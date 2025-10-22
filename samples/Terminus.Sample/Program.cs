@@ -93,7 +93,7 @@ class Program
         ListAllEndpoints(registry);
     }
 
-    static async Task InvokeCalculatorEndpoints(EndpointRegistry registry)
+    static Task InvokeCalculatorEndpoints(EndpointRegistry registry)
     {
         var calculator = new CalculatorEndpoint();
 
@@ -108,6 +108,8 @@ class Program
         var multiplyEndpoint = registry.GetEndpoint("Multiply");
         var result3 = EndpointInvoker.Invoke(multiplyEndpoint, calculator, 6, 7);
         Console.WriteLine($"Multiply(6, 7) = {result3}");
+        
+        return Task.CompletedTask;
     }
 
     static void QueryEndpointsByTag(EndpointRegistry registry)
