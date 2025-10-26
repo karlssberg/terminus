@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator", "src\Terminus.Generator\Terminus.Generator.csproj", "{2292D3FB-D1DD-4FF3-B14D-C175586128F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator.Tests.Unit", "test\Terminus.Generator.Tests.Unit\Terminus.Generator.Tests.Unit.csproj", "{98F7E5DC-FDF1-4FF5-AE51-36990F439A43}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus", "src\Terminus\Terminus.csproj", "{D9AED24F-5407-4826-A5E8-A52ED8E5D6A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2292D3FB-D1DD-4FF3-B14D-C175586128F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2292D3FB-D1DD-4FF3-B14D-C175586128F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2292D3FB-D1DD-4FF3-B14D-C175586128F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2292D3FB-D1DD-4FF3-B14D-C175586128F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98F7E5DC-FDF1-4FF5-AE51-36990F439A43}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98F7E5DC-FDF1-4FF5-AE51-36990F439A43}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98F7E5DC-FDF1-4FF5-AE51-36990F439A43}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98F7E5DC-FDF1-4FF5-AE51-36990F439A43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9AED24F-5407-4826-A5E8-A52ED8E5D6A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9AED24F-5407-4826-A5E8-A52ED8E5D6A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9AED24F-5407-4826-A5E8-A52ED8E5D6A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9AED24F-5407-4826-A5E8-A52ED8E5D6A1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
