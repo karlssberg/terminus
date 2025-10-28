@@ -38,6 +38,7 @@ public sealed class ParameterBindingContext
     public object? DefaultValue { get; init; }
 
     public CancellationToken CancellationToken { get; init; }
+    public Type? ParameterAttributeType { get; init; }
 #else
     public string ParameterName { get; }
     public Type ParameterType { get; }
@@ -48,6 +49,7 @@ public sealed class ParameterBindingContext
     public object? DefaultValue { get; set; }
 
     public CancellationToken CancellationToken { get; }
+    public Type? ParameterAttributeType { get; set; }
 #endif
 
     // Generic bag for any data the host application wants to provide

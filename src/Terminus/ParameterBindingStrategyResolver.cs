@@ -10,7 +10,12 @@ public sealed class ParameterBindingStrategyResolver
     private readonly List<IParameterBindingStrategy> _strategies = [];
     private readonly Dictionary<Type, IParameterBinder> _customBinders = [];
 
-    // Explicit builder-style API that makes ordering clear
+    public ParameterBindingStrategyResolver AddDefault()
+    {
+        _strategies.AddRange(DefaultParameterBindingStrategies.Create());
+        return this;
+    }
+    
     public ParameterBindingStrategyResolver AddStrategy(IParameterBindingStrategy strategy)
     {
         _strategies.Add(strategy);
@@ -45,27 +50,30 @@ public sealed class ParameterBindingStrategyResolver
         return this;
     }
     
-    public void RegisterParameterBinder<TAttribute>(IParameterBinder binder) 
+    public ParameterBindingStrategyResolver RegisterParameterBinder<TAttribute>(IParameterBinder binder) 
         where TAttribute : ParameterBinderAttribute
     {
         _customBinders[typeof(TAttribute)] = binder;
+        _customBinders[typeof(TAttribute)] = binder;
+        return this;
     }
     
-    public IParameterBindingStrategy GetStrategy(ParameterBindingContext context)
+    public TParameter ResolveParameter<TParameter>(string parameterName, ParameterBindingContext context)
     {
-        return _strategies.FirstOrDefault(strategy => strategy.CanBind(context))
-               ?? throw new InvalidOperationException(
-                    $"No binding strategy found for parameter type '{context.ParameterType.FullName}'.");
-    }
-    
-    public IParameterBinder GetParameterBinder(Type attributeType)
-    {
-        if (_customBinders.TryGetValue(attributeType, out var binder))
+        var scopedContext = context.ForParameter(parameterName, typeof(TParameter));
+        if (scopedContext.ParameterAttributeType is not null)
         {
-            return binder;
+            return _customBinders.TryGetValue(scopedContext.ParameterAttributeType, out var customBinder)
+                ? (TParameter) customBinder.BindParameter(scopedContext)!
+                : throw new InvalidOperationException(
+                     $"No custom binder registered for attribute type '{scopedContext.ParameterAttributeType.Name}'.");
+
         }
         
-        throw new InvalidOperationException(
-            $"No custom binder registered for attribute type '{attributeType.Name}'.");
+        var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(scopedContext))
+                    ?? throw new InvalidOperationException(
+                         $"No binding strategy found for parameter type '{scopedContext.ParameterType.FullName}'.");
+
+        return (TParameter)strategyBinder.Bind(scopedContext)!;
     }
 }

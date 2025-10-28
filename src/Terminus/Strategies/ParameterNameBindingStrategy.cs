@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Terminus.Strategies;
 
-public sealed class NamedValueBindingStrategy : IParameterBindingStrategy
+public sealed class ParameterNameBindingStrategy : IParameterBindingStrategy
 {
     private static readonly HashSet<Type> SimpleTypes =
     [

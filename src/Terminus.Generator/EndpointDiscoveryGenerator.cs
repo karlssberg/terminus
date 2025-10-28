@@ -8,7 +8,7 @@ namespace Terminus.Generator;
 [Generator]
 public class EndpointDiscoveryGenerator : IIncrementalGenerator
 {
-    private const string BaseAttributeFullName = "Terminus.Attributes.EntryPointAttribute";
+    private const string BaseAttributeFullName = "Terminus.EntryPointAttribute";
     
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -27,7 +27,7 @@ public class EndpointDiscoveryGenerator : IIncrementalGenerator
     private static bool IsCandidateMethod(SyntaxNode node) => 
         node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
 
-    private static EntryPointMethodDescriptor? GetMethodWithDerivedAttribute(
+    private static EntryPointMethodInfo? GetMethodWithDerivedAttribute(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
@@ -46,42 +46,14 @@ public class EndpointDiscoveryGenerator : IIncrementalGenerator
             // Walk up the inheritance chain to check if it derives from our base
             if (InheritsFromBaseAttribute(attributeData.AttributeClass))
             {
-                return new EntryPointMethodDescriptor(
-                    MethodName: methodSymbol.Name,
-                    ContainingType: methodSymbol.ContainingType.ToDisplayString(),
-                    AttributeType: attributeData.AttributeClass.ToDisplayString(),
-                    AttributeData: ExtractAttributeData(attributeData),
-                    IsStatic: methodSymbol.IsStatic
+                return new EntryPointMethodInfo(
+                    methodSymbol,
+                    attributeData
                 );
             }
         }
 
-        // Fallback: detect by attribute name syntax to tolerate missing using directives in user code
-        foreach (var attrList in methodSyntax.AttributeLists)
-        {
-            foreach (var attr in attrList.Attributes)
-            {
-                var nameText = attr.Name.ToString();
-                if (nameText == "EntryPoint" || nameText == "EntryPointAttribute")
-                {
-                    return new EntryPointMethodDescriptor(
-                        MethodName: methodSymbol.Name,
-                        ContainingType: methodSymbol.ContainingType.ToDisplayString(),
-                        AttributeType: "Terminus.Attributes.EntryPointAttribute",
-                        AttributeData: new AttributeInfo(default!),
-                        IsStatic: methodSymbol.IsStatic
-                    );
-                }
-            }
-        }
-
         return null;
-    }
-
-
-    private static AttributeInfo ExtractAttributeData(AttributeData attributeData)
-    {
-        return new AttributeInfo(attributeData);
     }
     
     private static bool InheritsFromBaseAttribute(INamedTypeSymbol attributeClass)
@@ -99,10 +71,10 @@ public class EndpointDiscoveryGenerator : IIncrementalGenerator
         return false;
     }
 
-    private void Execute(SourceProductionContext context, ImmutableArray<EntryPointMethodDescriptor> entryPoints)
+    private static void Execute(SourceProductionContext context, ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         // Generate one consolidated type for all discovered endpoints
-        var source = EntrypointRegistrationSourceBuilder.Generate(entryPoints);
+        var source = EntrypointRegistrationSourceBuilder.Generate(entryPoints).ToFullString();
         context.AddSource("EntryPoints.g.cs", source);
     }
 }
