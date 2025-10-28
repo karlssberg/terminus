@@ -54,7 +54,6 @@ public sealed class ParameterBindingStrategyResolver
         where TAttribute : ParameterBinderAttribute
     {
         _customBinders[typeof(TAttribute)] = binder;
-        _customBinders[typeof(TAttribute)] = binder;
         return this;
     }
     
