@@ -12,6 +12,11 @@
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>$(IntermediateOutputPath)Generated</CompilerGeneratedFilesOutputPath>
     </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Remove="**/*.g.cs" />
+        <None Include="**/*.g.cs" />
+    </ItemGroup>
     
     <ItemGroup>
       <ProjectReference Include="..\..\src\Terminus.Generator\Terminus.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />

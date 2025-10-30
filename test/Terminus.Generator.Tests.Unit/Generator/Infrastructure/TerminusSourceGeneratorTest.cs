@@ -24,14 +24,18 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
 
     private const string DiShimSource =
         """
+        using System;
         namespace Microsoft.Extensions.DependencyInjection
         {
             public interface IServiceCollection { }
+            public interface IServiceScope : IDisposable { }
             public static class ServiceCollectionExtensionsShim
             {
-                public static IServiceCollection AddKeyedSingleton<T>(this IServiceCollection services, object? key, T implementation)
+                public static IServiceCollection AddSingleton<T>(this IServiceCollection services, T implementation)
                     where T : class
                     => services;
+                    
+                public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
             }
         }
         """;

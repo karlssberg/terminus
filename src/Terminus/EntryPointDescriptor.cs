@@ -1,18 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Terminus;
 
-public class EntryPointDescriptor
+public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribute : EntryPointAttribute
 {
     public MethodInfo MethodInfo { get; }
     public Func<object, ParameterBindingContext, object?> Invoker { get; }
+    
+    public IEnumerable<TEntryPointAttribute> Attributes { get; }
 
-    public EntryPointDescriptor(MethodInfo methodInfo, Func<object, ParameterBindingContext, object?> func)
-    {
-        MethodInfo = methodInfo;
-        Invoker = func;
-    }
     public EntryPointDescriptor(MethodInfo methodInfo, Action<object, ParameterBindingContext> action)
     {
         MethodInfo = methodInfo;
@@ -21,5 +19,6 @@ public class EntryPointDescriptor
             action(instance, context);
             return null;
         };
+        Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
     }
 }

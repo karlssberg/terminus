@@ -7,12 +7,12 @@ namespace Terminus;
 
 public sealed class ParameterBindingStrategyResolver
 {
-    private readonly List<IParameterBindingStrategy> _strategies = [];
+    private readonly List<IParameterBindingStrategy> _strategies = [..DefaultParameterBindingStrategies.Create()];
     private readonly Dictionary<Type, IParameterBinder> _customBinders = [];
 
-    public ParameterBindingStrategyResolver AddDefault()
+    public ParameterBindingStrategyResolver Clear()
     {
-        _strategies.AddRange(DefaultParameterBindingStrategies.Create());
+        _strategies.Clear();
         return this;
     }
     
@@ -70,9 +70,8 @@ public sealed class ParameterBindingStrategyResolver
         }
         
         var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(scopedContext))
-                    ?? throw new InvalidOperationException(
-                         $"No binding strategy found for parameter type '{scopedContext.ParameterType.FullName}'.");
-
+                    ?? new DependencyInjectionBindingStrategy();
+        
         return (TParameter)strategyBinder.Bind(scopedContext)!;
     }
 }

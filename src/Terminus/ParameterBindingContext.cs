@@ -1,7 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+#if NET8_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Threading;
 
 namespace Terminus;
@@ -18,7 +19,6 @@ public sealed class ParameterBindingContext
         IReadOnlyDictionary<string, object?> data,
         CancellationToken cancellationToken = default)
     {
-        new ConcurrentDictionary<string, object?>().GetOrAdd(parameterName, _ => new object());
         ParameterName = parameterName;
         ParameterType = parameterType;
         ServiceProvider = serviceProvider;
@@ -26,7 +26,7 @@ public sealed class ParameterBindingContext
         CancellationToken = cancellationToken;
     }
     
-#if NET8_0_OR_GREATER
+#if NET7_0_OR_GREATER
     public ParameterBindingContext() {}
 
     public required string ParameterName { get; init; }
@@ -78,7 +78,8 @@ public sealed class ParameterBindingContext
         return new ParameterBindingContext(name, type, ServiceProvider, Data)
         {
             HasDefaultValue = hasDefault,
-            DefaultValue = defaultValue
+            DefaultValue = defaultValue,
+            ParameterAttributeType = ParameterAttributeType
         };
     }
 }

@@ -8,6 +8,5 @@ public static class DefaultParameterBindingStrategies
     {
         yield return new ParameterNameBindingStrategy();
         yield return new CancellationTokenBindingStrategy();
-        yield return new DependencyInjectionBindingStrategy();
     }
 }
