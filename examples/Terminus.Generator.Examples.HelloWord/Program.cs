@@ -1,35 +1,44 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Terminus;
-using Terminus.Generated;
+using Terminus.Attributes;
+using Terminus.Generator.Examples.HelloWorld;
+// using Terminus.Generated;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddEntryPoints();
+// builder.Services.AddEntryPointsIMediator();
 
 builder.Services.AddHostedService<Service>();
 builder.Services.AddSingleton<Listener>();
 
 var host = builder.Build();
 
-await host.RunAsync();
+// await host.RunAsync();
 
-public class Listener
+namespace Terminus.Generator.Examples.HelloWorld
 {
-    [EntryPoint]
-    public void Handle(string message) => Console.WriteLine(message);
-}
+    [Terminus.Attributes.EntryPointMediator]
+    public partial interface IMediator;
 
-public class Service(IServiceProvider provider) : IHostedService
-{
-    public Task StartAsync(CancellationToken cancellationToken)
+    public class Listener
     {
-        throw new NotImplementedException();
+        [EntryPoint]
+        public void Handle(string message) => Console.WriteLine(message);
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
+    public class Service(IServiceProvider provider) : IHostedService
     {
-        throw new NotImplementedException();
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            // provider.GetRequiredService<IMediator>().Handle("hello world");
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }
+
 

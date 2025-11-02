@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using Terminus;
+using Terminus.Attributes;
 using Terminus.Strategies;
 
 namespace Demo
@@ -77,7 +78,7 @@ namespace Demo
                      private static IServiceCollection AddEntryPointsInternal<TAttribute>(this IServiceCollection services, ParameterBindingStrategyResolver resolver)
                          where TAttribute : EntryPointAttribute
                      {
-                         if (typeof(Terminus.EntryPointAttribute) == typeof(TAttribute))
+                         if (typeof(Terminus.Attributes.EntryPointAttribute) == typeof(TAttribute))
                          {
                              services.AddSingleton<EntryPointDescriptor<TAttribute>>(new EntryPointDescriptor<TAttribute>(typeof(Demo.TestEndpoints).GetMethod("Hello", new System.Type[] { typeof(string) }), (instance, context) => Demo.TestEndpoints.Hello(resolver.ResolveParameter<string>("world", context))));
                          }

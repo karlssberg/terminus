@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Terminus;
+namespace Terminus.Attributes;
 
 [AttributeUsage(AttributeTargets.Parameter)]
 public abstract class ParameterBinderAttribute : Attribute

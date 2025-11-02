@@ -10,4 +10,8 @@
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Terminus.Attributes\Terminus.Attributes.csproj" />
+    </ItemGroup>
+
 </Project>

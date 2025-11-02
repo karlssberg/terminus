@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
+using Terminus.Attributes;
 
 namespace Terminus.Generator.Tests.Unit.Generator.Infrastructure;
 
@@ -28,11 +29,23 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         namespace Microsoft.Extensions.DependencyInjection
         {
             public interface IServiceCollection { }
-            public interface IServiceScope : IDisposable { }
+            public interface IServiceScope : IDisposable
+            {
+                IServiceProvider ServiceProvider { get; }
+            }
             public static class ServiceCollectionExtensionsShim
             {
                 public static IServiceCollection AddSingleton<T>(this IServiceCollection services, T implementation)
                     where T : class
+                    => services;
+                
+                public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services)
+                    where TService : class
+                    where TImplementation : class, TService
+                    => services;
+                
+                public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
+                    where TService : class
                     => services;
                     
                 public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
@@ -46,8 +59,10 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         TestState.Sources.Add(IsExternalInitSource);
         TestState.Sources.Add(DiShimSource);
         
-        // Ensure the test compilation can resolve Terminus.EntryPointAttribute
+        // Ensure the test compilation can resolve Terminus.EntryPointAttribute and other Terminus types
         TestState.AdditionalReferences.Add(
             MetadataReference.CreateFromFile(typeof(EntryPointAttribute).Assembly.Location));
+        TestState.AdditionalReferences.Add(
+            MetadataReference.CreateFromFile(typeof(Terminus.EntryPointDescriptor<>).Assembly.Location));
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Terminus.Attributes;
 
 namespace Terminus;
 
@@ -15,14 +16,4 @@ public static class TypeExtensions
             .Where(m => m.GetCustomAttribute<TAttribute>() != null)
             .ToArray();
     }
-}
-
-public static class ServiceProviderExtensions
-{
-    public static T GetRequiredService<T>(this IServiceProvider provider) =>
-        provider.GetService(typeof(T)) switch
-        {
-            T service => service,
-            _ => throw new InvalidOperationException($"Service '{typeof(T).FullName}' not found.")
-        };
 }
