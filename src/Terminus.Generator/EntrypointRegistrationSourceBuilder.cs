@@ -198,27 +198,48 @@ internal static class EntrypointRegistrationSourceBuilder
             var paramTypes = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
                 $"typeof({p.Type.ToDisplayString()})"));
             var paramArray = ep.MethodSymbol.Parameters.Length == 0
-                ? "System.Array.Empty<System.Type>()"
+                ? "new System.Type[] { }"
                 : $"new System.Type[] {{ {paramTypes} }}";
 
             return $"services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(CreateDescriptor(typeof({containingType}).GetMethod(\"{methodName}\", {paramArray})!, resolver));";
         }));
 
+        // Generate the CreateDescriptor lambda body that invokes the appropriate mediator method
+        var createDescriptorBody = string.Join("\n            ", matchingEntryPoints.Select(SyntaxNode(ep) =>
+        {
+            var methodName = ep.MethodSymbol.Name;
+            var containingType = ep.MethodSymbol.ContainingType.ToDisplayString();
+            
+            var parameterInvocations = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
+                $"resolver.ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
+
+            var invokeExpressionSnippet = ep.MethodSymbol.IsStatic
+                ? $"{containingType}.{methodName}({parameterInvocations})"
+                : $"context.ServiceProvider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
+            
+            var invokeExpression = ParseExpression(invokeExpressionSnippet);
+            if (ep.MethodSymbol.ReturnsVoid)
+            {
+                return ExpressionStatement(invokeExpression).NormalizeWhitespace();
+            }
+
+            return ReturnStatement(invokeExpression).NormalizeWhitespace();
+
+        }));
+
         return
           $$"""
-           public static IServiceCollection AddEntryPoints{{mediator.InterfaceSymbol.Name}}(
+           public static IServiceCollection AddEntryPointsFor{{mediator.InterfaceSymbol.Name}}(
                this IServiceCollection services,
                Action<ParameterBindingStrategyResolver>? configure = null)
            {
                var resolver = new ParameterBindingStrategyResolver();
                configure?.Invoke(resolver);
 
-               static EntryPointDescriptor<{{attributeTypeName}}> CreateDescriptor(
-                   MethodInfo method,
-                   ParameterBindingStrategyResolver resolver) =>
-                   new EntryPointDescriptor<{{attributeTypeName}}>(method, (instance, context) => {
-                       throw new NotImplementedException("Direct descriptor invocation not yet supported");
-                   });
+               static EntryPointDescriptor<{{attributeTypeName}}> CreateDescriptor(MethodInfo method, ParameterBindingStrategyResolver resolver) => new EntryPointDescriptor<{{attributeTypeName}}>(method, context =>
+               {
+                   {{createDescriptorBody}}
+               });
 
                {{registrations}}
 
@@ -313,7 +334,7 @@ internal static class EntrypointRegistrationSourceBuilder
           $"""
             new EntryPointDescriptor<TAttribute>(
                 {getMethodInvocation},
-                (instance, context) => {instanceInvoke})
+                context => {instanceInvoke})
             """;
         return ParseExpression(source).NormalizeWhitespace();
     }

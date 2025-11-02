@@ -49,6 +49,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
                     => services;
                     
                 public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
+                public static T GetRequiredService<T>(this IServiceProvider provider) => default!;
             }
         }
         """;

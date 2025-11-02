@@ -8,16 +8,27 @@ namespace Terminus;
 public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribute : EntryPointAttribute
 {
     public MethodInfo MethodInfo { get; }
-    public Func<object, ParameterBindingContext, object?> Invoker { get; }
+    public Func<ParameterBindingContext, object?> Invoker { get; }
     
     public IEnumerable<TEntryPointAttribute> Attributes { get; }
 
-    public EntryPointDescriptor(MethodInfo methodInfo, Action<object, ParameterBindingContext> action)
+    public EntryPointDescriptor(MethodInfo methodInfo, Action<ParameterBindingContext> action)
     {
         MethodInfo = methodInfo;
-        Invoker = (instance, context) =>
+        Invoker = context =>
         {
-            action(instance, context);
+            action(context);
+            return null;
+        };
+        Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
+    }
+    
+    public EntryPointDescriptor(MethodInfo methodInfo, Func<ParameterBindingContext, object?> function)
+    {
+        MethodInfo = methodInfo;
+        Invoker = context =>
+        {
+            function(context);
             return null;
         };
         Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
