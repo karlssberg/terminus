@@ -3,13 +3,13 @@
 namespace Terminus.Attributes;
 
 [AttributeUsage(AttributeTargets.Interface)]
-public class EntryPointMediatorAttribute(Type? endPointAttributeType = null) : Attribute
+public class EntryPointMediatorAttribute(Type? entryPointAttributeType = null) : Attribute
 {
-    public Type ForEntryPointAttribute { get; set;  } = endPointAttributeType ?? typeof(EntryPointAttribute);
+    public Type ForEntryPointAttribute { get; set;  } = entryPointAttributeType ?? typeof(EntryPointAttribute);
 }
 
 #if NET7_0_OR_GREATER
 [AttributeUsage(AttributeTargets.Interface)]
-public class EntryPointMediatorAttribute<TEndpointAttribute>
-    : EntryPointMediatorAttribute(type) where TEndpointAttribute : EntryPointAttribute;
+public class EntryPointMediatorAttribute<TEntryPointAttribute>
+    : EntryPointMediatorAttribute(type) where TEntryPointAttribute : EntryPointAttribute;
 #endif

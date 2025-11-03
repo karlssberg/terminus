@@ -21,8 +21,5 @@
     <ItemGroup>
         <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="analyzers\dotnet\cs\$(AssemblyName).dll" />
     </ItemGroup>
-    <ItemGroup>
-      <ProjectReference Include="..\Terminus.Attributes\Terminus.Attributes.csproj" />
-    </ItemGroup>
 
 </Project>

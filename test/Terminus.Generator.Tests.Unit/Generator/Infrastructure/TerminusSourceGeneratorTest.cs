@@ -9,7 +9,7 @@ namespace Terminus.Generator.Tests.Unit.Generator.Infrastructure;
 /// Shared harness for Terminus source generator tests.
 /// - Adds IsExternalInit shim so record types parse on older reference assemblies
 /// - Adds minimal shims for Microsoft.Extensions.DependencyInjection to avoid heavy package references
-/// - Adds a reference to Terminus so tests can use EndpointAttribute-derived types
+/// - Adds a reference to Terminus so tests can use EntryPointAttribute-derived types
 /// </summary>
 /// <typeparam name="TGenerator">The generator under test.</typeparam>
 public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest<TGenerator, DefaultVerifier>

@@ -1,14 +1,14 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Terminus.Attributes;
 
 namespace Terminus.Generator;
 
 [Generator]
-public class EndpointDiscoveryGenerator : IIncrementalGenerator
+public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
     private const string BaseAttributeFullName = "Terminus.Attributes.EntryPointAttribute";
     private const string MediatorAttributeFullName = "Terminus.Attributes.EntryPointMediatorAttribute";
@@ -18,7 +18,7 @@ public class EndpointDiscoveryGenerator : IIncrementalGenerator
         // Discover mediator interfaces marked with [EntryPointMediator]
         var discoveredMediators = context.SyntaxProvider
             .ForAttributeWithMetadataName( 
-                fullyQualifiedMetadataName: typeof(EntryPointMediatorAttribute).FullName!,
+                fullyQualifiedMetadataName: MediatorAttributeFullName,
                 predicate: static (node, _) => IsCandidateMediatorInterface(node),
                 transform: GetMediatorInterfaceInfo)
             .Where(static m => m.HasValue)
@@ -94,8 +94,7 @@ public class EndpointDiscoveryGenerator : IIncrementalGenerator
         // Check named property: ForEntryPointAttribute = typeof(CommandAttribute)
         foreach (var namedArg in mediatorAttribute.NamedArguments)
         {
-            if (namedArg.Key == "ForEntryPointAttribute" &&
-                namedArg.Value.Value is INamedTypeSymbol typeSymbol)
+            if (namedArg is { Key: "ForEntryPointAttribute", Value.Value: INamedTypeSymbol typeSymbol })
             {
                 return typeSymbol;
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 #if NET8_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
@@ -12,17 +13,32 @@ public sealed class ParameterBindingContext
 #if NET8_0_OR_GREATER
     [SetsRequiredMembers]
 #endif
-    public ParameterBindingContext(
+    private ParameterBindingContext(
         string parameterName,
         Type parameterType, 
         IServiceProvider serviceProvider,
-        IReadOnlyDictionary<string, object?> data,
+        IReadOnlyDictionary<string, object?>? data = null,
         CancellationToken cancellationToken = default)
     {
         ParameterName = parameterName;
         ParameterType = parameterType;
         ServiceProvider = serviceProvider;
-        Data = data;
+        Data = data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
+        CancellationToken = cancellationToken;
+    }
+    
+#if NET8_0_OR_GREATER
+    [SetsRequiredMembers]
+#endif
+    public ParameterBindingContext(
+        IServiceProvider serviceProvider,
+        IReadOnlyDictionary<string, object?>? data = null,
+        CancellationToken cancellationToken = default)
+    {
+        ParameterName = "";
+        ParameterType = typeof(void);
+        ServiceProvider = serviceProvider;
+        Data = data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
         CancellationToken = cancellationToken;
     }
     
