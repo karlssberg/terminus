@@ -8,56 +8,6 @@ namespace Terminus.Generator;
 
 internal static class SyntaxExtensions
 {
-    private static readonly SyntaxToken CommaToken = ParseToken(",");
-    
-    internal static PropertyDeclarationSyntax WithAssignmentTo(
-        this PropertyDeclarationSyntax propertyDeclaration,
-        ExpressionSyntax expression)
-    {
-        return propertyDeclaration
-            .WithInitializer(EqualsValueClause(expression))
-            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
-    }
-
-    internal static PropertyDeclarationSyntax WithGetterOnly(
-        this PropertyDeclarationSyntax propertyDeclaration)
-    {
-        return propertyDeclaration
-            .AddAccessorListAccessors(AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)));
-    }
-
-    internal static PropertyDeclarationSyntax WithModifiers(
-        this PropertyDeclarationSyntax propertyDeclaration,
-        params SyntaxKind[] modifiers)
-    {
-        return propertyDeclaration.WithModifiers(TokenList(modifiers.Select(Token)));
-    }
-
-    internal static  ObjectCreationExpressionSyntax WithEmptyArguments(
-        this ObjectCreationExpressionSyntax expression)
-    {
-        return expression.WithArgumentList(ArgumentList());
-    }
-    
-    internal static  ObjectCreationExpressionSyntax WithCollectionInitializer(
-        this ObjectCreationExpressionSyntax expression,
-        IEnumerable<ExpressionSyntax> initializations)
-    {
-        return expression.WithInitializer(
-            InitializerExpression(SyntaxKind.CollectionInitializerExpression)
-                .WithExpressions(SeparatedList(initializations, [CommaToken])));
-    }
-    
-    internal static  ObjectCreationExpressionSyntax WithObjectInitializer(
-        this ObjectCreationExpressionSyntax expression,
-        IEnumerable<ExpressionSyntax> initializations)
-    {
-        return expression.WithInitializer(
-            InitializerExpression(SyntaxKind.ObjectInitializerExpression)
-                .WithExpressions(SeparatedList(initializations, [CommaToken])));
-    }
-    
     internal static  InvocationExpressionSyntax WithArguments(
         this InvocationExpressionSyntax invocation,
         IEnumerable<ExpressionSyntax> expressions)
@@ -100,24 +50,6 @@ internal static class SyntaxExtensions
                 SeparatedList(initializations)));
     }
 
-    internal static ArrayCreationExpressionSyntax WithInitializer(
-        this ArrayCreationExpressionSyntax expression,
-        ExpressionSyntax firstInitialization,
-        params IEnumerable<ExpressionSyntax> otherInitializations)
-    {
-        return expression.WithInitializer([firstInitialization, ..otherInitializations]);
-    }
-
-    internal static ParameterListSyntax ToParameterListSyntax(this IEnumerable<IParameterSymbol> parameterSymbols)
-    {
-        var parameters = parameterSymbols.Select(parameter =>
-            Parameter(Identifier(parameter.Name))
-                .WithType(ParseTypeName(
-                    parameter.Type.ToDisplayString())));
-        
-        return ParameterList(SeparatedList(parameters));
-    }
-
     internal static MethodDeclarationSyntax ToMethodDeclarationSyntax(this IMethodSymbol methodSymbol)
     {
         var methodDeclarationSyntax = 
@@ -134,6 +66,16 @@ internal static class SyntaxExtensions
             methodDeclarationSyntax
                 .WithParameterList(
                     methodSymbol.Parameters.ToParameterListSyntax());
+    }
+
+    internal static ParameterListSyntax ToParameterListSyntax(this IEnumerable<IParameterSymbol> parameterSymbols)
+    {
+        var parameters = parameterSymbols.Select(parameter =>
+            Parameter(Identifier(parameter.Name))
+                .WithType(ParseTypeName(
+                    parameter.Type.ToDisplayString())));
+        
+        return ParameterList(SeparatedList(parameters));
     }
 
     internal static SyntaxList<T> ToListSyntax<T>(this IEnumerable<T> items) where T : SyntaxNode

@@ -120,25 +120,6 @@ internal static class EntrypointRegistrationSourceBuilder
         string implementationClassName,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
-        var methods = string.Join("\n\n    ", entryPoints.Select(CreateMediatorMethodImplementation));
-
-        var sourcee =
-          $$"""
-           internal sealed class {{implementationClassName}} : {{interfaceSymbol.ToDisplayString()}}
-           {
-               private readonly IServiceProvider _serviceProvider;
-               private readonly ParameterBindingStrategyResolver _resolver;
-
-               public {{implementationClassName}}(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
-               {
-                   _serviceProvider = serviceProvider;
-                   _resolver = resolver;
-               }
-
-               {{methods}}
-           }
-           """;
-
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceSymbol.ToDisplayString())))
