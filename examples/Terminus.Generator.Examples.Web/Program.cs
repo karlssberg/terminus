@@ -1,4 +1,5 @@
-using System.Text.RegularExpressions;
+using Terminus;
+using Terminus.Attributes;
 using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,97 +8,39 @@ var app = builder.Build();
 
 app.Use(async (HttpContext context, RequestDelegate _) =>
 {
+    var entryPoints = context.RequestServices.GetServices<EntryPointDescriptor<MyHttpPostAttribute>>();
+    var dispatcher = context.RequestServices.GetRequiredService<IAsyncDispatcher<MyHttpPostAttribute>>();
     var router = context.RequestServices.GetRequiredService<CustomRouter>();
+    
+    foreach (var entryPoint in entryPoints)
+    foreach (var attribute in entryPoint.Attributes)
+    {
+        router.AddRoute(attribute.Path, httpContext =>
+        {
+            var routeValues = httpContext.Request.RouteValues.ToDictionary(x => x.Key, x => x.Value);
+            return dispatcher.PublishAsync(new ParameterBindingContext(httpContext.RequestServices, routeValues), CancellationToken.None);
+        });
+    }
     await router.RouteAsync(context);
 });
 
 
-app.Run();
+await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    public class CustomRouter
+    [AttributeUsage(AttributeTargets.Method)]
+    public class MyHttpPostAttribute(string path) : EntryPointAttribute
     {
-        private readonly List<RouteEntry> _routes = new();
-
-        public void AddRoute(string pattern, RequestDelegate handler)
-        {
-            _routes.Add(new RouteEntry(pattern, handler));
-        }
-
-        public async Task RouteAsync(HttpContext context)
-        {
-            var path = context.Request.Path.Value;
-
-            foreach (var route in _routes)
-            {
-                var match = route.Match(path);
-                if (match.IsMatch)
-                {
-                    // Populate route values
-                    foreach (var param in match.Parameters)
-                    {
-                        context.Request.RouteValues[param.Key] = param.Value;
-                    }
-
-                    await route.Handler(context);
-                    return;
-                }
-            }
-
-            context.Response.StatusCode = 404;
-            await context.Response.WriteAsync("Not Found");
-        }
+        public string Path { get; } = path;
     }
-    
-    public class RouteEntry
+
+    public class MyHttpEntryPoints
     {
-        private readonly Regex _pattern;
-        private readonly List<string> _paramNames;
-
-        public RequestDelegate Handler { get; }
-
-        public RouteEntry(string pattern, RequestDelegate handler)
+        [MyHttpPost("/users/{id}/posts/{postId}")]
+        public void GetPost(string id, string postId)
         {
-            Handler = handler;
-            _paramNames = new List<string>();
-
-            // Convert "/users/{id}/posts/{postId}" to regex
-            var regexPattern = Regex.Replace(pattern, @"\{(\w+)\}", match =>
-            {
-                _paramNames.Add(match.Groups[1].Value);
-                return @"([^/]+)";
-            });
-
-            _pattern = new Regex($"^{regexPattern}$");
+            Console.WriteLine($"GetPost: {id} {postId}");
         }
-
-        public RouteMatch Match(string path)
-        {
-            var match = _pattern.Match(path);
-            if (!match.Success)
-                return RouteMatch.NoMatch;
-
-            var parameters = new Dictionary<string, string>();
-            for (int i = 0; i < _paramNames.Count; i++)
-            {
-                parameters[_paramNames[i]] = match.Groups[i + 1].Value;
-            }
-
-            return new RouteMatch(true, parameters);
-        }
-    }
-    public class RouteMatch
-    {
-        public bool IsMatch { get; }
-        public Dictionary<string, string> Parameters { get; }
-
-        public RouteMatch(bool isMatch, Dictionary<string, string> parameters)
-        {
-            IsMatch = isMatch;
-            Parameters = parameters;
-        }
-
-        public static RouteMatch NoMatch => new(false, new Dictionary<string, string>());
     }
 }

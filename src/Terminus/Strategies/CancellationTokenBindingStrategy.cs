@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 
 namespace Terminus.Strategies;
 
@@ -8,5 +9,5 @@ public sealed class CancellationTokenBindingStrategy : IParameterBindingStrategy
         => context.ParameterType == typeof(CancellationToken);
     
     public object? Bind(ParameterBindingContext context) 
-        => context.CancellationToken;
+        => context.Data.Values.FirstOrDefault(value => value is CancellationToken);
 }

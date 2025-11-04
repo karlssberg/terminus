@@ -183,49 +183,44 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
 
         // If there are mediators, generate one file per mediator
-        if (!mediators.IsEmpty)
+        if (mediators.IsEmpty)
         {
-            foreach (var mediator in mediators)
-            {
-                // Find all entry points whose attribute type matches or derives from the mediator's target
-                var matchingEntryPoints = entryPointsByAttributeType
-                    .Where(kvp => InheritsFromOrEquals(kvp.Key, mediator.EntryPointAttributeType))
-                    .SelectMany(kvp => kvp.Value)
-                    .ToImmutableArray();
 
-                if (matchingEntryPoints.IsEmpty)
-                {
-                    // Report diagnostic: Mediator has no entry points
-                    var diagnostic = Diagnostic.Create(
-                        new DiagnosticDescriptor(
-                            "TERM001",
-                            "No entry points found",
-                            $"Mediator interface '{mediator.InterfaceSymbol.Name}' references " +
-                            $"'{mediator.EntryPointAttributeType.Name}' but no methods are marked with this attribute or its derivatives",
-                            "Terminus",
-                            DiagnosticSeverity.Warning,
-                            true),
-                        mediator.MediatorAttributeData.ApplicationSyntaxReference?.GetSyntax().GetLocation());
-
-                    context.ReportDiagnostic(diagnostic);
-                    continue;
-                }
-
-                // Generate mediator implementation
-                var source = EntrypointRegistrationSourceBuilder.GenerateForMediator(
-                    mediator,
-                    matchingEntryPoints,
-                    entryPoints).ToFullString();
-
-                var fileName = $"{mediator.InterfaceSymbol.Name}_Generated.g.cs";
-                context.AddSource(fileName, source);
-            }
         }
-        else
+
+        foreach (var mediator in mediators)
         {
-            // Legacy behavior: No mediators defined, generate global file
-            var source = EntrypointRegistrationSourceBuilder.GenerateLegacy(entryPoints).ToFullString();
-            context.AddSource("EntryPoints.g.cs", source);
+            // Find all entry points whose attribute type matches or derives from the mediator's target
+            var matchingEntryPoints = entryPointsByAttributeType
+                .Where(kvp => InheritsFromOrEquals(kvp.Key, mediator.EntryPointAttributeType))
+                .SelectMany(kvp => kvp.Value)
+                .ToImmutableArray();
+
+            if (matchingEntryPoints.IsEmpty)
+            {
+                // Report diagnostic: Mediator has no entry points
+                var diagnostic = Diagnostic.Create(
+                    new DiagnosticDescriptor(
+                        "TERM001",
+                        "No entry points found",
+                        $"Mediator interface '{mediator.InterfaceSymbol.Name}' references " +
+                        $"'{mediator.EntryPointAttributeType.Name}' but no methods are marked with this attribute or its derivatives",
+                        "Terminus",
+                        DiagnosticSeverity.Warning,
+                        true),
+                    mediator.MediatorAttributeData.ApplicationSyntaxReference?.GetSyntax().GetLocation());
+
+                context.ReportDiagnostic(diagnostic);
+                continue;
+            }
+
+            // Generate mediator implementation
+            var source = EntrypointRegistrationSourceBuilder.GenerateForMediator(
+                mediator,
+                matchingEntryPoints).ToFullString();
+
+            var fileName = $"{mediator.EntryPointAttributeType.Name}_Generated.g.cs";
+            context.AddSource(fileName, source);
         }
     }
 

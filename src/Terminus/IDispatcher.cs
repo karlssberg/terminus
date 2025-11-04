@@ -1,9 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System.Threading;
 using Terminus.Attributes;
 
 namespace Terminus;
 
 public interface IDispatcher<TEndpointAttribute> where TEndpointAttribute : EntryPointAttribute
 {
-    public Task PublishAsync(ParameterBindingContext context);
+    public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default);
+    T Request<T>(ParameterBindingContext context, CancellationToken cancellationToken = default);
 }

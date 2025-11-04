@@ -30,8 +30,9 @@ namespace Terminus.Generator.Examples.HelloWorld
         }
         
         [EntryPoint]
-        public static Task<string> Query(string message1, string message2)
+        public static Task<string> Query(string message1, string message2, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Console.WriteLine($"Queried messages: '{message1}' and '{message2}'");
             return Task.FromResult(message2);
         }
@@ -42,7 +43,7 @@ namespace Terminus.Generator.Examples.HelloWorld
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             provider.GetRequiredService<IMediator>().Handle("hello world");
-            var message = await provider.GetRequiredService<IMediator>().Query("hello", "world");
+            var message = await provider.GetRequiredService<IMediator>().Query("hello", "world", cancellationToken);
             Console.WriteLine($"Return message: '{message}'");
         }
 

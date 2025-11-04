@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 #if NET8_0_OR_GREATER
 using System.Diagnostics.CodeAnalysis;
 #endif
-using System.Threading;
 
 namespace Terminus;
 
@@ -14,32 +13,37 @@ public sealed record ParameterBindingContext
     [SetsRequiredMembers]
 #endif
     private ParameterBindingContext(
-        string parameterName,
-        Type parameterType, 
-        IServiceProvider serviceProvider,
-        IReadOnlyDictionary<string, object?>? data = null,
-        CancellationToken cancellationToken = default)
+        string ParameterName,
+        Type ParameterType, 
+        IServiceProvider ServiceProvider,
+        IReadOnlyDictionary<string, object?>? Data = null)
     {
-        ParameterName = parameterName;
-        ParameterType = parameterType;
-        ServiceProvider = serviceProvider;
-        Data = data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
-        CancellationToken = cancellationToken;
+        this.ParameterName = ParameterName;
+        this.ParameterType = ParameterType;
+        this.ServiceProvider = ServiceProvider;
+        this.Data = Data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
     }
     
 #if NET8_0_OR_GREATER
     [SetsRequiredMembers]
 #endif
     public ParameterBindingContext(
-        IServiceProvider serviceProvider,
-        IReadOnlyDictionary<string, object?>? data = null,
-        CancellationToken cancellationToken = default)
+        IServiceProvider ServiceProvider,
+        IReadOnlyDictionary<string, object?>? Data = null)
     {
         ParameterName = "";
         ParameterType = typeof(void);
-        ServiceProvider = serviceProvider;
-        Data = data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
-        CancellationToken = cancellationToken;
+        this.ServiceProvider = ServiceProvider;
+        this.Data = Data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
+    }
+        
+#if NET8_0_OR_GREATER
+    [SetsRequiredMembers]
+#endif
+    public ParameterBindingContext(
+        IServiceProvider ServiceProvider,
+        object? Data = null) : this(ServiceProvider, Data.ToDictionary())
+    {
     }
     
 #if NET7_0_OR_GREATER
@@ -53,7 +57,6 @@ public sealed record ParameterBindingContext
     public bool HasDefaultValue { get; init; }
     public object? DefaultValue { get; init; }
 
-    public CancellationToken CancellationToken { get; init; }
     public Type? ParameterAttributeType { get; init; }
 #else
     public string ParameterName { get; set; }
@@ -63,20 +66,18 @@ public sealed record ParameterBindingContext
     
     public bool HasDefaultValue { get; set; }
     public object? DefaultValue { get; set; }
-
-    public CancellationToken CancellationToken { get; set; }
     public Type? ParameterAttributeType { get; set; }
 #endif
 
     // Generic bag for any data the host application wants to provide
 
     // Typed accessor helpers
-    public T? GetData<T>(string key) where T : class
+    public T? GetValue<T>(string key) where T : class
     {
         return Data.TryGetValue(key, out var value) ? value as T : null;
     }
     
-    public bool TryGetData<T>(string key, out T? value) where T : class
+    public bool TryGetValue<T>(string key, out T? value) where T : class
     {
         if (Data.TryGetValue(key, out var obj) && obj is T typed)
         {

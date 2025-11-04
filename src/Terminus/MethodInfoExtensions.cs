@@ -24,7 +24,7 @@ public static class MethodInfoExtensions
                 continue;
             }
 
-            if (argValue == null)
+            if (argValue is null)
             {
                 // Null is only valid for nullable types or reference types
                 if (param.ParameterType.IsValueType && 

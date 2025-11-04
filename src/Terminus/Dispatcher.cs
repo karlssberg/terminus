@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using Terminus.Attributes;
 
@@ -7,17 +8,19 @@ namespace Terminus;
 
 public class Dispatcher<TEndpointAttribute>(
     IEntryPointRouter<TEndpointAttribute> router)
-    : IDispatcher<TEndpointAttribute> 
+    : IDispatcher<TEndpointAttribute>, IAsyncDispatcher<TEndpointAttribute>
     where TEndpointAttribute : EntryPointAttribute
 {
-    public virtual void Publish(ParameterBindingContext context)
+    public virtual void Publish(
+        ParameterBindingContext context, 
+        CancellationToken cancellationToken = default)
     {
         var descriptor = router.GetEntryPoint(context);
-        var result = descriptor.Invoker(context);
+        var result = descriptor.Invoker(context, cancellationToken);
         switch (result)
         {
-            case Task task:
-            case ValueTask valueTask:
+            case Task:
+            case ValueTask:
             case not null when IsAwaitable(result):
                 throw CreateInvalidAsyncOperationException();
             default:
@@ -25,9 +28,11 @@ public class Dispatcher<TEndpointAttribute>(
         }
     }
 
-    public virtual async Task PublishAsync(ParameterBindingContext context)
+    public virtual async Task PublishAsync(
+        ParameterBindingContext context, 
+        CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
         switch (result)
         {
             case Task task:
@@ -44,9 +49,11 @@ public class Dispatcher<TEndpointAttribute>(
         }
     }
 
-    public virtual T Request<T>(ParameterBindingContext context)
+    public virtual T Request<T>(
+        ParameterBindingContext context,
+        CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
         return result switch
         {
             T value => value,
@@ -54,9 +61,11 @@ public class Dispatcher<TEndpointAttribute>(
         };
     }
 
-    public virtual async Task<T> RequestAsync<T>(ParameterBindingContext context)
+    public virtual async Task<T> RequestAsync<T>(
+        ParameterBindingContext context,
+        CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
         return result switch
         {
             T value => value,
