@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Terminus.Attributes;
 
 namespace Terminus;
@@ -12,18 +13,16 @@ public class Dispatcher<TEndpointAttribute>(
 {
     public void Publish(ParameterBindingContext context)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        using var scope = context.ServiceProvider.CreateScope();
+        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
+        var descriptor = router.GetEntryPoint(scopedContext);
+        var result = descriptor.Invoker(scopedContext);
         switch (result)
         {
             case Task task:
-                task.Wait();
-                return;
             case ValueTask valueTask:
-                valueTask.AsTask().Wait();
-                return;
             case not null when IsAwaitable(result):
-                AsTask(result).Wait();
-                return;
+                throw CreateInvalidAsyncOperationException();
             default:
                 return;
         }
@@ -31,17 +30,19 @@ public class Dispatcher<TEndpointAttribute>(
 
     public async Task PublishAsync(ParameterBindingContext context)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        await using var scope = context.ServiceProvider.CreateAsyncScope();
+        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
+        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
         switch (result)
         {
             case Task task:
-                await task;
+                await task.ConfigureAwait(false);
                 return;
             case ValueTask valueTask:
-                await valueTask;
+                await valueTask.ConfigureAwait(false);
                 return;
             case not null when IsAwaitable(result):
-                await AsTask(result);
+                await AsTask(result).ConfigureAwait(false);
                 return;
             default:
                 return;
@@ -50,34 +51,45 @@ public class Dispatcher<TEndpointAttribute>(
 
     public T Request<T>(ParameterBindingContext context)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        using var scope = context.ServiceProvider.CreateScope();
+        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
+        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
         return result switch
         {
             T value => value,
-            Task<T> task => task.Result,
-            ValueTask<T> valueTask => valueTask.AsTask().Result,
-            not null when IsAwaitable(result) => AsTask<T>(result).Result,
-            _ => throw new InvalidOperationException("Mismatch between return type and expected return type.")
+            _ => throw CreateTypeMismatchException()
         };
     }
-    
+
     public async Task<T> RequestAsync<T>(ParameterBindingContext context)
     {
-        var result = router.GetEntryPoint(context).Invoker(context);
+        await using var scope = context.ServiceProvider.CreateAsyncScope();
+        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
+        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
         return result switch
         {
             T value => value,
-            Task<T> task => await task,
-            ValueTask<T> valueTask => await valueTask.AsTask(),
-            not null when IsAwaitable(result) => await AsTask<T>(result),
-            _ => throw new InvalidOperationException("Mismatch between return type and expected return type.")
+            Task<T> task => await task.ConfigureAwait(false),
+            ValueTask<T> valueTask => await valueTask.AsTask().ConfigureAwait(false),
+            not null when IsAwaitable(result) => await AsTask<T>(result).ConfigureAwait(false),
+            _ => throw CreateTypeMismatchException()
         };
     }
-    
 
-    private static async Task AsTask(object obj) => await (dynamic)obj;
+    private static InvalidOperationException CreateTypeMismatchException()
+    {
+        return new InvalidOperationException("Mismatch between return type and expected return type.");
+    }
 
-    private static async Task<T> AsTask<T>(object obj) => await (dynamic)obj;
+    private static InvalidOperationException CreateInvalidAsyncOperationException()
+    {
+        return new InvalidOperationException(
+            "Calling Publish() on an async operation is not allowed. Use PublishAsync() instead.");
+    }
+
+    private static async Task AsTask(object obj) => await ((dynamic)obj).configureAwait(false);
+
+    private static async Task<T> AsTask<T>(object obj) => await ((dynamic)obj).ConfigureAwait(false);
 
     private static bool IsAwaitable(object? obj)
     {
@@ -85,10 +97,4 @@ public class Dispatcher<TEndpointAttribute>(
             .GetType()
             .GetMethod("GetAwaiter", BindingFlags.Public | BindingFlags.Instance) != null;
     }
-}
-
-public interface IEntryPointRouter<TEndpointAttribute>
-    where TEndpointAttribute : EntryPointAttribute
-{
-    EntryPointDescriptor<TEndpointAttribute> GetEntryPoint(ParameterBindingContext context);
 }

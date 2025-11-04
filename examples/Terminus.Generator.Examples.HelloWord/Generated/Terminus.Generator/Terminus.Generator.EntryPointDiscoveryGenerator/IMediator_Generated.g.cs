@@ -7,42 +7,39 @@ using Terminus;
 using Terminus.Attributes;
 using Terminus.Strategies;
 
-namespace Terminus.Generator.Examples.HelloWorld
+namespaceTerminus.Generator.Examples.HelloWorld
 {
-    public partial interface IMediator
+    publicpartialinterfaceIMediator
     {
-        void Handle(string message);
-        System.Threading.Tasks.Task<string> Query(string message1, string message2);
-    }
+        voidHandle(stringmessage, )System.Threading.Tasks.Task<string> Query(stringmessage1, stringmessage2)}
 
-    internal sealed class IMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMediator
+    internalsealedclassIMediator_Generated:
+        Terminus.Generator.Examples.HelloWorld.IMediator
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ParameterBindingStrategyResolver _resolver;
-        public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
-        {
-            _serviceProvider = serviceProvider;
-            _resolver = resolver;
-        }
+private readonly IServiceProvider _serviceProvider;
+private readonly ParameterBindingStrategyResolver _resolver;
+public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+{
+    _serviceProvider = serviceProvider;
+    _resolver = resolver;
+} )
 
-        public void Handle(string message)
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(message);
-            }
-        }
-
-        public System.Threading.Tasks.Task<string> Query(string message1, string message2)
-        {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                return Terminus.Generator.Examples.HelloWorld.Listener.Query(message1, message2);
-            }
-        }
+! , 
+public void Handle(string message)
+{
+    using (var scope = _serviceProvider.CreateScope())
+    {
+        scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(message);
     }
 }
 
+public System.Threading.Tasks.Task<string> Query(string message1, string message2)
+{
+    using (var scope = _serviceProvider.CreateScope())
+    {
+        return Terminus.Generator.Examples.HelloWorld.Listener.Query(message1, message2);
+    }
+} } }
 namespace Terminus.Generated
 {
     public static partial class ServiceCollectionExtensions
@@ -51,10 +48,10 @@ namespace Terminus.Generated
         {
             var resolver = new ParameterBindingStrategyResolver();
             configure?.Invoke(resolver);
+            services.AddSingleton(resolver);
             services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Handle", new System.Type[] { typeof(string) })!, context => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(resolver.ResolveParameter<string>("message", context))));
             services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string) })!, context => Terminus.Generator.Examples.HelloWorld.Listener.Query(resolver.ResolveParameter<string>("message1", context), resolver.ResolveParameter<string>("message2", context))));
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMediator, Terminus.Generator.Examples.HelloWorld.IMediator_Generated>();
-            services.AddSingleton(resolver);
             return services;
         }
     }

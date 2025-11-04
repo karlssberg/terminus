@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Attributes", "src\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{89265762-5B58-41C7-A263-69D4ED692A8A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator.Examples.Web", "examples\Terminus.Generator.Examples.Web\Terminus.Generator.Examples.Web.csproj", "{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -38,8 +40,13 @@ Global
 		{2AE116AB-6350-4F2D-B1FA-EABE788A4BE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AE116AB-6350-4F2D-B1FA-EABE788A4BE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AE116AB-6350-4F2D-B1FA-EABE788A4BE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{03D95E6E-1158-4E40-8841-D17DCBFED949} = {89265762-5B58-41C7-A263-69D4ED692A8A}
+		{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1} = {89265762-5B58-41C7-A263-69D4ED692A8A}
 	EndGlobalSection
 EndGlobal

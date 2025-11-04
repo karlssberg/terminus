@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Reflection;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -105,5 +106,38 @@ internal static class SyntaxExtensions
         params IEnumerable<ExpressionSyntax> otherInitializations)
     {
         return expression.WithInitializer([firstInitialization, ..otherInitializations]);
+    }
+
+    internal static ParameterListSyntax ToParameterListSyntax(this IEnumerable<IParameterSymbol> parameterSymbols)
+    {
+        var parameters = parameterSymbols.Select(parameter =>
+            Parameter(Identifier(parameter.Name))
+                .WithType(ParseTypeName(
+                    parameter.Type.ToDisplayString())));
+        
+        return ParameterList(SeparatedList(parameters));
+    }
+
+    internal static MethodDeclarationSyntax ToMethodDeclarationSyntax(this IMethodSymbol methodSymbol)
+    {
+        var methodDeclarationSyntax = 
+            MethodDeclaration(
+                    ParseTypeName(methodSymbol.ReturnType.ToDisplayString()),
+                    methodSymbol.Name)
+                .WithReturnType(ParseTypeName(
+                    methodSymbol.ReturnType.ToDisplayString()));
+        
+        if (methodSymbol.Parameters.Length == 0)
+            return methodDeclarationSyntax;
+        
+        return
+            methodDeclarationSyntax
+                .WithParameterList(
+                    methodSymbol.Parameters.ToParameterListSyntax());
+    }
+
+    internal static SyntaxList<T> ToListSyntax<T>(this IEnumerable<T> items) where T : SyntaxNode
+    {
+        return [..items];
     }
 }

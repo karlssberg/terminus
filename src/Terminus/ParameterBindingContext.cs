@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace Terminus;
 
-public sealed class ParameterBindingContext
+public sealed record ParameterBindingContext
 {
 #if NET8_0_OR_GREATER
     [SetsRequiredMembers]
@@ -56,15 +56,15 @@ public sealed class ParameterBindingContext
     public CancellationToken CancellationToken { get; init; }
     public Type? ParameterAttributeType { get; init; }
 #else
-    public string ParameterName { get; }
-    public Type ParameterType { get; }
-    public IServiceProvider ServiceProvider { get; }
-    public IReadOnlyDictionary<string, object?> Data { get; }
+    public string ParameterName { get; set; }
+    public Type ParameterType { get; set;  }
+    public IServiceProvider ServiceProvider { get; set; }
+    public IReadOnlyDictionary<string, object?> Data { get; set;  }
     
     public bool HasDefaultValue { get; set; }
     public object? DefaultValue { get; set; }
 
-    public CancellationToken CancellationToken { get; }
+    public CancellationToken CancellationToken { get; set; }
     public Type? ParameterAttributeType { get; set; }
 #endif
 
