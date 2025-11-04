@@ -123,7 +123,7 @@ internal static class EntrypointRegistrationSourceBuilder
         string implementationClassName)
     {
         var attributeTypeName = mediator.EntryPointAttributeType.ToDisplayString();
-        var interfaceFullName = $"{interfaceNamespace}.{mediator.InterfaceSymbol.Name}";
+        var interfaceFullName = mediator.InterfaceSymbol.ToDisplayString();
 
 
         // Generate the CreateDescriptor lambda body that invokes the appropriate mediator method

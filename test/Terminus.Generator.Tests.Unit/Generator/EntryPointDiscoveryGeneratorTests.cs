@@ -77,7 +77,7 @@ public class EntryPointDiscoveryGeneratorTests
                         var resolver = new ParameterBindingStrategyResolver();
                         configure?.Invoke(resolver);
                         services.AddSingleton(resolver);
-                        services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, context => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
+                        services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
                     }
@@ -93,7 +93,7 @@ public class EntryPointDiscoveryGeneratorTests
             }
         };
 
-        test.TestState.GeneratedSources.Add((typeof(EntryPointDiscoveryGenerator), "IMediator_Generated.g.cs", SourceText.From(expected, Encoding.UTF8)));
+        test.TestState.GeneratedSources.Add((typeof(EntryPointDiscoveryGenerator), "EntryPointAttribute_Generated.g.cs", SourceText.From(expected, Encoding.UTF8)));
 
         await test.RunAsync();
     }
@@ -171,7 +171,7 @@ public class EntryPointDiscoveryGeneratorTests
                          var resolver = new ParameterBindingStrategyResolver();
                          configure?.Invoke(resolver);
                          services.AddSingleton(resolver);
-                         services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, context => context.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                         services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => context.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
                          services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                          return services;
                      }
@@ -187,7 +187,7 @@ public class EntryPointDiscoveryGeneratorTests
              }
          };
 
-         test.TestState.GeneratedSources.Add((typeof(EntryPointDiscoveryGenerator), "IMediator_Generated.g.cs", SourceText.From(expected, Encoding.UTF8)));
+         test.TestState.GeneratedSources.Add((typeof(EntryPointDiscoveryGenerator), "EntryPointAttribute_Generated.g.cs", SourceText.From(expected, Encoding.UTF8)));
 
          await test.RunAsync();
      }
