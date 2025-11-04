@@ -44,31 +44,4 @@ public static class MethodInfoExtensions
         
         return true;
     }
-    
-    public static object? InvokeWith(this MethodInfo method, object? instance, 
-        Dictionary<string, object?> namedArgs)
-    {
-        if (!method.CanInvokeWith(namedArgs))
-        {
-            throw new ArgumentException("Cannot invoke method with provided arguments");
-        }
-        
-        var parameters = method.GetParameters();
-        var args = new object?[parameters.Length];
-        
-        for (var i = 0; i < parameters.Length; i++)
-        {
-            var param = parameters[i];
-            if (namedArgs.TryGetValue(param.Name, out var arg))
-            {
-                args[i] = arg;
-            }
-            else if (param.IsOptional)
-            {
-                args[i] = param.DefaultValue;
-            }
-        }
-        
-        return method.Invoke(instance, args);
-    }
 }

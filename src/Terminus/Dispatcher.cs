@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Terminus.Attributes;
 
 namespace Terminus;
@@ -11,12 +10,10 @@ public class Dispatcher<TEndpointAttribute>(
     : IDispatcher<TEndpointAttribute> 
     where TEndpointAttribute : EntryPointAttribute
 {
-    public void Publish(ParameterBindingContext context)
+    public virtual void Publish(ParameterBindingContext context)
     {
-        using var scope = context.ServiceProvider.CreateScope();
-        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
-        var descriptor = router.GetEntryPoint(scopedContext);
-        var result = descriptor.Invoker(scopedContext);
+        var descriptor = router.GetEntryPoint(context);
+        var result = descriptor.Invoker(context);
         switch (result)
         {
             case Task task:
@@ -28,11 +25,9 @@ public class Dispatcher<TEndpointAttribute>(
         }
     }
 
-    public async Task PublishAsync(ParameterBindingContext context)
+    public virtual async Task PublishAsync(ParameterBindingContext context)
     {
-        await using var scope = context.ServiceProvider.CreateAsyncScope();
-        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
-        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
+        var result = router.GetEntryPoint(context).Invoker(context);
         switch (result)
         {
             case Task task:
@@ -49,11 +44,9 @@ public class Dispatcher<TEndpointAttribute>(
         }
     }
 
-    public T Request<T>(ParameterBindingContext context)
+    public virtual T Request<T>(ParameterBindingContext context)
     {
-        using var scope = context.ServiceProvider.CreateScope();
-        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
-        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
+        var result = router.GetEntryPoint(context).Invoker(context);
         return result switch
         {
             T value => value,
@@ -61,11 +54,9 @@ public class Dispatcher<TEndpointAttribute>(
         };
     }
 
-    public async Task<T> RequestAsync<T>(ParameterBindingContext context)
+    public virtual async Task<T> RequestAsync<T>(ParameterBindingContext context)
     {
-        await using var scope = context.ServiceProvider.CreateAsyncScope();
-        var scopedContext = context with { ServiceProvider = scope.ServiceProvider };
-        var result = router.GetEntryPoint(scopedContext).Invoker(scopedContext);
+        var result = router.GetEntryPoint(context).Invoker(context);
         return result switch
         {
             T value => value,

@@ -5,9 +5,18 @@ namespace Terminus;
 
 public class TerminusEntryPointNotFoundException : TerminusException
 {
-    public TerminusEntryPointNotFoundException(string message) : base(message) { }
-    public TerminusEntryPointNotFoundException(string message, Exception innerException) : base(message, innerException) { }   
-    public TerminusEntryPointNotFoundException() : base("Terminus entry point not found") { }
+    public TerminusEntryPointNotFoundException(string message, ParameterBindingContext parameterBindingContext) : base(message)
+    {
+        ParameterBindingContext = parameterBindingContext;
+    }
+    public TerminusEntryPointNotFoundException(string message, Exception innerException, ParameterBindingContext parameterBindingContext) : base(message, innerException)
+    {
+        ParameterBindingContext = parameterBindingContext;
+    }   
+    public TerminusEntryPointNotFoundException(ParameterBindingContext parameterBindingContext) : base("Terminus entry point not found")
+    {
+        ParameterBindingContext = parameterBindingContext;
+    }
 
-    public ParameterBindingContext ParameterBindingContext { get; set; }
+    public ParameterBindingContext ParameterBindingContext { get; }
 }

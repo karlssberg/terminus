@@ -13,9 +13,8 @@ public class DefaultEntryPointRouter<TEntryPointAttribute>(
     public EntryPointDescriptor<TEntryPointAttribute> GetEntryPoint(ParameterBindingContext context)
     {
         return entryPointDescriptors.FirstOrDefault(descriptor => descriptor.MethodInfo.CanInvokeWith(context.Data))
-            ?? throw new TerminusEntryPointNotFoundException($"Cannot find suitable '{typeof(TEntryPointAttribute).Name}' entry point descriptor")
-            {
-                ParameterBindingContext = context
-            };
+               ?? throw new TerminusEntryPointNotFoundException(
+                   $"Cannot find suitable '{typeof(TEntryPointAttribute).Name}' entry point descriptor",
+                   context);
     }
 }
