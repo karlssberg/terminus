@@ -20,6 +20,7 @@ namespace Terminus.Generated
             services.AddTransient<IAsyncDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, DefaultEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
             services.AddSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyHttpEntryPoints).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyHttpEntryPoints>().GetPost(resolver.ResolveParameter<string>("id", context), resolver.ResolveParameter<string>("postId", context))));
+            services.AddTransient<Terminus.Generator.Examples.Web.MyHttpEntryPoints>();
             return services;
         }
     }

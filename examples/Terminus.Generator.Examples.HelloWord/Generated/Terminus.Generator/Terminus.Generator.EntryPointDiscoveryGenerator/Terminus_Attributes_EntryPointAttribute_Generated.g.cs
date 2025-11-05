@@ -9,17 +9,17 @@ using Terminus.Strategies;
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    public partial interface IMediator
+    public partial interface IMyMediator
     {
         void Handle(string message);
         System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken);
     }
 
-    internal sealed class IMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMediator
+    internal sealed class IMyMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMyMediator
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ParameterBindingStrategyResolver _resolver;
-        public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+        public IMyMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
         {
             _serviceProvider = serviceProvider;
             _resolver = resolver;
@@ -29,7 +29,7 @@ namespace Terminus.Generator.Examples.HelloWorld
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(message);
+                scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyListener>().Handle(message);
             }
         }
 
@@ -37,7 +37,7 @@ namespace Terminus.Generator.Examples.HelloWorld
         {
             using (var scope = _serviceProvider.CreateScope())
             {
-                return Terminus.Generator.Examples.HelloWorld.Listener.Query(message1, message2, cancellationToken);
+                return Terminus.Generator.Examples.HelloWorld.MyListener.Query(message1, message2, cancellationToken);
             }
         }
     }
@@ -55,9 +55,11 @@ namespace Terminus.Generated
             services.AddTransient<IDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
             services.AddTransient<IAsyncDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
             services.AddTransient<IEntryPointRouter<Terminus.Attributes.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.Attributes.EntryPointAttribute>>();
-            services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(resolver.ResolveParameter<string>("message", context))));
-            services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.Listener.Query(resolver.ResolveParameter<string>("message1", context), resolver.ResolveParameter<string>("message2", context), ct)));
-            services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMediator, Terminus.Generator.Examples.HelloWorld.IMediator_Generated>();
+            services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyListener>().Handle(resolver.ResolveParameter<string>("message", context))));
+            services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyListener.Query(resolver.ResolveParameter<string>("message1", context), resolver.ResolveParameter<string>("message2", context), ct)));
+            services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
+            services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
+            services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMyMediator, Terminus.Generator.Examples.HelloWorld.IMyMediator_Generated>();
             return services;
         }
     }
