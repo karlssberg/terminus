@@ -173,7 +173,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             return;
 
         // Group entry points by their attribute type (exact match)
-        var entryPointsByAttributeType = entryPoints
+        var entryPointsByAttributeTypesDictionary = entryPoints
             .GroupBy(
                 ep => ep.AttributeData.AttributeClass!,
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
@@ -181,58 +181,37 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.Key,
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
+        
+        var mediatorAttributeTypesDictionary = mediators
+            .GroupBy(m => m.EntryPointAttributeType, (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToImmutableArray(),
+                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
+        
 
-        // If there are mediators, generate one file per mediator
-        if (mediators.IsEmpty)
+        foreach (var keyValuePair in entryPointsByAttributeTypesDictionary)
         {
-
-        }
-
-        foreach (var mediator in mediators)
-        {
-            // Find all entry points whose attribute type matches or derives from the mediator's target
-            var matchingEntryPoints = entryPointsByAttributeType
-                .Where(kvp => InheritsFromOrEquals(kvp.Key, mediator.EntryPointAttributeType))
-                .SelectMany(kvp => kvp.Value)
-                .ToImmutableArray();
-
-            if (matchingEntryPoints.IsEmpty)
-            {
-                // Report diagnostic: Mediator has no entry points
-                var diagnostic = Diagnostic.Create(
-                    new DiagnosticDescriptor(
-                        "TERM001",
-                        "No entry points found",
-                        $"Mediator interface '{mediator.InterfaceSymbol.Name}' references " +
-                        $"'{mediator.EntryPointAttributeType.Name}' but no methods are marked with this attribute or its derivatives",
-                        "Terminus",
-                        DiagnosticSeverity.Warning,
-                        true),
-                    mediator.MediatorAttributeData.ApplicationSyntaxReference?.GetSyntax().GetLocation());
-
-                context.ReportDiagnostic(diagnostic);
-                continue;
-            }
-
+            var entryPointAttributeType = keyValuePair.Key!;
+            var entryPointMethodInfos = keyValuePair.Value;
+            
             // Generate mediator implementation
-            var source = EntrypointRegistrationSourceBuilder.GenerateForMediator(
-                mediator,
-                matchingEntryPoints).ToFullString();
+            var source = EntrypointRegistrationSourceBuilder
+                .Generate(
+                    entryPointAttributeType,
+                    entryPointMethodInfos,
+                    mediatorAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
+                        ? entryPointAttributeMediators
+                        : ImmutableArray<MediatorInterfaceInfo>.Empty)
+                .ToFullString();
 
-            var fileName = $"{mediator.EntryPointAttributeType.Name}_Generated.g.cs";
-            context.AddSource(fileName, source);
+            context.AddSource($"{entryPointAttributeType.ToDisplayString().EscapeIdentifierName()}_Generated.g.cs", source);
         }
-    }
 
-    private static bool InheritsFromOrEquals(INamedTypeSymbol derived, INamedTypeSymbol baseType)
-    {
-        var current = derived;
-        while (current != null)
-        {
-            if (SymbolEqualityComparer.Default.Equals(current, baseType))
-                return true;
-            current = current.BaseType;
-        }
-        return false;
+        var compilationUnitSyntax = EntrypointRegistrationSourceBuilder
+            .Generate(entryPointsByAttributeTypesDictionary.Keys)
+            .NormalizeWhitespace();
+        
+        context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
     }
 }

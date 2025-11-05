@@ -10,4 +10,7 @@ internal readonly record struct MediatorInterfaceInfo(
     public INamedTypeSymbol InterfaceSymbol { get; } = InterfaceSymbol;
     public AttributeData MediatorAttributeData { get; } = MediatorAttributeData;
     public INamedTypeSymbol EntryPointAttributeType { get; } = EntryPointAttributeType;
+    
+    public string GetImplementationClassName() => $"{InterfaceSymbol.Name}_Generated";
+    public string GetImplementationClassFullName() => $"{InterfaceSymbol.ToDisplayString()}_Generated";
 };

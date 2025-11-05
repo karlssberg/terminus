@@ -47,11 +47,14 @@ namespace Terminus.Generated
 {
     public static partial class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddEntryPointsForIMediator(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
             var resolver = new ParameterBindingStrategyResolver();
             configure?.Invoke(resolver);
             services.AddSingleton(resolver);
+            services.AddTransient<IDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
+            services.AddTransient<IAsyncDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
+            services.AddTransient<IEntryPointRouter<Terminus.Attributes.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.Attributes.EntryPointAttribute>>();
             services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.Listener>().Handle(resolver.ResolveParameter<string>("message", context))));
             services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.Listener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.Listener.Query(resolver.ResolveParameter<string>("message1", context), resolver.ResolveParameter<string>("message2", context), ct)));
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMediator, Terminus.Generator.Examples.HelloWorld.IMediator_Generated>();

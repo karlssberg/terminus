@@ -10,7 +10,7 @@ var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddHostedService<Service>();
 builder.Services.AddSingleton<Listener>();
-builder.Services.AddEntryPointsForIMediator();
+builder.Services.AddEntryPointsFor<EntryPointAttribute>();
 
 var host = builder.Build();
 

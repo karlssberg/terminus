@@ -1,9 +1,12 @@
 using Terminus;
 using Terminus.Attributes;
+using Terminus.Generated;
 using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTransient<CustomRouter>();
+builder.Services.AddEntryPointsFor<MyHttpPostAttribute>();
+
 var app = builder.Build();
 
 app.Use(async (HttpContext context, RequestDelegate _) =>
