@@ -95,30 +95,66 @@ internal static class EntrypointRegistrationSourceBuilder
 
     private static MemberDeclarationSyntax CreateMediatorMethodImplementation(EntryPointMethodInfo entryPoint)
     {
-        var parameters = string.Join(", ", entryPoint.MethodSymbol.Parameters.Select(p =>
-            $"{p.Type.ToDisplayString()} {p.Name}"));
-        var returnType = entryPoint.MethodSymbol.ReturnsVoid ? "void" : entryPoint.MethodSymbol.ReturnType.ToDisplayString();
+        // Build return type
+        TypeSyntax returnTypeSyntax = entryPoint.MethodSymbol.ReturnsVoid
+            ? PredefinedType(Token(SyntaxKind.VoidKeyword))
+            : ParseTypeName(entryPoint.MethodSymbol.ReturnType.ToDisplayString());
 
-        var serviceResolution = entryPoint.MethodSymbol.IsStatic
-            ? entryPoint.MethodSymbol.ContainingType.ToDisplayString()
-            : $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()";
+        // Build parameter list
+        var parameterList = ParameterList(SeparatedList(
+            entryPoint.MethodSymbol.Parameters.Select(p =>
+                Parameter(Identifier(p.Name))
+                    .WithType(ParseTypeName(p.Type.ToDisplayString()))
+            )));
 
-        var methodArgs = string.Join(", ", entryPoint.MethodSymbol.Parameters.Select(p => p.Name));
+        // Build instance/service resolution expression
+        ExpressionSyntax instanceExpression;
+        instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
+            ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
+            $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
 
-        var invocation = $"{serviceResolution}.{entryPoint.MethodSymbol.Name}({methodArgs})";
-        var returnStatement = entryPoint.MethodSymbol.ReturnsVoid ? "" : "return ";
+        // Build method invocation
+        var methodAccess = MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            instanceExpression,
+            IdentifierName(entryPoint.MethodSymbol.Name));
 
-        var source =
-          $$"""
-           public {{returnType}} {{entryPoint.MethodSymbol.Name}}({{parameters}})
-           {
-               using (var scope = _serviceProvider.CreateScope())
-               {
-                   {{returnStatement}}{{invocation}};
-               }
-           }
-           """;
-        return ParseMemberDeclaration(source)!.NormalizeWhitespace();
+        var argumentList = ArgumentList(SeparatedList(
+            entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
+        ));
+
+        var invocationExpression = InvocationExpression(methodAccess, argumentList);
+
+        // Return or expression statement depending on void
+        StatementSyntax innerStatement = entryPoint.MethodSymbol.ReturnsVoid
+            ? ExpressionStatement(invocationExpression)
+            : ReturnStatement(invocationExpression);
+
+        // using (var scope = _serviceProvider.CreateScope()) { ... }
+        var createScopeAccess = MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            IdentifierName("_serviceProvider"),
+            IdentifierName("CreateScope"));
+
+        var usingStatement = UsingStatement(
+            declaration: VariableDeclaration(IdentifierName("var"))
+                .WithVariables(SingletonSeparatedList(
+                    VariableDeclarator(Identifier("scope"))
+                        .WithInitializer(EqualsValueClause(
+                            InvocationExpression(createScopeAccess)
+                        ))
+                )),
+            expression: null,
+            statement: Block(innerStatement));
+
+        var body = Block(usingStatement);
+
+        var method = MethodDeclaration(returnTypeSyntax, Identifier(entryPoint.MethodSymbol.Name))
+            .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
+            .WithParameterList(parameterList)
+            .WithBody(body);
+
+        return method.NormalizeWhitespace();
     }
 
     private static string CreateAddEntryPointsExtension(

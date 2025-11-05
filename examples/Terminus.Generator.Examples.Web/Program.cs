@@ -27,7 +27,6 @@ app.Use(async (HttpContext context, RequestDelegate _) =>
     await router.RouteAsync(context);
 });
 
-
 await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
