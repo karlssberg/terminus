@@ -15,7 +15,7 @@ internal static class EntrypointRegistrationSourceBuilder
     {
         var mediatorTypeDeclarations = mediators
             .Select(mediator => CreateMediatorTypeDeclarations(mediator, entryPointMethodInfos))
-            .ToListSyntax();
+            .ToSyntaxList();
         
         var rawCompilationUnit =
           $$"""
@@ -65,7 +65,7 @@ internal static class EntrypointRegistrationSourceBuilder
             .WithMembers(
                 entryPoints
                     .Select(ep => ep.MethodSymbol.ToMethodDeclarationSyntax().WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))
-                    .ToListSyntax<MemberDeclarationSyntax>())
+                    .ToSyntaxList<MemberDeclarationSyntax>())
             .NormalizeWhitespace();
     }
 
@@ -128,39 +128,44 @@ internal static class EntrypointRegistrationSourceBuilder
     {
         var attributeTypeName = entryPointAttributeType.ToDisplayString();
      
-        var registrationCollection = entryPointMethodInfos.Select(ep =>
-        {
-            var methodName = ep.MethodSymbol.Name;
-            var containingType = ep.MethodSymbol.ContainingType.ToDisplayString();
-            var paramTypes = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
-                $"typeof({p.Type.ToDisplayString()})"));
-            var paramArray = ep.MethodSymbol.Parameters.Length == 0
-                ? "new System.Type[] { }"
-                : $"new System.Type[] {{ {paramTypes} }}";
-            
-            var parameterInvocations = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
-                p.Type.ToDisplayString() == "System.Threading.CancellationToken"
-                    ? "ct"
-                    : $"resolver.ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
-
-            var invokeExpressionSnippet = ep.MethodSymbol.IsStatic
-                ? $"{containingType}.{methodName}({parameterInvocations})"
-                : $"context.ServiceProvider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
+        var entryPointRegistrations = entryPointMethodInfos
+            .Select(ep =>
+            {
+                var methodName = ep.MethodSymbol.Name;
+                var containingType = ep.MethodSymbol.ContainingType.ToDisplayString();
+                var paramTypes = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
+                    $"typeof({p.Type.ToDisplayString()})"));
+                var paramArray = ep.MethodSymbol.Parameters.Length == 0
+                    ? "new System.Type[] { }"
+                    : $"new System.Type[] {{ {paramTypes} }}";
                 
-            var invokeExpression = ParseExpression(invokeExpressionSnippet);
+                var parameterInvocations = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
+                    p.Type.ToDisplayString() == "System.Threading.CancellationToken"
+                        ? "ct"
+                        : $"resolver.ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
 
-            var registrationExpressionStatement =
-                $"services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(new EntryPointDescriptor<{attributeTypeName}>(typeof({containingType}).GetMethod(\"{methodName}\", {paramArray})!, (context, ct) => {invokeExpression}));";
-            return ParseStatement(registrationExpressionStatement);
-        });
+                var invokeExpressionSnippet = ep.MethodSymbol.IsStatic
+                    ? $"{containingType}.{methodName}({parameterInvocations})"
+                    : $"context.ServiceProvider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
+                    
+                var invokeExpression = ParseExpression(invokeExpressionSnippet);
 
-        var registrations = List(registrationCollection);
+                var registrationExpressionStatement =
+                    $"services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(new EntryPointDescriptor<{attributeTypeName}>(typeof({containingType}).GetMethod(\"{methodName}\", {paramArray})!, (context, ct) => {invokeExpression}));";
+                return ParseStatement(registrationExpressionStatement);
+            })
+            .ToSyntaxList();
+
+        var entryPointContainingTypeCollection = entryPointMethodInfos
+            .Select(ep => ParseStatement(
+                $"services.AddTransient<{ep.MethodSymbol.ContainingType.ToDisplayString()}>();"))
+            .ToSyntaxList();
         
         var mediatorServiceRegistrations = mediators
             .Select(mediator => ParseExpression(
                 $"services.AddSingleton<{mediator.InterfaceSymbol.ToDisplayString()}, {mediator.GetImplementationClassFullName()}>()"))
             .Select(ExpressionStatement)
-            .ToListSyntax();
+            .ToSyntaxList();
 
         return
           $$"""
@@ -175,7 +180,9 @@ internal static class EntrypointRegistrationSourceBuilder
                 services.AddTransient<IAsyncDispatcher<{{attributeTypeName}}>, ScopedDispatcher<{{attributeTypeName}}>>();
                 services.AddTransient<IEntryPointRouter<{{attributeTypeName}}>, DefaultEntryPointRouter<{{attributeTypeName}}>>();
  
-                {{registrations}}
+                {{entryPointRegistrations}}
+                
+                {{entryPointContainingTypeCollection}}
  
                 {{mediatorServiceRegistrations}}
  
@@ -218,7 +225,7 @@ internal static class EntrypointRegistrationSourceBuilder
             {
                 public static partial class ServiceCollectionExtensions
                 {
-                    public static IServiceCollection AddEntryPointsFor<T>(
+                    public static IServiceCollection AddEntryPoints<T>(
                         this IServiceCollection services,
                         Action<ParameterBindingStrategyResolver>? configure = null) where T : EntryPointAttribute
                     {

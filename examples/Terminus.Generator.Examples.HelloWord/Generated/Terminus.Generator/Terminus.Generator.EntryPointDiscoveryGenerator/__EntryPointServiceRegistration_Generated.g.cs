@@ -7,7 +7,7 @@ namespace Terminus.Generated
 {
     public static partial class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddEntryPointsFor<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
             where T : EntryPointAttribute
         {
             switch (typeof(T).FullName)

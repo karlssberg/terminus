@@ -52,6 +52,10 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
                     where TService : class
                     where TImplementation : class, TService
                     => services;
+                    
+                public static IServiceCollection AddTransient<TService>(this IServiceCollection services)
+                    where TService : class
+                    => services;
             }
             
             public static class ServiceProviderExtensionsShim

@@ -5,7 +5,7 @@ using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTransient<CustomRouter>();
-builder.Services.AddEntryPointsFor<MyHttpPostAttribute>();
+builder.Services.AddEntryPoints<MyHttpPostAttribute>();
 
 var app = builder.Build();
 

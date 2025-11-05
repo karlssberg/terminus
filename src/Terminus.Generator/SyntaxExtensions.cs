@@ -78,7 +78,7 @@ internal static class SyntaxExtensions
         return ParameterList(SeparatedList(parameters));
     }
 
-    internal static SyntaxList<T> ToListSyntax<T>(this IEnumerable<T> items) where T : SyntaxNode
+    internal static SyntaxList<T> ToSyntaxList<T>(this IEnumerable<T> items) where T : SyntaxNode
     {
         return [..items];
     }
