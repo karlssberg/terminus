@@ -49,7 +49,7 @@ internal static class EntryPointRegistrationSourceBuilder
             .WithMembers(
             [
                 CreateMediatorInterfaceExtensionDeclaration(mediator, matchingEntryPoints),
-                CreateMediatorClassImplementation(mediator, matchingEntryPoints)
+                CreateMediatorClassImplementationWithScope(mediator, matchingEntryPoints)
             ])
             .NormalizeWhitespace();
     }
@@ -64,12 +64,12 @@ internal static class EntryPointRegistrationSourceBuilder
                 Token(SyntaxKind.PartialKeyword)))
             .WithMembers(
                 entryPoints
-                    .Select(ep => ep.MethodSymbol.ToMethodDeclarationSyntax().WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))
+                    .Select(ep => ep.MethodSymbol.ToMethodDeclaration().WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))
                     .ToSyntaxList<MemberDeclarationSyntax>())
             .NormalizeWhitespace();
     }
-
-    private static ClassDeclarationSyntax CreateMediatorClassImplementation(
+    
+    private static ClassDeclarationSyntax CreateMediatorClassImplementationWithScope(
         MediatorInterfaceInfo mediatorInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
@@ -81,14 +81,58 @@ internal static class EntryPointRegistrationSourceBuilder
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
                 ParseMemberDeclaration(
+                    $$"""
+                      public {{implementationClassName}}(IServiceProvider serviceProvider)
+                      {
+                          _serviceProvider = serviceProvider;
+                      }
+                      """)!,
+                ..entryPoints.Select(CreateMediatorMethodImplementation),
+            ]);
+    }
+
+    private static ClassDeclarationSyntax CreateMediatorClassImplementation(
+        MediatorInterfaceInfo mediatorInfo,
+        ImmutableArray<EntryPointMethodInfo> entryPoints)
+    {
+        var types = entryPoints
+            .Select(ep => ep.MethodSymbol.ContainingType)
+            .Distinct<INamedTypeSymbol>(SymbolEqualityComparer.Default)
+            .ToList();
+        
+        var fields = types
+            .Select(type => ParseMemberDeclaration(
+                $"private readonly {type.ToDisplayString()} _{type.ToVariableIdentifierString()};")!)
+            .ToSyntaxList();
+
+        var constructorParameters = types
+            .Select(type => (Identifier(type.ToVariableIdentifierString()), ParseTypeName(type.ToDisplayString())))
+            .ToParameterList()
+            .NormalizeWhitespace();
+        
+        var fieldAssignments = types
+            .Select(type => type.ToVariableIdentifierString())
+            .Select(identifier => ParseStatement(
+                $"_{identifier} = {identifier};"))
+            .ToSyntaxList();
+        
+        var implementationClassName = mediatorInfo.GetImplementationClassName();
+        return ClassDeclaration(implementationClassName)
+            .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(mediatorInfo.InterfaceSymbol.ToDisplayString())))
+            .WithMembers(
+            [
+                ..fields,
+                ParseMemberDeclaration(
                    $$"""
-                     public {{implementationClassName}}(IServiceProvider serviceProvider)
+                     public {{implementationClassName}}{{constructorParameters}}
                      {
-                         _serviceProvider = serviceProvider;
+                         {{fieldAssignments}}
                      }
                      """)!,
                 ..entryPoints.Select(CreateMediatorMethodImplementation),
-            ]);
+            ])
+            .NormalizeWhitespace();
     }
 
     private static MemberDeclarationSyntax CreateMediatorMethodImplementation(EntryPointMethodInfo entryPoint)
@@ -225,7 +269,7 @@ internal static class EntryPointRegistrationSourceBuilder
 
         return
           $$"""
-            private static IServiceCollection AddEntryPointsFor_{{attributeTypeName.EscapeIdentifierName()}}(
+            private static IServiceCollection AddEntryPointsFor_{{entryPointAttributeType.ToIdentifierString()}}(
                 this IServiceCollection services,
                 Action<ParameterBindingStrategyResolver>? configure = null)
             {
@@ -265,14 +309,14 @@ internal static class EntryPointRegistrationSourceBuilder
                                             SyntaxKind.SimpleMemberAccessExpression,
                                             IdentifierName("services"),
                                             IdentifierName(
-                                                $"AddEntryPointsFor_{attributeType.ToDisplayString().EscapeIdentifierName()}")))
+                                                $"AddEntryPointsFor_{attributeType.ToIdentifierString()}")))
                                         .WithArgumentList(ParseArgumentList("(configure)")))))
                     .ToArray())
                 .NormalizeWhitespace();
 
         var registerAllEntryPoints = entryPointAttributeTypes
             .Select(attributeType => ParseStatement(
-                $"services.AddEntryPointsFor_{attributeType.ToDisplayString().EscapeIdentifierName()}();"))
+                $"services.AddEntryPointsFor_{attributeType.ToIdentifierString()}();"))
             .ToSyntaxList();
 
 

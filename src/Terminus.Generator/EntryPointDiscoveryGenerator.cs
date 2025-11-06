@@ -1,6 +1,4 @@
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -197,7 +195,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                         : ImmutableArray<MediatorInterfaceInfo>.Empty)
                 .ToFullString();
 
-            context.AddSource($"{entryPointAttributeType.ToDisplayString().EscapeIdentifierName()}_Generated.g.cs", source);
+            context.AddSource($"{entryPointAttributeType.ToIdentifierString()}_Generated.g.cs", source);
         }
 
         var compilationUnitSyntax = EntryPointRegistrationSourceBuilder
