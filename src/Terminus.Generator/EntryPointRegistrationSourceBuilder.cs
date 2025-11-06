@@ -94,7 +94,7 @@ internal static class EntryPointRegistrationSourceBuilder
     private static MemberDeclarationSyntax CreateMediatorMethodImplementation(EntryPointMethodInfo entryPoint)
     {
         // Build return type
-        TypeSyntax returnTypeSyntax = entryPoint.MethodSymbol.ReturnsVoid
+        var returnTypeSyntax = entryPoint.MethodSymbol.ReturnsVoid
             ? PredefinedType(Token(SyntaxKind.VoidKeyword))
             : ParseTypeName(entryPoint.MethodSymbol.ReturnType.ToDisplayString());
 
@@ -106,8 +106,7 @@ internal static class EntryPointRegistrationSourceBuilder
             )));
 
         // Build instance/service resolution expression
-        ExpressionSyntax instanceExpression;
-        instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
+        var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
             ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
             $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
 
