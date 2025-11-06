@@ -80,13 +80,11 @@ internal static class EntryPointRegistrationSourceBuilder
             .WithMembers(
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
-                ParseMemberDeclaration("private readonly ParameterBindingStrategyResolver _resolver;")!,
                 ParseMemberDeclaration(
                    $$"""
-                     public {{implementationClassName}}(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+                     public {{implementationClassName}}(IServiceProvider serviceProvider)
                      {
                          _serviceProvider = serviceProvider;
-                         _resolver = resolver;
                      }
                      """)!,
                 ..entryPoints.Select(CreateMediatorMethodImplementation),

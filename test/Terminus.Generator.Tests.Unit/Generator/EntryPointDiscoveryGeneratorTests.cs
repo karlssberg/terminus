@@ -51,11 +51,9 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IMediator_Generated : Demo.IMediator
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly ParameterBindingStrategyResolver _resolver;
-                    public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+                    public IMediator_Generated(IServiceProvider serviceProvider)
                     {
                         _serviceProvider = serviceProvider;
-                        _resolver = resolver;
                     }
             
                     public void Hello(string world)
@@ -185,11 +183,9 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IMediator_Generated : Demo.IMediator
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly ParameterBindingStrategyResolver _resolver;
-                    public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+                    public IMediator_Generated(IServiceProvider serviceProvider)
                     {
                         _serviceProvider = serviceProvider;
-                        _resolver = resolver;
                     }
             
                     public void Hello(string world)
@@ -320,11 +316,9 @@ public class EntryPointDiscoveryGeneratorTests
                   internal sealed class IMediator_Generated : Demo.IMediator
                   {
                       private readonly IServiceProvider _serviceProvider;
-                      private readonly ParameterBindingStrategyResolver _resolver;
-                      public IMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+                      public IMediator_Generated(IServiceProvider serviceProvider)
                       {
                           _serviceProvider = serviceProvider;
-                          _resolver = resolver;
                       }
               
                       public System.Threading.Tasks.Task Hello()
