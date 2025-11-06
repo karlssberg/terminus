@@ -25,14 +25,13 @@ internal static class EntryPointRegistrationSourceBuilder
             using System;
             using System.Reflection;
             using Terminus;
-            using Terminus.Attributes;
-            using Terminus.Strategies;
+                        using Terminus.Strategies;
 
             {{mediatorTypeDeclarations}}
 
-            namespace Terminus.Generated
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     {{CreateAddEntryPointsExtension(entryPointAttributeType, mediators, entryPointMethodInfos)}}
                 }
@@ -324,11 +323,10 @@ internal static class EntryPointRegistrationSourceBuilder
                      #nullable enable
                      using Microsoft.Extensions.DependencyInjection;
                      using System;
-                     using Terminus.Attributes;
-
-                     namespace Terminus.Generated
+                     
+                     namespace Terminus
                      {
-                         public static partial class ServiceCollectionExtensions
+                         public static partial class ServiceCollectionExtensions__Generated
                          {
                              public static IServiceCollection AddEntryPoints<T>(
                                  this IServiceCollection services,

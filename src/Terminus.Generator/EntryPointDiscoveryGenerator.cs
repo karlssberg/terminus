@@ -8,8 +8,8 @@ namespace Terminus.Generator;
 [Generator]
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
-    private const string BaseAttributeFullName = "Terminus.Attributes.EntryPointAttribute";
-    private const string AutoGenerateAttributeFullName = "Terminus.Attributes.AutoGenerateAttribute";
+    private const string BaseAttributeFullName = "Terminus.EntryPointAttribute";
+    private const string AutoGenerateAttributeFullName = "Terminus.AutoGenerateAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

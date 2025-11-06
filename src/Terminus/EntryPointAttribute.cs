@@ -1,6 +1,6 @@
 using System;
 
-namespace Terminus.Attributes;
+namespace Terminus;
 
 [AttributeUsage(AttributeTargets.Method)]
 public class EntryPointAttribute : Attribute;

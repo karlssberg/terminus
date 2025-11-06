@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Terminus.Attributes;
-using Terminus.Generated;
+using Terminus;
 using Terminus.Generator.Examples.HelloWorld;
 
 var services = new ServiceCollection();

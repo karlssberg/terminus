@@ -4,12 +4,11 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Reflection;
 using Terminus;
-using Terminus.Attributes;
 using Terminus.Strategies;
 
-namespace Terminus.Generated
+namespace Terminus
 {
-    public static partial class ServiceCollectionExtensions
+    public static partial class ServiceCollectionExtensions__Generated
     {
         private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_MyHttpPostAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
@@ -19,8 +18,8 @@ namespace Terminus.Generated
             services.AddTransient<IDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
             services.AddTransient<IAsyncDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, DefaultEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
-            services.AddSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyHttpEntryPoints).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyHttpEntryPoints>().GetPost(resolver.ResolveParameter<string>("id", context), resolver.ResolveParameter<string>("postId", context))));
-            services.AddTransient<Terminus.Generator.Examples.Web.MyHttpEntryPoints>();
+            services.AddSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyController).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(resolver.ResolveParameter<string>("id", context), resolver.ResolveParameter<string>("postId", context))));
+            services.AddTransient<Terminus.Generator.Examples.Web.MyController>();
             return services;
         }
     }

@@ -11,7 +11,6 @@ public class EntryPointDiscoveryGeneratorTests
     {
         const string source =
             """
-            using Terminus.Attributes;
             using System;
 
             namespace Demo
@@ -38,8 +37,7 @@ public class EntryPointDiscoveryGeneratorTests
             using System;
             using System.Reflection;
             using Terminus;
-            using Terminus.Attributes;
-            using Terminus.Strategies;
+                        using Terminus.Strategies;
             
             namespace Demo
             {
@@ -66,9 +64,9 @@ public class EntryPointDiscoveryGeneratorTests
                 }
             }
             
-            namespace Terminus.Generated
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
@@ -91,11 +89,10 @@ public class EntryPointDiscoveryGeneratorTests
             #nullable enable
             using Microsoft.Extensions.DependencyInjection;
             using System;
-            using Terminus.Attributes;
-            
-            namespace Terminus.Generated
+                        
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
@@ -143,7 +140,6 @@ public class EntryPointDiscoveryGeneratorTests
     {
         const string source =
             """
-            using Terminus.Attributes;
             using System;
 
             namespace Demo
@@ -170,8 +166,7 @@ public class EntryPointDiscoveryGeneratorTests
             using System;
             using System.Reflection;
             using Terminus;
-            using Terminus.Attributes;
-            using Terminus.Strategies;
+                        using Terminus.Strategies;
             
             namespace Demo
             {
@@ -198,9 +193,9 @@ public class EntryPointDiscoveryGeneratorTests
                 }
             }
             
-            namespace Terminus.Generated
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
@@ -223,11 +218,10 @@ public class EntryPointDiscoveryGeneratorTests
             #nullable enable
             using Microsoft.Extensions.DependencyInjection;
             using System;
-            using Terminus.Attributes;
-            
-            namespace Terminus.Generated
+                        
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
@@ -275,7 +269,6 @@ public class EntryPointDiscoveryGeneratorTests
     {
         const string source =
             """
-            using Terminus.Attributes;
             using System;
             using System.Threading.Tasks;
 
@@ -303,8 +296,7 @@ public class EntryPointDiscoveryGeneratorTests
               using System;
               using System.Reflection;
               using Terminus;
-              using Terminus.Attributes;
-              using Terminus.Strategies;
+                            using Terminus.Strategies;
               
               namespace Demo
               {
@@ -331,9 +323,9 @@ public class EntryPointDiscoveryGeneratorTests
                   }
               }
               
-              namespace Terminus.Generated
+              namespace Terminus
               {
-                  public static partial class ServiceCollectionExtensions
+                  public static partial class ServiceCollectionExtensions__Generated
                   {
                       private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                       {
@@ -357,11 +349,10 @@ public class EntryPointDiscoveryGeneratorTests
             #nullable enable
             using Microsoft.Extensions.DependencyInjection;
             using System;
-            using Terminus.Attributes;
-
-            namespace Terminus.Generated
+            
+            namespace Terminus
             {
-                public static partial class ServiceCollectionExtensions
+                public static partial class ServiceCollectionExtensions__Generated
                 {
                     public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute

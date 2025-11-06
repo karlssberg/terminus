@@ -1,7 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
-using Terminus.Attributes;
 
 namespace Terminus.Generator.Tests.Unit.Generator.Infrastructure;
 

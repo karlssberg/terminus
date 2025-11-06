@@ -1,5 +1,3 @@
-using Terminus.Attributes;
-
 namespace Terminus;
 
 public interface IEntryPointRouter<TEndpointAttribute>

@@ -1,6 +1,4 @@
 using Terminus;
-using Terminus.Attributes;
-using Terminus.Generated;
 using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +29,10 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
+    
+    [AutoGenerate(Kind = InterfaceKind.EventPublisher)]
+    public partial interface IDispatcher;
+    
     [AttributeUsage(AttributeTargets.Method)]
     public class MyHttpPostAttribute(string path) : EntryPointAttribute
     {

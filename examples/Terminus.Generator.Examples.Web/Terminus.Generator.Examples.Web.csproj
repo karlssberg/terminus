@@ -17,7 +17,6 @@
     </ItemGroup>
     
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Terminus.Attributes\Terminus.Attributes.csproj" />
       <ProjectReference Include="..\..\src\Terminus.Generator\Terminus.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
       <ProjectReference Include="..\..\src\Terminus\Terminus.csproj" />
     </ItemGroup>

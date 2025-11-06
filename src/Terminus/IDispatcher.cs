@@ -1,5 +1,4 @@
 ﻿using System.Threading;
-using Terminus.Attributes;
 
 namespace Terminus;
 

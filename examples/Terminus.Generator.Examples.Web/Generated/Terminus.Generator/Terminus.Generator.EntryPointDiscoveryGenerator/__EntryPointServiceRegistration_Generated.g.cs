@@ -1,11 +1,10 @@
 ﻿#nullable enable
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using Terminus.Attributes;
 
-namespace Terminus.Generated
+namespace Terminus
 {
-    public static partial class ServiceCollectionExtensions
+    public static partial class ServiceCollectionExtensions__Generated
     {
         public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
             where T : EntryPointAttribute
