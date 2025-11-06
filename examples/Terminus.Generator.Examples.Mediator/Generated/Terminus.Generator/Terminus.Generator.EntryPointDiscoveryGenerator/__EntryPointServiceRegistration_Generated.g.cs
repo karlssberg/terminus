@@ -12,15 +12,15 @@ namespace Terminus.Generated
         {
             switch (typeof(T).FullName)
             {
-                case "Terminus.Generator.Examples.Web.MyHttpPostAttribute":
-                    return services.AddEntryPointsFor_Terminus_Generator_Examples_Web_MyHttpPostAttribute(configure);
+                case "Terminus.Attributes.EntryPointAttribute":
+                    return services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(configure);
             };
             throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
         }
 
         public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
-            services.AddEntryPointsFor_Terminus_Generator_Examples_Web_MyHttpPostAttribute();
+            services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute();
             return services;
         }
     }

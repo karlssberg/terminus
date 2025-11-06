@@ -37,7 +37,7 @@ namespace Terminus.Generator.Examples.Web
         public string Path { get; } = path;
     }
 
-    public class MyHttpEntryPoints
+    public class MyController
     {
         [MyHttpPost("/users/{id}/posts/{postId}")]
         public void GetPost(string id, string postId)

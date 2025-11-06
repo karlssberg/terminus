@@ -8,23 +8,26 @@ var services = new ServiceCollection();
 services.AddEntryPoints<EntryPointAttribute>();
 
 var serviceProvider = services.BuildServiceProvider();
-var myListener = serviceProvider.GetRequiredService<IMyListener>();
+var mediator = serviceProvider.GetRequiredService<IMediator>();
     
-myListener.Handle("hello world");
+mediator.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [AutoGenerate(typeof(MyListener))]
-    public partial interface IMyListener;
+    [AutoGenerate]
+    public partial interface IMediator;
 
-    public class MyListener
+    public class MyService
     {
         [EntryPoint]
         public void Handle(string message)
         {
             Console.WriteLine($"Handled message: '{message}'");
         }
-
+    }
+    
+    public class MyOtherService
+    {
         [EntryPoint]
         public static Task<string> Query(string message1, string message2,
             CancellationToken cancellationToken = default)
@@ -35,5 +38,3 @@ namespace Terminus.Generator.Examples.HelloWorld
         }
     }
 }
-
-

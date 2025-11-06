@@ -5,7 +5,6 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Terminus.Generator.Examples</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -17,14 +16,14 @@
         <Compile Remove="**/*.g.cs" />
         <None Include="**/*.g.cs" />
     </ItemGroup>
-    
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Terminus.Generator\Terminus.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-      <ProjectReference Include="..\..\src\Terminus\Terminus.csproj" />
-    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\Terminus.Generator\Terminus.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+      <ProjectReference Include="..\..\src\Terminus\Terminus.csproj" />
     </ItemGroup>
 
 </Project>
