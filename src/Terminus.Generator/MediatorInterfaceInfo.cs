@@ -4,11 +4,11 @@ namespace Terminus.Generator;
 
 internal readonly record struct MediatorInterfaceInfo(
     INamedTypeSymbol InterfaceSymbol,
-    AttributeData MediatorAttributeData,
+    AttributeData AutoGenerateAttributeData,
     INamedTypeSymbol EntryPointAttributeType)
 {
     public INamedTypeSymbol InterfaceSymbol { get; } = InterfaceSymbol;
-    public AttributeData MediatorAttributeData { get; } = MediatorAttributeData;
+    public AttributeData AutoGenerateAttributeData { get; } = AutoGenerateAttributeData;
     public INamedTypeSymbol EntryPointAttributeType { get; } = EntryPointAttributeType;
     
     public string GetImplementationClassName() => $"{InterfaceSymbol.Name}_Generated";

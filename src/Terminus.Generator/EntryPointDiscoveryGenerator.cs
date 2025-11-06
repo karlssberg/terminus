@@ -11,14 +11,14 @@ namespace Terminus.Generator;
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
     private const string BaseAttributeFullName = "Terminus.Attributes.EntryPointAttribute";
-    private const string MediatorAttributeFullName = "Terminus.Attributes.EntryPointMediatorAttribute";
+    private const string AutoGenerateAttributeFullName = "Terminus.Attributes.AutoGenerateAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Discover mediator interfaces marked with [EntryPointMediator]
+        // Discover mediator interfaces marked with [AutoGenerate]
         var discoveredMediators = context.SyntaxProvider
             .ForAttributeWithMetadataName( 
-                fullyQualifiedMetadataName: MediatorAttributeFullName,
+                fullyQualifiedMetadataName: AutoGenerateAttributeFullName,
                 predicate: static (node, _) => IsCandidateMediatorInterface(node),
                 transform: GetMediatorInterfaceInfo)
             .Where(static m => m.HasValue)
@@ -54,15 +54,15 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         if (context.TargetSymbol is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [EntryPointMediator] or derived attribute
+        // Find [AutoGenerate] or derived attribute
         foreach (var attributeData in interfaceSymbol.GetAttributes())
         {
             if (attributeData.AttributeClass == null)
                 continue;
 
-            if (InheritsFromMediatorAttribute(attributeData.AttributeClass))
+            if (InheritsFromAutoGenerateAttribute(attributeData.AttributeClass))
             {
-                // Get the ForEntryPointAttribute type from the mediator attribute
+                // Get the MethodHook type from the mediator attribute
                 var entryPointAttrType = GetEntryPointAttributeType(attributeData, context.SemanticModel.Compilation);
 
                 if (entryPointAttrType == null)
@@ -80,37 +80,29 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     }
 
     private static INamedTypeSymbol? GetEntryPointAttributeType(
-        AttributeData mediatorAttribute,
+        AttributeData autoGenerateAttribute,
         Compilation compilation)
     {
-        // Check constructor argument: [EntryPointMediator(typeof(CommandAttribute))]
-        if (mediatorAttribute.ConstructorArguments.Length > 0)
+        // Check AutoGenerateAttribute's named property: MethodHook = typeof(CommandAttribute)
+        foreach (var namedArg in autoGenerateAttribute.NamedArguments)
         {
-            var arg = mediatorAttribute.ConstructorArguments[0];
-            if (arg.Value is INamedTypeSymbol typeSymbol)
-                return typeSymbol;
-        }
-
-        // Check named property: ForEntryPointAttribute = typeof(CommandAttribute)
-        foreach (var namedArg in mediatorAttribute.NamedArguments)
-        {
-            if (namedArg is { Key: "ForEntryPointAttribute", Value.Value: INamedTypeSymbol typeSymbol })
+            if (namedArg is { Key: "MethodHook", Value.Value: INamedTypeSymbol typeSymbol })
             {
                 return typeSymbol;
             }
         }
-
+        
         // Default to base EntryPointAttribute
         return compilation.GetTypeByMetadataName(BaseAttributeFullName);
     }
 
-    private static bool InheritsFromMediatorAttribute(INamedTypeSymbol attributeClass)
+    private static bool InheritsFromAutoGenerateAttribute(INamedTypeSymbol attributeClass)
     {
         var current = attributeClass;
 
         while (current != null)
         {
-            if (current.ToDisplayString() == MediatorAttributeFullName)
+            if (current.ToDisplayString() == AutoGenerateAttributeFullName)
                 return true;
 
             current = current.BaseType;
@@ -182,7 +174,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
         
-        var mediatorAttributeTypesDictionary = mediators
+        var autoGenerateAttributeTypesDictionary = mediators
             .GroupBy(m => m.EntryPointAttributeType, (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
             .ToDictionary(
                 g => g.Key,
@@ -196,11 +188,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             var entryPointMethodInfos = keyValuePair.Value;
             
             // Generate mediator implementation
-            var source = EntrypointRegistrationSourceBuilder
+            var source = EntryPointRegistrationSourceBuilder
                 .Generate(
                     entryPointAttributeType,
                     entryPointMethodInfos,
-                    mediatorAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
+                    autoGenerateAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
                         ? entryPointAttributeMediators
                         : ImmutableArray<MediatorInterfaceInfo>.Empty)
                 .ToFullString();
@@ -208,8 +200,8 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             context.AddSource($"{entryPointAttributeType.ToDisplayString().EscapeIdentifierName()}_Generated.g.cs", source);
         }
 
-        var compilationUnitSyntax = EntrypointRegistrationSourceBuilder
-            .Generate(entryPointsByAttributeTypesDictionary.Keys)
+        var compilationUnitSyntax = EntryPointRegistrationSourceBuilder
+            .Generate([..entryPointsByAttributeTypesDictionary.Keys])
             .NormalizeWhitespace();
         
         context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());

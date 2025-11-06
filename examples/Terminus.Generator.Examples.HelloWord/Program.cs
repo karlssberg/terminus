@@ -4,21 +4,20 @@ using Terminus.Attributes;
 using Terminus.Generated;
 using Terminus.Generator.Examples.HelloWorld;
 
-var builder = Host.CreateApplicationBuilder(args);
+var services = new ServiceCollection();
 
-// builder.Services.AddEntryPointsIMediator();
+services.AddHostedService<Service>();
+services.AddEntryPoints<EntryPointAttribute>();
 
-builder.Services.AddHostedService<Service>();
-builder.Services.AddEntryPoints<EntryPointAttribute>();
-
-var host = builder.Build();
-
-await host.RunAsync();
+var serviceProvider = services.BuildServiceProvider();
+var mediator = serviceProvider.GetRequiredService<IMyListener>();
+    
+mediator.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [EntryPointMediator]
-    public partial interface IMyMediator;
+    [AutoGenerate(typeof(MyListener))]
+    public partial interface IMyListener;
 
     public class MyListener
     {
@@ -41,8 +40,8 @@ namespace Terminus.Generator.Examples.HelloWorld
     {
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            provider.GetRequiredService<IMyMediator>().Handle("hello world");
-            var message = await provider.GetRequiredService<IMyMediator>().Query("hello", "world", cancellationToken);
+            provider.GetRequiredService<IMyListener>().Handle("hello world");
+            var message = await provider.GetRequiredService<IMyListener>().Query("hello", "world", cancellationToken);
             
             Console.WriteLine($"Return message: '{message}'");
         }

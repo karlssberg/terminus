@@ -9,17 +9,17 @@ using Terminus.Strategies;
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    public partial interface IMyMediator
+    public partial interface IMyListener
     {
         void Handle(string message);
         System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken);
     }
 
-    internal sealed class IMyMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMyMediator
+    internal sealed class IMyListener_Generated : Terminus.Generator.Examples.HelloWorld.IMyListener
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ParameterBindingStrategyResolver _resolver;
-        public IMyMediator_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
+        public IMyListener_Generated(IServiceProvider serviceProvider, ParameterBindingStrategyResolver resolver)
         {
             _serviceProvider = serviceProvider;
             _resolver = resolver;
@@ -59,7 +59,7 @@ namespace Terminus.Generated
             services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyListener.Query(resolver.ResolveParameter<string>("message1", context), resolver.ResolveParameter<string>("message2", context), ct)));
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
-            services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMyMediator, Terminus.Generator.Examples.HelloWorld.IMyMediator_Generated>();
+            services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMyListener, Terminus.Generator.Examples.HelloWorld.IMyListener_Generated>();
             return services;
         }
     }

@@ -6,7 +6,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator;
 
-internal static class EntrypointRegistrationSourceBuilder
+internal static class EntryPointRegistrationSourceBuilder
 {
     internal static CompilationUnitSyntax Generate(
         INamedTypeSymbol entryPointAttributeType,
@@ -130,22 +130,9 @@ internal static class EntrypointRegistrationSourceBuilder
             ? ExpressionStatement(invocationExpression)
             : ReturnStatement(invocationExpression);
 
-        // using (var scope = _serviceProvider.CreateScope()) { ... }
-        var createScopeAccess = MemberAccessExpression(
-            SyntaxKind.SimpleMemberAccessExpression,
-            IdentifierName("_serviceProvider"),
-            IdentifierName("CreateScope"));
-
-        var usingStatement = UsingStatement(
-            declaration: VariableDeclaration(IdentifierName("var"))
-                .WithVariables(SingletonSeparatedList(
-                    VariableDeclarator(Identifier("scope"))
-                        .WithInitializer(EqualsValueClause(
-                            InvocationExpression(createScopeAccess)
-                        ))
-                )),
-            expression: null,
-            statement: Block(innerStatement));
+        var usingStatement = entryPoint.MethodSymbol.IsAsync
+            ? CreateUsingStatementWithCreateAsyncScope(innerStatement)
+            : CreateUsingStatementWithCreateScope(innerStatement);
 
         var body = Block(usingStatement);
 
@@ -155,6 +142,41 @@ internal static class EntrypointRegistrationSourceBuilder
             .WithBody(body);
 
         return method.NormalizeWhitespace();
+    }
+
+    private static UsingStatementSyntax CreateUsingStatementWithCreateScope(StatementSyntax innerStatement)
+    {
+        // using (var scope = _serviceProvider.CreateScope()) { ... }
+        var createScopeAccess = MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            IdentifierName("_serviceProvider"),
+            IdentifierName("CreateScope"));
+
+        return UsingStatement(Block(innerStatement))
+            .WithDeclaration(
+                VariableDeclaration(IdentifierName("var"))
+                    .WithVariables(SingletonSeparatedList(
+                        VariableDeclarator(Identifier("scope"))
+                            .WithInitializer(EqualsValueClause(
+                                InvocationExpression(createScopeAccess))))));
+    }
+
+    private static UsingStatementSyntax CreateUsingStatementWithCreateAsyncScope(StatementSyntax innerStatement)
+    {
+        // await using (var scope = _serviceProvider.CreateAsyncScope()) { ... }
+        var createScopeAccess = MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            IdentifierName("_serviceProvider"),
+            IdentifierName("CreateAsyncScope"));
+
+        return UsingStatement(Block(innerStatement))
+            .WithAwaitKeyword(Token(SyntaxKind.AwaitKeyword))
+            .WithDeclaration(
+                VariableDeclaration(IdentifierName("var"))
+                    .WithVariables(SingletonSeparatedList(
+                        VariableDeclarator(Identifier("scope"))
+                            .WithInitializer(EqualsValueClause(
+                                InvocationExpression(createScopeAccess))))));
     }
 
     private static string CreateAddEntryPointsExtension(
@@ -193,6 +215,7 @@ internal static class EntrypointRegistrationSourceBuilder
             .ToSyntaxList();
 
         var entryPointContainingTypeCollection = entryPointMethodInfos
+            .Where(ep => !ep.MethodSymbol.ContainingType.IsStatic)
             .Select(ep => ParseStatement(
                 $"services.AddTransient<{ep.MethodSymbol.ContainingType.ToDisplayString()}>();"))
             .ToSyntaxList();
@@ -227,7 +250,7 @@ internal static class EntrypointRegistrationSourceBuilder
             """;
     }
 
-    public static CompilationUnitSyntax Generate(IEnumerable<INamedTypeSymbol> entryPointAttributeTypes)
+    public static CompilationUnitSyntax Generate(ImmutableArray<INamedTypeSymbol> entryPointAttributeTypes)
     {
         var switchExpression =
             SwitchStatement(ParseExpression("typeof(T).FullName"))
@@ -249,28 +272,44 @@ internal static class EntrypointRegistrationSourceBuilder
                                         .WithArgumentList(ParseArgumentList("(configure)")))))
                     .ToArray())
                 .NormalizeWhitespace();
+
+        var registerAllEntryPoints = entryPointAttributeTypes
+            .Select(attributeType => ParseStatement(
+                $"services.AddEntryPointsFor_{attributeType.ToDisplayString().EscapeIdentifierName()}();"))
+            .ToSyntaxList();
+
+
+        var compilationUnit = $$"""
+                     #nullable enable
+                     using Microsoft.Extensions.DependencyInjection;
+                     using System;
+                     using Terminus.Attributes;
+
+                     namespace Terminus.Generated
+                     {
+                         public static partial class ServiceCollectionExtensions
+                         {
+                             public static IServiceCollection AddEntryPoints<T>(
+                                 this IServiceCollection services,
+                                 Action<ParameterBindingStrategyResolver>? configure = null) where T : EntryPointAttribute
+                             {
+                                 {{switchExpression}};
+                                 
+                                 throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");   
+                             }
+                             
+                             public static IServiceCollection AddEntryPoints(
+                                 this IServiceCollection services,
+                                 Action<ParameterBindingStrategyResolver>? configure = null)
+                             {
+                                 {{registerAllEntryPoints}}
+                                 
+                                 return services;
+                             }
+                         }
+                     }
+                     """;
         
-        return ParseCompilationUnit(
-          $$"""
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            using Terminus.Attributes;
-            
-            namespace Terminus.Generated
-            {
-                public static partial class ServiceCollectionExtensions
-                {
-                    public static IServiceCollection AddEntryPoints<T>(
-                        this IServiceCollection services,
-                        Action<ParameterBindingStrategyResolver>? configure = null) where T : EntryPointAttribute
-                    {
-                        {{switchExpression}};
-                        
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");   
-                    }
-                }
-            }
-            """);
+        return ParseCompilationUnit(compilationUnit).NormalizeWhitespace();
     }
 }
