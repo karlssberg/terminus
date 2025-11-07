@@ -4,7 +4,7 @@ using Terminus.Generator.Examples.HelloWorld;
 
 var services = new ServiceCollection();
 
-services.AddEntryPoints<EntryPointAttribute>();
+services.AddEntryPoints();
 
 var serviceProvider = services.BuildServiceProvider();
 var mediator = serviceProvider.GetRequiredService<IMediator>();
@@ -35,5 +35,5 @@ namespace Terminus.Generator.Examples.HelloWorld
 
             return Task.FromResult(message2);
         }
-    }
+    } 
 }

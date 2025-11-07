@@ -29,8 +29,7 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    
-    [AutoGenerate(Kind = InterfaceKind.EventPublisher)]
+    [AutoGenerate]
     public partial interface IDispatcher;
     
     [AttributeUsage(AttributeTargets.Method)]

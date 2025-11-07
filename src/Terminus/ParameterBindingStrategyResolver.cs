@@ -63,7 +63,7 @@ public sealed class ParameterBindingStrategyResolver
         if (scopedContext.ParameterAttributeType is not null)
         {
             return _customBinders.TryGetValue(scopedContext.ParameterAttributeType, out var customBinder)
-                ? (TParameter) customBinder.BindParameter(scopedContext)!
+                ? customBinder.BindParameter<TParameter>(scopedContext)!
                 : throw new InvalidOperationException(
                      $"No custom binder registered for attribute type '{scopedContext.ParameterAttributeType.Name}'.");
 

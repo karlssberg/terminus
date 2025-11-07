@@ -12,6 +12,7 @@ public class EntryPointDiscoveryGeneratorTests
         const string source =
             """
             using System;
+            using Terminus;
 
             namespace Demo
             {
@@ -37,7 +38,7 @@ public class EntryPointDiscoveryGeneratorTests
             using System;
             using System.Reflection;
             using Terminus;
-                        using Terminus.Strategies;
+            using Terminus.Strategies;
             
             namespace Demo
             {
@@ -68,15 +69,15 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         var resolver = new ParameterBindingStrategyResolver();
                         configure?.Invoke(resolver);
                         services.AddSingleton(resolver);
-                        services.AddTransient<IDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddTransient<IAsyncDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.Attributes.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
+                        services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
+                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
                     }
@@ -89,7 +90,7 @@ public class EntryPointDiscoveryGeneratorTests
             #nullable enable
             using Microsoft.Extensions.DependencyInjection;
             using System;
-                        
+            
             namespace Terminus
             {
                 public static partial class ServiceCollectionExtensions__Generated
@@ -99,15 +100,15 @@ public class EntryPointDiscoveryGeneratorTests
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.Attributes.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(configure);
+                            case "Terminus.EntryPointAttribute":
+                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
 
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute();
+                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
                         return services;
                     }
                 }
@@ -124,7 +125,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_Attributes_EntryPointAttribute_Generated.g.cs", 
+            "Terminus_EntryPointAttribute_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
         
         test.TestState.GeneratedSources.Add((
@@ -141,6 +142,7 @@ public class EntryPointDiscoveryGeneratorTests
         const string source =
             """
             using System;
+            using Terminus;
 
             namespace Demo
             {
@@ -166,7 +168,7 @@ public class EntryPointDiscoveryGeneratorTests
             using System;
             using System.Reflection;
             using Terminus;
-                        using Terminus.Strategies;
+            using Terminus.Strategies;
             
             namespace Demo
             {
@@ -197,15 +199,15 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         var resolver = new ParameterBindingStrategyResolver();
                         configure?.Invoke(resolver);
                         services.AddSingleton(resolver);
-                        services.AddTransient<IDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddTransient<IAsyncDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.Attributes.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.Attributes.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
+                        services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
+                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
                     }
@@ -218,7 +220,7 @@ public class EntryPointDiscoveryGeneratorTests
             #nullable enable
             using Microsoft.Extensions.DependencyInjection;
             using System;
-                        
+            
             namespace Terminus
             {
                 public static partial class ServiceCollectionExtensions__Generated
@@ -228,15 +230,15 @@ public class EntryPointDiscoveryGeneratorTests
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.Attributes.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(configure);
+                            case "Terminus.EntryPointAttribute":
+                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute();
+                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
                         return services;
                     }
                 }
@@ -253,7 +255,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_Attributes_EntryPointAttribute_Generated.g.cs", 
+            "Terminus_EntryPointAttribute_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
         
         test.TestState.GeneratedSources.Add((
@@ -271,6 +273,7 @@ public class EntryPointDiscoveryGeneratorTests
             """
             using System;
             using System.Threading.Tasks;
+            using Terminus;
 
             namespace Demo
             {
@@ -296,7 +299,7 @@ public class EntryPointDiscoveryGeneratorTests
               using System;
               using System.Reflection;
               using Terminus;
-                            using Terminus.Strategies;
+              using Terminus.Strategies;
               
               namespace Demo
               {
@@ -327,15 +330,15 @@ public class EntryPointDiscoveryGeneratorTests
               {
                   public static partial class ServiceCollectionExtensions__Generated
                   {
-                      private static IServiceCollection AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                      private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                       {
                           var resolver = new ParameterBindingStrategyResolver();
                           configure?.Invoke(resolver);
                           services.AddSingleton(resolver);
-                          services.AddTransient<IDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                          services.AddTransient<IAsyncDispatcher<Terminus.Attributes.EntryPointAttribute>, ScopedDispatcher<Terminus.Attributes.EntryPointAttribute>>();
-                          services.AddTransient<IEntryPointRouter<Terminus.Attributes.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.Attributes.EntryPointAttribute>>();
-                          services.AddSingleton<EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.Attributes.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => context.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                          services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                          services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                          services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
+                          services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => context.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
                           services.AddTransient<Demo.TestEntryPoints>();
                           services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                           return services;
@@ -359,15 +362,15 @@ public class EntryPointDiscoveryGeneratorTests
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.Attributes.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute(configure);
+                            case "Terminus.EntryPointAttribute":
+                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
 
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_Attributes_EntryPointAttribute();
+                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
                         return services;
                     }
                 }
@@ -384,7 +387,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_Attributes_EntryPointAttribute_Generated.g.cs", 
+            "Terminus_EntryPointAttribute_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
        
         test.TestState.GeneratedSources.Add((

@@ -2,5 +2,5 @@
 
 public interface IParameterBinder
 {
-    object? BindParameter(ParameterBindingContext context);
+    TParameter BindParameter<TParameter>(ParameterBindingContext context);
 }

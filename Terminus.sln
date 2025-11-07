@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{89
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator.Examples.Web", "examples\Terminus.Generator.Examples.Web\Terminus.Generator.Examples.Web.csproj", "{39A907E2-A1FE-4BC4-9E6F-9B2262A432E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator.Examples.Mediator", "examples\Terminus.Generator.Examples.Mediator\Terminus.Generator.Examples.Mediator.csproj", "{13E96FCD-810D-42B7-A4B0-969E0421E6BC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Terminus.Generator.Examples.Facade", "examples\Terminus.Generator.Examples.Facade\Terminus.Generator.Examples.Facade.csproj", "{13E96FCD-810D-42B7-A4B0-969E0421E6BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

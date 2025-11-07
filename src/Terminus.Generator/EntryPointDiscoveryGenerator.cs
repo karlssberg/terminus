@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Terminus.Generator.Builders;
 
 namespace Terminus.Generator;
 
@@ -55,23 +56,19 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         // Find [AutoGenerate] or derived attribute
         foreach (var attributeData in interfaceSymbol.GetAttributes())
         {
-            if (attributeData.AttributeClass == null)
-                continue;
+            if (!InheritsFromAutoGenerateAttribute(attributeData.AttributeClass)) continue;
+            
+            // Get the MethodHook type from the mediator attribute
+            var entryPointAttrType = GetEntryPointAttributeType(attributeData, context.SemanticModel.Compilation);
 
-            if (InheritsFromAutoGenerateAttribute(attributeData.AttributeClass))
-            {
-                // Get the MethodHook type from the mediator attribute
-                var entryPointAttrType = GetEntryPointAttributeType(attributeData, context.SemanticModel.Compilation);
+            if (entryPointAttrType == null)
+                return null;
 
-                if (entryPointAttrType == null)
-                    return null;
-
-                return new MediatorInterfaceInfo(
-                    interfaceSymbol,
-                    attributeData,
-                    entryPointAttrType
-                );
-            }
+            return new MediatorInterfaceInfo(
+                interfaceSymbol,
+                attributeData,
+                entryPointAttrType
+            );
         }
 
         return null;
@@ -94,11 +91,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         return compilation.GetTypeByMetadataName(BaseAttributeFullName);
     }
 
-    private static bool InheritsFromAutoGenerateAttribute(INamedTypeSymbol attributeClass)
+    private static bool InheritsFromAutoGenerateAttribute(INamedTypeSymbol? attributeClass)
     {
         var current = attributeClass;
 
-        while (current != null)
+        while (current is not null)
         {
             if (current.ToDisplayString() == AutoGenerateAttributeFullName)
                 return true;
@@ -186,8 +183,8 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             var entryPointMethodInfos = keyValuePair.Value;
             
             // Generate mediator implementation
-            var source = EntryPointRegistrationSourceBuilder
-                .Generate(
+            var source = SourceBuilder
+                .GenerateEntryPoints(
                     entryPointAttributeType,
                     entryPointMethodInfos,
                     autoGenerateAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
@@ -198,8 +195,8 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             context.AddSource($"{entryPointAttributeType.ToIdentifierString()}_Generated.g.cs", source);
         }
 
-        var compilationUnitSyntax = EntryPointRegistrationSourceBuilder
-            .Generate([..entryPointsByAttributeTypesDictionary.Keys])
+        var compilationUnitSyntax = SourceBuilder
+            .GenerateServiceRegistrations([..entryPointsByAttributeTypesDictionary.Keys])
             .NormalizeWhitespace();
         
         context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
