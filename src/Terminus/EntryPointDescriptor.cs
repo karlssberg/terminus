@@ -24,6 +24,7 @@ public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribu
             return null;
         };
         Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
+        ReturnKind = methodInfo.ResolveReturnTypeKind();
     }
 
     public EntryPointDescriptor(MethodInfo methodInfo, Func<ParameterBindingContext, CancellationToken, object?> function)
@@ -31,5 +32,6 @@ public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribu
         MethodInfo = methodInfo;
         Invoker = function;
         Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
+        ReturnKind = methodInfo.ResolveReturnTypeKind();
     }
 }

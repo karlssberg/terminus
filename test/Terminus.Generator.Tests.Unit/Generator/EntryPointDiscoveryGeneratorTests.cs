@@ -62,10 +62,7 @@ public class EntryPointDiscoveryGeneratorTests
                     public void Hello(string world, System.Threading.CancellationToken cancellationToken)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        using (var scope = _serviceProvider.CreateScope())
-                        {
-                            Demo.TestEntryPoints.Hello(world, cancellationToken);
-                        }
+                        Demo.TestEntryPoints.Hello(world, cancellationToken);
                     }
             
                     public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
@@ -160,7 +157,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [EntryPointFacade]
+                [EntryPointFacade()]
                 public partial interface IMediator;
                 
                 public static class TestEntryPoints
@@ -204,10 +201,7 @@ public class EntryPointDiscoveryGeneratorTests
             
                     public void Hello(string world)
                     {
-                        using (var scope = _serviceProvider.CreateScope())
-                        {
-                            Demo.TestEntryPoints.Hello(world);
-                        }
+                        Demo.TestEntryPoints.Hello(world);
                     }
             
                     public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)

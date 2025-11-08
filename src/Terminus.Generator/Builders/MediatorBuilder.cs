@@ -311,10 +311,6 @@ internal static class MediatorBuilder
                 ? ExpressionStatement(invocationExpression)
                 : ReturnStatement(invocationExpression);
 
-            var usingStatement = entryPoint.MethodSymbol.IsAsync
-                ? GenerateUsingStatementWithCreateAsyncScope(innerStatement)
-                : GenerateUsingStatementWithCreateScope(innerStatement);
-            
             var cancellationTokens = entryPoint.MethodSymbol.Parameters.Where(p =>
                 !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
                 .ToList();
@@ -325,7 +321,12 @@ internal static class MediatorBuilder
                 yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
             }
 
-            yield return usingStatement;
+            yield return entryPoint.MethodSymbol switch
+            {
+                { IsStatic: true } => innerStatement,
+                { IsAsync: true } => GenerateUsingStatementWithCreateAsyncScope(innerStatement),
+                _ => GenerateUsingStatementWithCreateScope(innerStatement)
+            };
         }
     }
 

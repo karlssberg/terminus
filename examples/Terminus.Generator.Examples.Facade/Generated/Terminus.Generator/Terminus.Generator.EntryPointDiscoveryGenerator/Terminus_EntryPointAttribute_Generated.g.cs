@@ -12,15 +12,15 @@ namespace Terminus.Generator.Examples.HelloWorld
     {
         void Handle(string message);
         System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken);
-        public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default);
-        public System.Threading.Tasks.Task<T> SendAsync<T>(ParameterBindingContext context, CancellationToken cancellationToken = default);
+        public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+        public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
     }
 
     internal sealed class IMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMediator
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-        public IMediator_Generated(IServiceProvider serviceProvider, Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+        private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
+        public IMediator_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
         {
             _serviceProvider = serviceProvider;
             _dispatcher = dispatcher;
@@ -36,19 +36,19 @@ namespace Terminus.Generator.Examples.HelloWorld
 
         public System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken)
         {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                return Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(message1, message2, cancellationToken);
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+            return Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(message1, message2, cancellationToken);
         }
 
-        public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default)
+        public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             _dispatcher.Publish(context, cancellationToken);
         }
 
-        public System.Threading.Tasks.Task<T> SendAsync<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
+        public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             return _dispatcher.SendAsync<T>(context, cancellationToken);
         }
     }

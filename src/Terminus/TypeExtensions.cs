@@ -8,15 +8,6 @@ namespace Terminus;
 
 public static class TypeExtensions
 {
-    public static IEnumerable<MethodInfo> FindEntryPointMethodInfos<TAttribute>(this Type type)
-        where TAttribute : EntryPointAttribute
-    {
-        return type
-            .GetMethods()
-            .Where(m => m.GetCustomAttribute<TAttribute>() != null)
-            .ToArray();
-    }
-
     public static ReturnTypeKind ResolveReturnTypeKind(this MethodInfo methodInfo)
     {
         if (methodInfo.ReturnType == typeof(void))

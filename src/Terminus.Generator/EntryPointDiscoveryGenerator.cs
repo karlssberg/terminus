@@ -75,11 +75,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     }
 
     private static INamedTypeSymbol? GetEntryPointAttributeType(
-        AttributeData EntryPointFacadeAttribute,
+        AttributeData entryPointFacadeAttribute,
         Compilation compilation)
     {
         // Check EntryPointFacadeAttribute's named property: EntryPointAttribute = typeof(CommandAttribute)
-        foreach (var namedArg in EntryPointFacadeAttribute.NamedArguments)
+        foreach (var namedArg in entryPointFacadeAttribute.NamedArguments)
         {
             if (namedArg is { Key: "EntryPointAttribute", Value.Value: INamedTypeSymbol typeSymbol })
             {
@@ -89,6 +89,23 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         
         // Default to base EntryPointAttribute
         return compilation.GetTypeByMetadataName(BaseAttributeFullName);
+    }
+    
+    private static bool GetAttributeOrBaseAttribut(
+        AttributeData attribute,
+        string baseAttributeName)
+    {
+        var attributeClass = attribute.AttributeClass;
+
+        while (attributeClass != null)
+        {
+            if (attributeClass.Name == baseAttributeName)
+                return true;
+
+            attributeClass = attributeClass.BaseType;
+        }
+
+        return false;
     }
 
     private static bool InheritsFromAutoGenerateAttribute(INamedTypeSymbol? attributeClass)
