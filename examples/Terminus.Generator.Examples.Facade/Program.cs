@@ -13,7 +13,7 @@ mediator.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [AutoGenerate]
+    [EntryPointFacade]
     public partial interface IMediator;
 
     public class MyService

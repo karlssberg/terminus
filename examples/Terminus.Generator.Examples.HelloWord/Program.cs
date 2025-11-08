@@ -13,7 +13,7 @@ myListener.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [AutoGenerate(typeof(MyListener))]
+    [EntryPointFacade(typeof(MyListener))]
     public partial interface IMyListener;
 
     public class MyListener

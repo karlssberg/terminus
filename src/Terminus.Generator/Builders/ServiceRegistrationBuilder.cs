@@ -50,27 +50,30 @@ internal static class ServiceRegistrationBuilder
         var entryPointAttributeTypeDisplay = entryPointAttributeType.ToDisplayString();
 
         return
-            $$"""
-              private static IServiceCollection AddEntryPointsFor_{{entryPointAttributeType.ToIdentifierString()}}(
-                  this IServiceCollection services,
-                  Action<ParameterBindingStrategyResolver>? configure = null)
-              {
-                  var resolver = new ParameterBindingStrategyResolver();
-                  configure?.Invoke(resolver);
-                  services.AddSingleton(resolver);
-                  services.AddTransient<IDispatcher<{{entryPointAttributeTypeDisplay}}>, ScopedDispatcher<{{entryPointAttributeTypeDisplay}}>>();
-                  services.AddTransient<IAsyncDispatcher<{{entryPointAttributeTypeDisplay}}>, ScopedDispatcher<{{entryPointAttributeTypeDisplay}}>>();
-                  services.AddTransient<IEntryPointRouter<{{entryPointAttributeTypeDisplay}}>, DefaultEntryPointRouter<{{entryPointAttributeTypeDisplay}}>>();
+          $$"""
+            private static IServiceCollection AddEntryPointsFor_{{entryPointAttributeType.ToIdentifierString()}}(
+                this IServiceCollection services,
+                Action<ParameterBindingStrategyResolver>? configure = null)
+            {
+                services.AddSingleton(provider =>
+                {
+                    var resolver = new ParameterBindingStrategyResolver(provider);
+                    configure?.Invoke(resolver);
+                    return resolver;
+                });
+                services.AddTransient<ScopedDispatcher<{{entryPointAttributeTypeDisplay}}>>();
+                services.AddTransient<Dispatcher<{{entryPointAttributeTypeDisplay}}>>();
+                services.AddTransient<IEntryPointRouter<{{entryPointAttributeTypeDisplay}}>, DefaultEntryPointRouter<{{entryPointAttributeTypeDisplay}}>>();
 
-                  {{GenerateEntryPointDescriptorRegistrations(entryPointMethodInfos, entryPointAttributeTypeDisplay)}}
-                  
-                  {{GenerateEntryPointContainingTypeRegistrations(entryPointMethodInfos)}}
+                {{GenerateEntryPointDescriptorRegistrations(entryPointMethodInfos, entryPointAttributeTypeDisplay)}}
+                
+                {{GenerateEntryPointContainingTypeRegistrations(entryPointMethodInfos)}}
 
-                  {{GenerateMediatorServiceRegistrations(mediators)}}
+                {{GenerateMediatorServiceRegistrations(mediators)}}
 
-                  return services;
-              }
-              """;
+                return services;
+            }
+            """;
     }
 
     private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos,
@@ -90,17 +93,17 @@ internal static class ServiceRegistrationBuilder
                 var parameterInvocations = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
                     p.Type.ToDisplayString() == "System.Threading.CancellationToken"
                         ? "ct"
-                        : $"resolver.ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
+                        : $"provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
 
                 var invokeExpressionSnippet = ep.MethodSymbol.IsStatic
                     ? $"{containingType}.{methodName}({parameterInvocations})"
-                    : $"context.ServiceProvider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
+                    : $"provider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
                     
                 var invokeExpression = SyntaxFactory.ParseExpression(invokeExpressionSnippet);
 
                 var registrationExpressionStatement =
                     $"""
-                     services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(
+                     services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(provider =>
                         new EntryPointDescriptor<{attributeTypeName}>(
                             typeof({containingType}).GetMethod("{methodName}", {paramArray})!,
                             (context, ct) => {invokeExpression}));

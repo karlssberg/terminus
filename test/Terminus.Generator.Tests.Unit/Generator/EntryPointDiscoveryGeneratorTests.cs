@@ -16,7 +16,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [AutoGenerate]
+                [EntryPointFacade]
                 public partial interface IMediator;
                 
                 public static class TestEntryPoints
@@ -146,7 +146,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [AutoGenerate]
+                [EntryPointFacade]
                 public partial interface IMediator;
                 
                 public static class TestEntryPoints
@@ -277,7 +277,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [AutoGenerate]
+                [EntryPointFacade]
                 public partial interface IMediator;
                 
                 public class TestEntryPoints

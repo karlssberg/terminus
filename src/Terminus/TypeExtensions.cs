@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Terminus;
 
@@ -15,13 +16,18 @@ public static class TypeExtensions
             .Where(m => m.GetCustomAttribute<TAttribute>() != null)
             .ToArray();
     }
-}
 
-public static class ObjectExtensions
-{
-    public static IReadOnlyDictionary<string, object?>? ToDictionary(this object? obj)
+    public static ReturnTypeKind ResolveReturnTypeKind(this MethodInfo methodInfo)
     {
-        return obj?.GetType().GetProperties()
-            .ToDictionary(p => p.Name, p => p?.GetValue(obj));
+        if (methodInfo.ReturnType == typeof(void))
+            return ReturnTypeKind.Void;
+        if (methodInfo.ReturnType == typeof(Task) || methodInfo.ReturnType == typeof(ValueTask))
+            return ReturnTypeKind.Task;
+        if (methodInfo.ReturnType == typeof(Task<>) || methodInfo.ReturnType == typeof(ValueTask<>))
+            return ReturnTypeKind.TaskWithResult;
+        if (methodInfo.ReturnType == typeof(IAsyncEnumerable<>))
+            return ReturnTypeKind.AsyncEnumerable;
+
+        return ReturnTypeKind.Result;
     }
 }

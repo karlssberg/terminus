@@ -6,20 +6,57 @@ using System.Reflection;
 using Terminus;
 using Terminus.Strategies;
 
+namespace Terminus.Generator.Examples.Web
+{
+    public partial interface IDispatcher
+    {
+        void GetPost(string id, string postId);
+        public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default);
+    }
+
+    internal sealed class IDispatcher_Generated : Terminus.Generator.Examples.Web.IDispatcher
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly Terminus.Dispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute> _dispatcher;
+        public IDispatcher_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute> dispatcher)
+        {
+            _serviceProvider = serviceProvider;
+            _dispatcher = dispatcher;
+        }
+
+        public void GetPost(string id, string postId)
+        {
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(id, postId);
+            }
+        }
+
+        public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default)
+        {
+            _dispatcher.Publish(context, cancellationToken);
+        }
+    }
+}
+
 namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
         private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_MyHttpPostAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
-            var resolver = new ParameterBindingStrategyResolver();
-            configure?.Invoke(resolver);
-            services.AddSingleton(resolver);
-            services.AddTransient<IDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
-            services.AddTransient<IAsyncDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
+            services.AddSingleton(provider =>
+            {
+                var resolver = new ParameterBindingStrategyResolver(provider);
+                configure?.Invoke(resolver);
+                return resolver;
+            });
+            services.AddTransient<ScopedDispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
+            services.AddTransient<Dispatcher<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>, DefaultEntryPointRouter<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>();
-            services.AddSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyController).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => context.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(resolver.ResolveParameter<string>("id", context), resolver.ResolveParameter<string>("postId", context))));
+            services.AddSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(provider => new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyController).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("id", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("postId", context))));
             services.AddTransient<Terminus.Generator.Examples.Web.MyController>();
+            services.AddSingleton<Terminus.Generator.Examples.Web.IDispatcher, Terminus.Generator.Examples.Web.IDispatcher_Generated>();
             return services;
         }
     }

@@ -15,12 +15,10 @@ public sealed record ParameterBindingContext
     private ParameterBindingContext(
         string ParameterName,
         Type ParameterType, 
-        IServiceProvider ServiceProvider,
         IReadOnlyDictionary<string, object?>? Data = null)
     {
         this.ParameterName = ParameterName;
         this.ParameterType = ParameterType;
-        this.ServiceProvider = ServiceProvider;
         this.Data = Data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
     }
     
@@ -28,12 +26,10 @@ public sealed record ParameterBindingContext
     [SetsRequiredMembers]
 #endif
     public ParameterBindingContext(
-        IServiceProvider ServiceProvider,
         IReadOnlyDictionary<string, object?>? Data = null)
     {
         ParameterName = "";
         ParameterType = typeof(void);
-        this.ServiceProvider = ServiceProvider;
         this.Data = Data ?? new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
     }
         
@@ -41,8 +37,7 @@ public sealed record ParameterBindingContext
     [SetsRequiredMembers]
 #endif
     public ParameterBindingContext(
-        IServiceProvider ServiceProvider,
-        object? Data = null) : this(ServiceProvider, Data.ToDictionary())
+        object? Data = null) : this(Data.ToDictionary())
     {
     }
     
@@ -51,7 +46,6 @@ public sealed record ParameterBindingContext
 
     public required string ParameterName { get; init; }
     public required Type ParameterType { get; init; }
-    public required IServiceProvider ServiceProvider { get; init; }
     public required IReadOnlyDictionary<string, object?> Data { get; init; }
     
     public bool HasDefaultValue { get; init; }
@@ -61,7 +55,6 @@ public sealed record ParameterBindingContext
 #else
     public string ParameterName { get; set; }
     public Type ParameterType { get; set;  }
-    public IServiceProvider ServiceProvider { get; set; }
     public IReadOnlyDictionary<string, object?> Data { get; set;  }
     
     public bool HasDefaultValue { get; set; }
@@ -92,7 +85,7 @@ public sealed record ParameterBindingContext
     public ParameterBindingContext ForParameter(string name, Type type, 
         bool hasDefault = false, object? defaultValue = null)
     {
-        return new ParameterBindingContext(name, type, ServiceProvider, Data)
+        return new ParameterBindingContext(name, type, Data)
         {
             HasDefaultValue = hasDefault,
             DefaultValue = defaultValue,

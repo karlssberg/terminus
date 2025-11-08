@@ -8,12 +8,16 @@ public class DefaultEntryPointRouter<TEntryPointAttribute>(
     : IEntryPointRouter<TEntryPointAttribute> 
     where TEntryPointAttribute : EntryPointAttribute
 {
-    
     public EntryPointDescriptor<TEntryPointAttribute> GetEntryPoint(ParameterBindingContext context)
     {
-        return entryPointDescriptors.FirstOrDefault(descriptor => descriptor.MethodInfo.CanInvokeWith(context.Data))
+        return GetEntryPoints(context).FirstOrDefault()
                ?? throw new TerminusEntryPointNotFoundException(
                    $"Cannot find suitable '{typeof(TEntryPointAttribute).Name}' entry point descriptor",
                    context);
+    }
+
+    public IEnumerable<EntryPointDescriptor<TEntryPointAttribute>> GetEntryPoints(ParameterBindingContext context)
+    {
+        return entryPointDescriptors.Where(descriptor => descriptor.MethodInfo.CanInvokeWith(context.Data));
     }
 }

@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Terminus.Strategies;
 
 namespace Terminus;
 
-public sealed class ParameterBindingStrategyResolver
+public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider)
 {
     private readonly List<IParameterBindingStrategy> _strategies = [..DefaultParameterBindingStrategies.Create()];
     private readonly Dictionary<Type, IParameterBinder> _customBinders = [];
@@ -70,7 +71,7 @@ public sealed class ParameterBindingStrategyResolver
         }
         
         var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(scopedContext))
-                    ?? new DependencyInjectionBindingStrategy();
+                    ?? serviceProvider.GetRequiredService<DependencyInjectionBindingStrategy>();
         
         return (TParameter)strategyBinder.Bind(scopedContext)!;
     }

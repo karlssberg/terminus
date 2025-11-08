@@ -2,7 +2,7 @@
 
 namespace Terminus.Strategies;
 
-public sealed class DependencyInjectionBindingStrategy : IParameterBindingStrategy
+public sealed class DependencyInjectionBindingStrategy(IServiceProvider serviceProvider) : IParameterBindingStrategy
 {
     public bool CanBind(ParameterBindingContext context)
     {
@@ -12,7 +12,7 @@ public sealed class DependencyInjectionBindingStrategy : IParameterBindingStrate
     
     public object? Bind(ParameterBindingContext context)
     {
-        var service = context.ServiceProvider.GetService(context.ParameterType);
+        var service = serviceProvider.GetService(context.ParameterType);
         if (service is not null) return service;
         
         // Use default if available

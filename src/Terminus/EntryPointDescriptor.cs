@@ -10,8 +10,10 @@ public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribu
 {
     public MethodInfo MethodInfo { get; }
     public Func<ParameterBindingContext, CancellationToken, object?> Invoker { get; }
-    
+
     public IEnumerable<TEntryPointAttribute> Attributes { get; }
+    
+    public ReturnTypeKind ReturnKind { get; }
 
     public EntryPointDescriptor(MethodInfo methodInfo, Action<ParameterBindingContext, CancellationToken> action)
     {

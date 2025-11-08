@@ -4,8 +4,10 @@ namespace Terminus.Generator;
 
 internal readonly record struct EntryPointMethodInfo(
     IMethodSymbol MethodSymbol,
-    AttributeData AttributeData)
+    AttributeData AttributeData,
+    ReturnTypeKind ReturnTypeKind)
 {
     public IMethodSymbol MethodSymbol { get; } = MethodSymbol;
     public AttributeData AttributeData { get; } = AttributeData;
+    public ReturnTypeKind ReturnTypeKind { get; } = ReturnTypeKind;
 };

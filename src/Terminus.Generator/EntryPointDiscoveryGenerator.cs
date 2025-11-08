@@ -10,11 +10,11 @@ namespace Terminus.Generator;
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
     private const string BaseAttributeFullName = "Terminus.EntryPointAttribute";
-    private const string AutoGenerateAttributeFullName = "Terminus.AutoGenerateAttribute";
+    private const string AutoGenerateAttributeFullName = "Terminus.EntryPointFacadeAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Discover mediator interfaces marked with [AutoGenerate]
+        // Discover mediator interfaces marked with [EntryPointFacade]
         var discoveredMediators = context.SyntaxProvider
             .ForAttributeWithMetadataName( 
                 fullyQualifiedMetadataName: AutoGenerateAttributeFullName,
@@ -53,12 +53,12 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         if (context.TargetSymbol is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [AutoGenerate] or derived attribute
+        // Find [EntryPointFacade] or derived attribute
         foreach (var attributeData in interfaceSymbol.GetAttributes())
         {
             if (!InheritsFromAutoGenerateAttribute(attributeData.AttributeClass)) continue;
             
-            // Get the MethodHook type from the mediator attribute
+            // Get the EntryPointAttribute type from the mediator attribute
             var entryPointAttrType = GetEntryPointAttributeType(attributeData, context.SemanticModel.Compilation);
 
             if (entryPointAttrType == null)
@@ -75,13 +75,13 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     }
 
     private static INamedTypeSymbol? GetEntryPointAttributeType(
-        AttributeData autoGenerateAttribute,
+        AttributeData EntryPointFacadeAttribute,
         Compilation compilation)
     {
-        // Check AutoGenerateAttribute's named property: MethodHook = typeof(CommandAttribute)
-        foreach (var namedArg in autoGenerateAttribute.NamedArguments)
+        // Check EntryPointFacadeAttribute's named property: EntryPointAttribute = typeof(CommandAttribute)
+        foreach (var namedArg in EntryPointFacadeAttribute.NamedArguments)
         {
-            if (namedArg is { Key: "MethodHook", Value.Value: INamedTypeSymbol typeSymbol })
+            if (namedArg is { Key: "EntryPointAttribute", Value.Value: INamedTypeSymbol typeSymbol })
             {
                 return typeSymbol;
             }
@@ -125,9 +125,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             // Walk up the inheritance chain to check if it derives from our base
             if (InheritsFromBaseAttribute(attributeData.AttributeClass))
             {
+                var isTaskLike = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
                 return new EntryPointMethodInfo(
                     methodSymbol,
-                    attributeData
+                    attributeData,
+                    isTaskLike
                 );
             }
         }
