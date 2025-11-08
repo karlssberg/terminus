@@ -13,6 +13,7 @@ public class EntryPointDiscoveryGeneratorTests
             """
             using System;
             using Terminus;
+            using System.Threading;
 
             namespace Demo
             {
@@ -22,7 +23,7 @@ public class EntryPointDiscoveryGeneratorTests
                 public static class TestEntryPoints
                 {
                     [EntryPoint]
-                    public static void Hello(string world) 
+                    public static void Hello(string world, CancellationToken cancellationToken) 
                     { 
                         Console.WriteLine($"hello {world}"); 
                     }
@@ -44,23 +45,33 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public partial interface IMediator
                 {
-                    void Hello(string world);
+                    void Hello(string world, System.Threading.CancellationToken cancellationToken);
+                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IMediator_Generated : Demo.IMediator
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    public IMediator_Generated(IServiceProvider serviceProvider)
+                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
+                    public IMediator_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
+                        _dispatcher = dispatcher;
                     }
             
-                    public void Hello(string world)
+                    public void Hello(string world, System.Threading.CancellationToken cancellationToken)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         using (var scope = _serviceProvider.CreateScope())
                         {
-                            Demo.TestEntryPoints.Hello(world);
+                            Demo.TestEntryPoints.Hello(world, cancellationToken);
                         }
+                    }
+            
+                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        _dispatcher.Publish(context, cancellationToken);
                     }
                 }
             }
@@ -71,13 +82,16 @@ public class EntryPointDiscoveryGeneratorTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        var resolver = new ParameterBindingStrategyResolver();
-                        configure?.Invoke(resolver);
-                        services.AddSingleton(resolver);
-                        services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddSingleton(provider =>
+                        {
+                            var resolver = new ParameterBindingStrategyResolver(provider);
+                            configure?.Invoke(resolver);
+                            return resolver;
+                        });
+                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
                         services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
+                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
                     }
@@ -105,7 +119,7 @@ public class EntryPointDiscoveryGeneratorTests
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
-
+            
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddEntryPointsFor_Terminus_EntryPointAttribute();
@@ -175,14 +189,17 @@ public class EntryPointDiscoveryGeneratorTests
                 public partial interface IMediator
                 {
                     void Hello(string world);
+                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IMediator_Generated : Demo.IMediator
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    public IMediator_Generated(IServiceProvider serviceProvider)
+                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
+                    public IMediator_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
+                        _dispatcher = dispatcher;
                     }
             
                     public void Hello(string world)
@@ -191,6 +208,12 @@ public class EntryPointDiscoveryGeneratorTests
                         {
                             Demo.TestEntryPoints.Hello(world);
                         }
+                    }
+            
+                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        _dispatcher.Publish(context, cancellationToken);
                     }
                 }
             }
@@ -201,13 +224,16 @@ public class EntryPointDiscoveryGeneratorTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        var resolver = new ParameterBindingStrategyResolver();
-                        configure?.Invoke(resolver);
-                        services.AddSingleton(resolver);
-                        services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddSingleton(provider =>
+                        {
+                            var resolver = new ParameterBindingStrategyResolver(provider);
+                            configure?.Invoke(resolver);
+                            return resolver;
+                        });
+                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
                         services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(resolver.ResolveParameter<string>("world", context))));
+                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
                     }
@@ -292,7 +318,7 @@ public class EntryPointDiscoveryGeneratorTests
             """;
 
         const string expectedMainSource =
-            $$"""
+              """
               // <auto-generated/> Generated by Terminus EntryPointDiscoveryGenerator
               #nullable enable
               using Microsoft.Extensions.DependencyInjection;
@@ -306,14 +332,17 @@ public class EntryPointDiscoveryGeneratorTests
                   public partial interface IMediator
                   {
                       System.Threading.Tasks.Task Hello();
+                      public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                   }
               
                   internal sealed class IMediator_Generated : Demo.IMediator
                   {
                       private readonly IServiceProvider _serviceProvider;
-                      public IMediator_Generated(IServiceProvider serviceProvider)
+                      private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
+                      public IMediator_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
                       {
                           _serviceProvider = serviceProvider;
+                          _dispatcher = dispatcher;
                       }
               
                       public System.Threading.Tasks.Task Hello()
@@ -322,6 +351,12 @@ public class EntryPointDiscoveryGeneratorTests
                           {
                               return scope.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello();
                           }
+                      }
+              
+                      public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                      {
+                          cancellationToken.ThrowIfCancellationRequested();
+                          return _dispatcher.PublishAsync(context, cancellationToken);
                       }
                   }
               }
@@ -332,13 +367,16 @@ public class EntryPointDiscoveryGeneratorTests
                   {
                       private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                       {
-                          var resolver = new ParameterBindingStrategyResolver();
-                          configure?.Invoke(resolver);
-                          services.AddSingleton(resolver);
-                          services.AddTransient<IDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                          services.AddTransient<IAsyncDispatcher<Terminus.EntryPointAttribute>, ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                          services.AddSingleton(provider =>
+                          {
+                              var resolver = new ParameterBindingStrategyResolver(provider);
+                              configure?.Invoke(resolver);
+                              return resolver;
+                          });
+                          services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
+                          services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
                           services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                          services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => context.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                          services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
                           services.AddTransient<Demo.TestEntryPoints>();
                           services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                           return services;
@@ -367,7 +405,7 @@ public class EntryPointDiscoveryGeneratorTests
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
-
+            
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddEntryPointsFor_Terminus_EntryPointAttribute();

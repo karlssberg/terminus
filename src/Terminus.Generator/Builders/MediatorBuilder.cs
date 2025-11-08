@@ -124,15 +124,16 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GeneratePublishMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default);")!;
+            "public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GeneratePublishMethodImplementation()
     {
         const string methodDeclaration =
             """
-            public void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default)
+            public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 _dispatcher.Publish(context, cancellationToken);
             }
             """;
@@ -143,15 +144,16 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Threading.Tasks.Task PublishAsync(ParameterBindingContext context, CancellationToken cancellationToken = default);")!;
+            "public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
     
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodImplementation()
     {
         const string methodDeclaration =
             """
-            public System.Threading.Tasks.Task PublishAsync(ParameterBindingContext context, CancellationToken cancellationToken = default)
+            public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return _dispatcher.PublishAsync(context, cancellationToken);
             }
             """;
@@ -162,15 +164,16 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateSendMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public T Send<T>(ParameterBindingContext context, CancellationToken cancellationToken = default);")!;
+            "public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendMethodImplementation()
     {
         const string methodDeclaration =
             """
-            public T Send<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
+            public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return _dispatcher.Send<T>(context, cancellationToken);
             }
             """;
@@ -181,15 +184,16 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateSendAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Threading.Tasks.Task<T> SendAsync<T>(ParameterBindingContext context, CancellationToken cancellationToken = default);")!;
+            "public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendAsyncMethodImplementation()
     {
         const string methodDeclaration =
             """
-            public System.Threading.Tasks.Task<T> SendAsync<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
+            public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return _dispatcher.SendAsync<T>(context, cancellationToken);
             }
             """;
@@ -200,15 +204,16 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(ParameterBindingContext context, CancellationToken cancellationToken = default);")!;
+            "public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodImplementation()
     {
         const string methodDeclaration =
             """
-            public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
+            public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 return _dispatcher.CreateStream<T>(context, cancellationToken);
             }
             """;
@@ -285,30 +290,43 @@ internal static class MediatorBuilder
             SyntaxKind.SimpleMemberAccessExpression,
             instanceExpression,
             IdentifierName(entryPoint.MethodSymbol.Name));
-
-        var argumentList = ArgumentList(SeparatedList(
-            entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
-        ));
-
-        var invocationExpression = InvocationExpression(methodAccess, argumentList);
-
-        // Return or expression statement depending on void
-        StatementSyntax innerStatement = entryPoint.MethodSymbol.ReturnsVoid
-            ? ExpressionStatement(invocationExpression)
-            : ReturnStatement(invocationExpression);
-
-        var usingStatement = entryPoint.MethodSymbol.IsAsync
-            ? GenerateUsingStatementWithCreateAsyncScope(innerStatement)
-            : GenerateUsingStatementWithCreateScope(innerStatement);
-
-        var body = Block(usingStatement);
-
+     
         var method = MethodDeclaration(returnTypeSyntax, Identifier(entryPoint.MethodSymbol.Name))
-            .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
+            .AddModifiers(Token(SyntaxKind.PublicKeyword))
             .WithParameterList(parameterList)
-            .WithBody(body);
+            .WithBody(Block(GenerateBody()));
 
         return method.NormalizeWhitespace();
+
+        IEnumerable<StatementSyntax> GenerateBody()
+        {
+            var argumentList = ArgumentList(SeparatedList(
+                entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
+            ));
+
+            var invocationExpression = InvocationExpression(methodAccess, argumentList);
+
+            // Return or expression statement depending on void
+            StatementSyntax innerStatement = entryPoint.MethodSymbol.ReturnsVoid
+                ? ExpressionStatement(invocationExpression)
+                : ReturnStatement(invocationExpression);
+
+            var usingStatement = entryPoint.MethodSymbol.IsAsync
+                ? GenerateUsingStatementWithCreateAsyncScope(innerStatement)
+                : GenerateUsingStatementWithCreateScope(innerStatement);
+            
+            var cancellationTokens = entryPoint.MethodSymbol.Parameters.Where(p =>
+                !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
+                .ToList();
+
+            if (cancellationTokens.Count == 1)
+            {
+                var parameterName = cancellationTokens[0].Name;
+                yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
+            }
+
+            yield return usingStatement;
+        }
     }
 
     private static UsingStatementSyntax GenerateUsingStatementWithCreateScope(StatementSyntax innerStatement)
