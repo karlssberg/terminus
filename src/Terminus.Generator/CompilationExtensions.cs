@@ -13,7 +13,7 @@ public static class CompilationExtensions
         var valueTaskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.ValueTask");
         var valueTaskOfTType = compilation.GetTypeByMetadataName("System.Threading.Tasks.ValueTask`1");
         var asyncEnumerableType = compilation.GetTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1");
-
+        
         if (SymbolEqualityComparer.Default.Equals(returnType, taskType)
             || SymbolEqualityComparer.Default.Equals(returnType, valueTaskType))
             return ReturnTypeKind.Task;

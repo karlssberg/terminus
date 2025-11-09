@@ -22,9 +22,12 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         }
         """;
 
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     private const string DiShimSource =
         """
         using System;
+        using System.Threading.Tasks;
+        
         namespace Microsoft.Extensions.DependencyInjection
         {
             public interface IServiceCollection { }
@@ -32,6 +35,58 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             {
                 IServiceProvider ServiceProvider { get; }
             }
+            public class AsyncServiceScope : IAsyncDisposable
+            {
+                public IServiceProvider ServiceProvider { get; }
+                public ValueTask DisposeAsync() => default;
+            }
+
+            public static class ServiceCollectionExtensionsShim
+            {
+                public static IServiceCollection AddSingleton<T>(this IServiceCollection services, T implementation)
+                    where T : class
+                    => services;
+                
+                public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services)
+                    where TService : class
+                    where TImplementation : class, TService
+                    => services;
+                
+                public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
+                    where TService : class
+                    => services;
+                
+                public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services)
+                    where TService : class
+                    where TImplementation : class, TService
+                    => services;
+                    
+                public static IServiceCollection AddTransient<TService>(this IServiceCollection services)
+                    where TService : class
+                    => services;
+            }
+            
+            public static class ServiceProviderExtensionsShim
+            {
+                public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
+                public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => null!;
+                public static T GetRequiredService<T>(this IServiceProvider provider) => default!;
+            }
+        }
+        """;
+#else
+    private const string DiShimSource =
+        """
+        using System;
+        
+        namespace Microsoft.Extensions.DependencyInjection
+        {
+            public interface IServiceCollection { }
+            public interface IServiceScope : IDisposable
+            {
+                IServiceProvider ServiceProvider { get; }
+            }
+
             public static class ServiceCollectionExtensionsShim
             {
                 public static IServiceCollection AddSingleton<T>(this IServiceCollection services, T implementation)
@@ -64,9 +119,17 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             }
         }
         """;
+#endif
 
     public TerminusSourceGeneratorTest()
     {
+        // Align reference assemblies with the current test target framework
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
+        ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
+#else
+        ReferenceAssemblies = ReferenceAssemblies.NetStandard.NetStandard20;
+#endif
+        
         // Common test inputs
         TestState.Sources.Add(IsExternalInitSource);
         TestState.Sources.Add(DiShimSource);

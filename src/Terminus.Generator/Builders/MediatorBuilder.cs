@@ -60,11 +60,12 @@ internal static class MediatorBuilder
                           _dispatcher = dispatcher;
                       }
                       """)!,
-                ..GenerateImplementationMediatorMethods(entryPoints)
+                ..GenerateImplementationMediatorMethods(mediatorInfo, entryPoints)
             ]);
     }
 
-    private static IEnumerable<MemberDeclarationSyntax> GenerateInterfaceMediatorMethods(ImmutableArray<EntryPointMethodInfo> entryPoints)
+    private static IEnumerable<MemberDeclarationSyntax> GenerateInterfaceMediatorMethods(
+        ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
         foreach (var entryPoint in entryPoints)
@@ -90,13 +91,15 @@ internal static class MediatorBuilder
         }
     }
     
-    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationMediatorMethods(ImmutableArray<EntryPointMethodInfo> entryPoints)
+    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationMediatorMethods(
+        MediatorInterfaceInfo mediatorInfo,
+        ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
         foreach (var entryPoint in entryPoints)
         {
             returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
-            yield return GenerateEntryPointMethodImplementationDefinition(entryPoint);
+            yield return GenerateEntryPointMethodImplementationDefinition(mediatorInfo, entryPoint);
         }
         
         foreach (var returnTypeKind in returnTypeKindsDiscovered)
@@ -118,13 +121,17 @@ internal static class MediatorBuilder
 
     private static MemberDeclarationSyntax GenerateEntryPointMethodInterfaceDefinition(EntryPointMethodInfo entryPoint)
     {
-        return entryPoint.MethodSymbol.ToMethodDeclaration().WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+        // Emit interface method without access modifiers regardless of source method modifiers
+        return entryPoint.MethodSymbol
+            .ToMethodDeclaration()
+            .WithModifiers(new SyntaxTokenList())
+            .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
 
     private static MemberDeclarationSyntax GeneratePublishMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+            "void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GeneratePublishMethodImplementation()
@@ -144,7 +151,7 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
     
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodImplementation()
@@ -164,7 +171,7 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateSendMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+            "T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendMethodImplementation()
@@ -184,7 +191,7 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateSendAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendAsyncMethodImplementation()
@@ -204,7 +211,7 @@ internal static class MediatorBuilder
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodImplementation()
@@ -261,12 +268,14 @@ internal static class MediatorBuilder
                           {{fieldAssignments}}
                       }
                       """)!,
-                ..entryPoints.Select(GenerateEntryPointMethodImplementationDefinition),
+                ..entryPoints.Select(ep => GenerateEntryPointMethodImplementationDefinition(mediatorInfo, ep)),
             ])
             .NormalizeWhitespace();
     }
 
-    private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(EntryPointMethodInfo entryPoint)
+    private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(
+        MediatorInterfaceInfo mediatorInfo,
+        EntryPointMethodInfo entryPoint)
     {
         // Build return type
         var returnTypeSyntax = entryPoint.MethodSymbol.ReturnsVoid
@@ -279,37 +288,60 @@ internal static class MediatorBuilder
                 Parameter(Identifier(p.Name))
                     .WithType(ParseTypeName(p.Type.ToDisplayString()))
             )));
-
-        // Build instance/service resolution expression
-        var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
-            ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
-            $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
-
-        // Build method invocation
-        var methodAccess = MemberAccessExpression(
-            SyntaxKind.SimpleMemberAccessExpression,
-            instanceExpression,
-            IdentifierName(entryPoint.MethodSymbol.Name));
      
         var method = MethodDeclaration(returnTypeSyntax, Identifier(entryPoint.MethodSymbol.Name))
             .AddModifiers(Token(SyntaxKind.PublicKeyword))
-            .WithParameterList(parameterList)
-            .WithBody(Block(GenerateBody()));
+            .WithParameterList(parameterList);
+
+        // Add async modifier when returning Task or Task<T>
+        if (entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult)
+        {
+            method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
+        }
+
+        method = method.WithBody(Block(GenerateBody()));
 
         return method.NormalizeWhitespace();
 
         IEnumerable<StatementSyntax> GenerateBody()
         {
+            // Build instance/service resolution expression
+            var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
+                ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
+                $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
+
+            // Build method invocation
+            var methodAccess = MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                instanceExpression,
+                IdentifierName(entryPoint.MethodSymbol.Name));
+            
             var argumentList = ArgumentList(SeparatedList(
                 entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
             ));
 
             var invocationExpression = InvocationExpression(methodAccess, argumentList);
 
-            // Return or expression statement depending on void
-            StatementSyntax innerStatement = entryPoint.MethodSymbol.ReturnsVoid
-                ? ExpressionStatement(invocationExpression)
-                : ReturnStatement(invocationExpression);
+            // For async Task/Task<T>, append ConfigureAwait(false) and await the call
+            var isAsyncTask = entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult;
+            if (isAsyncTask)
+            {
+                invocationExpression = InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        invocationExpression,
+                        IdentifierName("ConfigureAwait")))
+                    .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(LiteralExpression(SyntaxKind.FalseLiteralExpression)))));
+            }
+
+            // Return or expression statement depending on void / async kind
+            StatementSyntax innerStatement = entryPoint.ReturnTypeKind switch
+            {
+                ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
+                ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
+                ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+                _ => ReturnStatement(invocationExpression)
+            };
 
             var cancellationTokens = entryPoint.MethodSymbol.Parameters.Where(p =>
                 !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
@@ -321,10 +353,15 @@ internal static class MediatorBuilder
                 yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
             }
 
-            yield return entryPoint.MethodSymbol switch
+            yield return entryPoint switch
             {
-                { IsStatic: true } => innerStatement,
-                { IsAsync: true } => GenerateUsingStatementWithCreateAsyncScope(innerStatement),
+                { MethodSymbol.IsStatic: true } =>
+                    innerStatement,
+                
+                { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable } 
+                    when mediatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
+                    GenerateUsingStatementWithCreateAsyncScope(innerStatement),
+                
                 _ => GenerateUsingStatementWithCreateScope(innerStatement)
             };
         }

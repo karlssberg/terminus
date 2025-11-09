@@ -50,6 +50,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         GeneratorAttributeSyntaxContext context,
         CancellationToken ct)
     {
+        var typeByMetadataName = context.SemanticModel.Compilation
+            .GetTypeByMetadataName("System.IAsyncDisposable");
+        var dotnetFeatures = 
+            typeByMetadataName is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
+        
         if (context.TargetSymbol is not INamedTypeSymbol interfaceSymbol)
             return null;
 
@@ -67,7 +72,8 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             return new MediatorInterfaceInfo(
                 interfaceSymbol,
                 attributeData,
-                entryPointAttrType
+                entryPointAttrType,
+                dotnetFeatures
             );
         }
 
@@ -91,7 +97,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         return compilation.GetTypeByMetadataName(BaseAttributeFullName);
     }
     
-    private static bool GetAttributeOrBaseAttribut(
+    private static bool GetAttributeOrBaseAttribute(
         AttributeData attribute,
         string baseAttributeName)
     {
@@ -195,20 +201,24 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
         
-
         foreach (var keyValuePair in entryPointsByAttributeTypesDictionary)
         {
             var entryPointAttributeType = keyValuePair.Key!;
             var entryPointMethodInfos = keyValuePair.Value;
             
             // Generate mediator implementation
+            var entryPointsContext =
+                new EntryPointsContext(entryPointAttributeType)
+                {
+                    EntryPointMethodInfos = entryPointMethodInfos,
+                    Mediators = autoGenerateAttributeTypesDictionary
+                        .TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
+                            ? entryPointAttributeMediators
+                            : []
+                };
+            
             var source = SourceBuilder
-                .GenerateEntryPoints(
-                    entryPointAttributeType,
-                    entryPointMethodInfos,
-                    autoGenerateAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
-                        ? entryPointAttributeMediators
-                        : ImmutableArray<MediatorInterfaceInfo>.Empty)
+                .GenerateEntryPoints(entryPointsContext)
                 .ToFullString();
 
             context.AddSource($"{entryPointAttributeType.ToIdentifierString()}_Generated.g.cs", source);

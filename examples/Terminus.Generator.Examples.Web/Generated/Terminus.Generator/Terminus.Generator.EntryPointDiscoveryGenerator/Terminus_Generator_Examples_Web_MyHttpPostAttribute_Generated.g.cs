@@ -11,7 +11,7 @@ namespace Terminus.Generator.Examples.Web
     public partial interface IDispatcher
     {
         void GetPost(string id, string postId);
-        public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+        void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
     }
 
     internal sealed class IDispatcher_Generated : Terminus.Generator.Examples.Web.IDispatcher

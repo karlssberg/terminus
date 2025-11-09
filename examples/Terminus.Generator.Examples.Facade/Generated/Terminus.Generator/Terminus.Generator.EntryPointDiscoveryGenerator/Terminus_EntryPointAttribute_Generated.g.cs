@@ -12,8 +12,8 @@ namespace Terminus.Generator.Examples.HelloWorld
     {
         void Handle(string message);
         System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken);
-        public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-        public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+        void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+        System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
     }
 
     internal sealed class IMediator_Generated : Terminus.Generator.Examples.HelloWorld.IMediator
@@ -34,10 +34,10 @@ namespace Terminus.Generator.Examples.HelloWorld
             }
         }
 
-        public System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(message1, message2, cancellationToken);
+            return await Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(message1, message2, cancellationToken).ConfigureAwait(false);
         }
 
         public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)

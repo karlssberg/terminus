@@ -23,6 +23,7 @@ app.Use(async (HttpContext context, RequestDelegate _) =>
             return Task.CompletedTask;
         });
     }
+    await using (var scope = app.Services.CreateAsyncScope());
     await router.RouteAsync(context);
 });
 
