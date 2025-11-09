@@ -69,11 +69,20 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             if (entryPointAttrType == null)
                 return null;
 
+            // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
+            var isScoped = attributeData.NamedArguments
+                .Where(namedArg => namedArg is { Key: "Scoped" })
+                .Select(namedArg => namedArg.Value.Value)
+                .OfType<bool?>()
+                .FirstOrDefault() ?? true;
+            
+
             return new MediatorInterfaceInfo(
                 interfaceSymbol,
                 attributeData,
                 entryPointAttrType,
-                dotnetFeatures
+                dotnetFeatures,
+                isScoped
             );
         }
 

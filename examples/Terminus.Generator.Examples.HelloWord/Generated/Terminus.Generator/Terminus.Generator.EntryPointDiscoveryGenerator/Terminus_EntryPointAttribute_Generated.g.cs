@@ -72,7 +72,6 @@ namespace Terminus
             services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyListener>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
             services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyListener.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
-            services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMyListener, Terminus.Generator.Examples.HelloWorld.IMyListener_Generated>();
             return services;
         }

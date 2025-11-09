@@ -286,8 +286,7 @@ internal static class MediatorBuilder
         var parameterList = ParameterList(SeparatedList(
             entryPoint.MethodSymbol.Parameters.Select(p =>
                 Parameter(Identifier(p.Name))
-                    .WithType(ParseTypeName(p.Type.ToDisplayString()))
-            )));
+                    .WithType(ParseTypeName(p.Type.ToDisplayString())))));
      
         var method = MethodDeclaration(returnTypeSyntax, Identifier(entryPoint.MethodSymbol.Name))
             .AddModifiers(Token(SyntaxKind.PublicKeyword))
@@ -305,10 +304,14 @@ internal static class MediatorBuilder
 
         IEnumerable<StatementSyntax> GenerateBody()
         {
+            var serviceProviderExpression = mediatorInfo.Scoped
+                ? "scope.ServiceProvider"
+                : "_serviceProvider";
+            
             // Build instance/service resolution expression
             var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
                 ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
-                $"scope.ServiceProvider.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
+                $"{serviceProviderExpression}.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
 
             // Build method invocation
             var methodAccess = MemberAccessExpression(
@@ -351,6 +354,12 @@ internal static class MediatorBuilder
             {
                 var parameterName = cancellationTokens[0].Name;
                 yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
+            }
+
+            if (!mediatorInfo.Scoped)
+            {
+                yield return innerStatement;
+                yield break;
             }
 
             yield return entryPoint switch

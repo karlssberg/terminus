@@ -6,6 +6,7 @@ namespace Terminus;
 public class EntryPointFacadeAttribute(params Type[] targetTypes) : Attribute
 {
     public Type EntryPointAttribute { get; set; } = typeof(EntryPointAttribute);
+    public bool Scoped { get; set; } = true;
 
     public Type[] TargetTypes { get; } = targetTypes;
 }

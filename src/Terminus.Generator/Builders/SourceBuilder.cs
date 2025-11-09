@@ -23,7 +23,7 @@ internal static class SourceBuilder
             using System;
             using System.Reflection;
             using Terminus;
-                        using Terminus.Strategies;
+            using Terminus.Strategies;
 
             {{GenerateMediatorTypeDeclarations(entryPointMethodInfos, mediators)}}
 

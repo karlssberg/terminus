@@ -118,8 +118,10 @@ internal static class ServiceRegistrationBuilder
     {
         return entryPointMethodInfos
             .Where(ep => !ep.MethodSymbol.ContainingType.IsStatic)
-            .Select(ep => SyntaxFactory.ParseStatement(
-                $"services.AddTransient<{ep.MethodSymbol.ContainingType.ToDisplayString()}>();"))
+            .Select(ep => ep.MethodSymbol.ContainingType.ToDisplayString())
+            .Distinct()
+            .Select(containingType => SyntaxFactory.ParseStatement(
+                $"services.AddTransient<{containingType}>();"))
             .ToSyntaxList();
     }
 
