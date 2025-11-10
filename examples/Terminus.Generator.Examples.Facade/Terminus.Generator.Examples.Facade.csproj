@@ -5,7 +5,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <RootNamespace>Terminus.Generator.Examples.Mediator</RootNamespace>
+        <RootNamespace>Terminus.Generator.Examples.Facade</RootNamespace>
     </PropertyGroup>
 
     <PropertyGroup>

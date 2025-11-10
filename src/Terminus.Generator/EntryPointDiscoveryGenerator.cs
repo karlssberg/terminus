@@ -9,17 +9,17 @@ namespace Terminus.Generator;
 [Generator]
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
-    private const string BaseAttributeFullName = "Terminus.EntryPointAttribute";
-    private const string AutoGenerateAttributeFullName = "Terminus.EntryPointFacadeAttribute";
+    private const string EntryPointAttributeFullName = "Terminus.EntryPointAttribute";
+    private const string FacadeAttributeFullName = "Terminus.FacadeAttribute";
+    private const string ScopedFacadeAttributeFullName = "Terminus.ScopedFacadeAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Discover mediator interfaces marked with [EntryPointFacade]
-        var discoveredMediators = context.SyntaxProvider
-            .ForAttributeWithMetadataName( 
-                fullyQualifiedMetadataName: AutoGenerateAttributeFullName,
-                predicate: static (node, _) => IsCandidateMediatorInterface(node),
-                transform: GetMediatorInterfaceInfo)
+        // Discover facade interfaces marked with [Facade]
+        var discoveredFacades = context.SyntaxProvider
+            .CreateSyntaxProvider( 
+                predicate: static (node, _) => IsCandidateFacadeInterface(node),
+                transform: GetFacadeInterfaceInfo)
             .Where(static m => m.HasValue)
             .Select((m, _) => m!.Value)
             .Collect();
@@ -34,52 +34,57 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             .Collect();
 
         // Combine both providers
-        var combined = discoveredMediators.Combine(discoveredMethods);
+        var combined = discoveredFacades.Combine(discoveredMethods);
 
         context.RegisterSourceOutput(combined, Execute);
     }
 
-    private static bool IsCandidateMethod(SyntaxNode node) =>
-        node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
-
-    private static bool IsCandidateMediatorInterface(SyntaxNode node) =>
+    private static bool IsCandidateFacadeInterface(SyntaxNode node) =>
         node is InterfaceDeclarationSyntax { AttributeLists.Count: > 0 } @interface &&
         @interface.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
 
-    private static MediatorInterfaceInfo? GetMediatorInterfaceInfo(
-        GeneratorAttributeSyntaxContext context,
+    private static bool IsCandidateMethod(SyntaxNode node) =>
+        node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
+
+    private static FacadeInterfaceInfo? GetFacadeInterfaceInfo(
+        GeneratorSyntaxContext context,
         CancellationToken ct)
     {
-        var typeByMetadataName = context.SemanticModel.Compilation
-            .GetTypeByMetadataName("System.IAsyncDisposable");
+        var entryPointTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName(EntryPointAttributeFullName)
+                                   ?? throw new InvalidOperationException($"{EntryPointAttributeFullName} not found");
+        
+        var facadeAttributeTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName(FacadeAttributeFullName) 
+                                        ?? throw new InvalidOperationException($"{FacadeAttributeFullName} not found");
+        
+        var scopedFacadeAttributeTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName(ScopedFacadeAttributeFullName)
+                                               ??  throw new InvalidOperationException($"{ScopedFacadeAttributeFullName} not found");
+        
+        var typeByMetadataName = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
         var dotnetFeatures = 
             typeByMetadataName is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
-        
-        if (context.TargetSymbol is not INamedTypeSymbol interfaceSymbol)
+
+        if (context.SemanticModel.GetDeclaredSymbol(context.Node, ct) is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [EntryPointFacade] or derived attribute
-        foreach (var attributeData in interfaceSymbol.GetAttributes())
+        // Find [Facade] or    derived attribute
+        foreach (var facadeAttributeData in interfaceSymbol.GetAttributes())
         {
-            if (!InheritsFromAutoGenerateAttribute(attributeData.AttributeClass)) continue;
+            var facadeAttributeMatch =
+                GetSelfOrBaseType(
+                    facadeAttributeData.AttributeClass, 
+                    facadeAttributeTypeSymbol, 
+                    scopedFacadeAttributeTypeSymbol);
+            if (facadeAttributeMatch is null) 
+                continue;
             
-            // Get the EntryPointAttribute type from the mediator attribute
-            var entryPointAttrType = GetEntryPointAttributeType(attributeData, context.SemanticModel.Compilation);
-
-            if (entryPointAttrType == null)
-                return null;
-
-            // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
-            var isScoped = attributeData.NamedArguments
-                .Where(namedArg => namedArg is { Key: "Scoped" })
-                .Select(namedArg => namedArg.Value.Value)
-                .OfType<bool?>()
-                .FirstOrDefault() ?? true;
+            // Determine scoping behavior from [Facade] attribute (default: true)
+            var isScoped = SymbolEqualityComparer.Default.Equals(facadeAttributeMatch, scopedFacadeAttributeTypeSymbol);
+            var entryPointAttrType = facadeAttributeData.GetNamedArgument<INamedTypeSymbol?>("EntryPointAttributeType")
+                                     ?? entryPointTypeSymbol;
             
-
-            return new MediatorInterfaceInfo(
+            return new FacadeInterfaceInfo(
                 interfaceSymbol,
-                attributeData,
+                facadeAttributeData,
                 entryPointAttrType,
                 dotnetFeatures,
                 isScoped
@@ -88,54 +93,23 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
         return null;
     }
-
-    private static INamedTypeSymbol? GetEntryPointAttributeType(
-        AttributeData entryPointFacadeAttribute,
-        Compilation compilation)
-    {
-        // Check EntryPointFacadeAttribute's named property: EntryPointAttribute = typeof(CommandAttribute)
-        foreach (var namedArg in entryPointFacadeAttribute.NamedArguments)
-        {
-            if (namedArg is { Key: "EntryPointAttribute", Value.Value: INamedTypeSymbol typeSymbol })
-            {
-                return typeSymbol;
-            }
-        }
-        
-        // Default to base EntryPointAttribute
-        return compilation.GetTypeByMetadataName(BaseAttributeFullName);
-    }
     
-    private static bool GetAttributeOrBaseAttribute(
-        AttributeData attribute,
-        string baseAttributeName)
+    private static INamedTypeSymbol? GetSelfOrBaseType(
+        INamedTypeSymbol? attributeClass, 
+        params IEnumerable<INamedTypeSymbol> types)
     {
-        var attributeClass = attribute.AttributeClass;
-
-        while (attributeClass != null)
-        {
-            if (attributeClass.Name == baseAttributeName)
-                return true;
-
-            attributeClass = attributeClass.BaseType;
-        }
-
-        return false;
-    }
-
-    private static bool InheritsFromAutoGenerateAttribute(INamedTypeSymbol? attributeClass)
-    {
+        var typeSet =  new HashSet<INamedTypeSymbol>(types,  SymbolEqualityComparer.Default);
         var current = attributeClass;
 
         while (current is not null)
         {
-            if (current.ToDisplayString() == AutoGenerateAttributeFullName)
-                return true;
+            if (typeSet.Contains(current))
+                return current;
 
             current = current.BaseType;
         }
 
-        return false;
+        return null;
     }
 
     private static EntryPointMethodInfo? GetMethodWithDerivedAttribute(
@@ -175,7 +149,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         
         while (current != null)
         {
-            if (current.ToDisplayString() == BaseAttributeFullName)
+            if (current.ToDisplayString() == EntryPointAttributeFullName)
                 return true;
 
             current = current.BaseType;
@@ -186,11 +160,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private static void Execute(
         SourceProductionContext context,
-        (ImmutableArray<MediatorInterfaceInfo> Mediators, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
+        (ImmutableArray<FacadeInterfaceInfo> Facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
     {
-        var (mediators, entryPoints) = data;
+        var (facades, entryPoints) = data;
 
-        if (entryPoints.IsEmpty && mediators.IsEmpty)
+        if (entryPoints.IsEmpty && facades.IsEmpty)
             return;
 
         // Group entry points by their attribute type (exact match)
@@ -203,7 +177,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
         
-        var autoGenerateAttributeTypesDictionary = mediators
+        var autoGenerateAttributeTypesDictionary = facades
             .GroupBy(m => m.EntryPointAttributeType, (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
             .ToDictionary(
                 g => g.Key,
@@ -215,14 +189,14 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             var entryPointAttributeType = keyValuePair.Key!;
             var entryPointMethodInfos = keyValuePair.Value;
             
-            // Generate mediator implementation
+            // Generate facade implementation
             var entryPointsContext =
                 new EntryPointsContext(entryPointAttributeType)
                 {
                     EntryPointMethodInfos = entryPointMethodInfos,
-                    Mediators = autoGenerateAttributeTypesDictionary
-                        .TryGetValue(entryPointAttributeType, out var entryPointAttributeMediators)
-                            ? entryPointAttributeMediators
+                    Facades = autoGenerateAttributeTypesDictionary
+                        .TryGetValue(entryPointAttributeType, out var entryPointAttributeFacades)
+                            ? entryPointAttributeFacades
                             : []
                 };
             

@@ -7,14 +7,14 @@ var services = new ServiceCollection();
 services.AddEntryPoints();
 
 var serviceProvider = services.BuildServiceProvider();
-var mediator = serviceProvider.GetRequiredService<IMediator>();
+var facade = serviceProvider.GetRequiredService<IFacade>();
     
-mediator.Handle("hello world");
+facade.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [EntryPointFacade]
-    public partial interface IMediator;
+    [Facade]
+    public partial interface IFacade;
 
     public class MyService
     {

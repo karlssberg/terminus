@@ -4,6 +4,13 @@ namespace Terminus.Generator;
 
 internal static class SymbolExtensions
 {
+    internal static T? GetNamedArgument<T>(this AttributeData attributeData, string argName) =>
+        attributeData.NamedArguments
+            .Where(namedArg => namedArg.Key == argName)
+            .Select(namedArg => namedArg.Value.Value)
+            .OfType<T>()
+            .FirstOrDefault();
+
     internal static string ToIdentifierString(this INamedTypeSymbol symbol) => symbol.ToDisplayString()
         .ToIdentifierString();
     

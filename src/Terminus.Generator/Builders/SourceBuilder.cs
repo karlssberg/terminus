@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Terminus.Generator.Builders.MediatorBuilder;
+using static Terminus.Generator.Builders.FacadeBuilder;
 using static Terminus.Generator.Builders.ServiceRegistrationBuilder;
 
 namespace Terminus.Generator.Builders;
@@ -13,7 +13,7 @@ internal static class SourceBuilder
     {
         var entryPointAttributeType = entryPointsContext.EntryPointAttributeType;
         var entryPointMethodInfos = entryPointsContext.EntryPointMethodInfos;
-        var mediators = entryPointsContext.Mediators;
+        var facades = entryPointsContext.Facades;
 
         var rawCompilationUnit =
           $$"""
@@ -25,13 +25,13 @@ internal static class SourceBuilder
             using Terminus;
             using Terminus.Strategies;
 
-            {{GenerateMediatorTypeDeclarations(entryPointMethodInfos, mediators)}}
+            {{GenerateFacadeTypeDeclarations(entryPointMethodInfos, facades)}}
 
             namespace Terminus
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    {{CreateAddEntryPointsMethods(entryPointAttributeType, mediators, entryPointMethodInfos)}}
+                    {{CreateAddEntryPointsMethods(entryPointAttributeType, facades, entryPointMethodInfos)}}
                 }
             }
             """;

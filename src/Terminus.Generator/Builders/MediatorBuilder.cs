@@ -6,48 +6,48 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator.Builders;
 
-internal static class MediatorBuilder
+internal static class FacadeBuilder
 {
-    internal static SyntaxList<NamespaceDeclarationSyntax> GenerateMediatorTypeDeclarations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos, ImmutableArray<MediatorInterfaceInfo> mediators)
+    internal static SyntaxList<NamespaceDeclarationSyntax> GenerateFacadeTypeDeclarations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos, ImmutableArray<FacadeInterfaceInfo> facades)
     {
-        return mediators
-            .Select(mediator => GenerateMediatorTypeDeclarations(mediator, entryPointMethodInfos))
+        return facades
+            .Select(facade => GenerateFacadeTypeDeclarations(facade, entryPointMethodInfos))
             .ToSyntaxList();
     }
     
-    private static NamespaceDeclarationSyntax GenerateMediatorTypeDeclarations(MediatorInterfaceInfo mediator, ImmutableArray<EntryPointMethodInfo> matchingEntryPoints)
+    private static NamespaceDeclarationSyntax GenerateFacadeTypeDeclarations(FacadeInterfaceInfo facade, ImmutableArray<EntryPointMethodInfo> matchingEntryPoints)
     {
-        var interfaceNamespace = mediator.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
-                GenerateMediatorInterfaceExtensionDeclaration(mediator, matchingEntryPoints),
-                GenerateMediatorClassImplementationWithScope(mediator, matchingEntryPoints)
+                GenerateFacadeInterfaceExtensionDeclaration(facade, matchingEntryPoints),
+                GenerateFacadeClassImplementationWithScope(facade, matchingEntryPoints)
             ])
             .NormalizeWhitespace();
     }
 
-    private static InterfaceDeclarationSyntax GenerateMediatorInterfaceExtensionDeclaration(
-        MediatorInterfaceInfo mediatorInfo,
+    private static InterfaceDeclarationSyntax GenerateFacadeInterfaceExtensionDeclaration(
+        FacadeInterfaceInfo facadeInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
-        return InterfaceDeclaration(mediatorInfo.InterfaceSymbol.Name)
+        return InterfaceDeclaration(facadeInfo.InterfaceSymbol.Name)
             .WithModifiers(TokenList(Token(
                     SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
-            .WithMembers(GenerateInterfaceMediatorMethods(entryPoints).ToSyntaxList())
+            .WithMembers(GenerateInterfaceFacadeMethods(entryPoints).ToSyntaxList())
             .NormalizeWhitespace();
     }
 
-    private static ClassDeclarationSyntax GenerateMediatorClassImplementationWithScope(
-        MediatorInterfaceInfo mediatorInfo,
+    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithScope(
+        FacadeInterfaceInfo facadeInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
-        var entryPointAttributeType = mediatorInfo.EntryPointAttributeType.ToDisplayString();
-        var implementationClassName = mediatorInfo.GetImplementationClassName();
+        var entryPointAttributeType = facadeInfo.EntryPointAttributeType.ToDisplayString();
+        var implementationClassName = facadeInfo.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(mediatorInfo.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeInfo.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
@@ -60,11 +60,11 @@ internal static class MediatorBuilder
                           _dispatcher = dispatcher;
                       }
                       """)!,
-                ..GenerateImplementationMediatorMethods(mediatorInfo, entryPoints)
+                ..GenerateImplementationFacadeMethods(facadeInfo, entryPoints)
             ]);
     }
 
-    private static IEnumerable<MemberDeclarationSyntax> GenerateInterfaceMediatorMethods(
+    private static IEnumerable<MemberDeclarationSyntax> GenerateInterfaceFacadeMethods(
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
@@ -91,15 +91,15 @@ internal static class MediatorBuilder
         }
     }
     
-    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationMediatorMethods(
-        MediatorInterfaceInfo mediatorInfo,
+    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(
+        FacadeInterfaceInfo facadeInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
         foreach (var entryPoint in entryPoints)
         {
             returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
-            yield return GenerateEntryPointMethodImplementationDefinition(mediatorInfo, entryPoint);
+            yield return GenerateEntryPointMethodImplementationDefinition(facadeInfo, entryPoint);
         }
         
         foreach (var returnTypeKind in returnTypeKindsDiscovered)
@@ -229,8 +229,8 @@ internal static class MediatorBuilder
     }
 
 
-    private static ClassDeclarationSyntax GenerateMediatorClassImplementationWithoutContext(
-        MediatorInterfaceInfo mediatorInfo,
+    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithoutContext(
+        FacadeInterfaceInfo facadeInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         var types = entryPoints
@@ -254,10 +254,10 @@ internal static class MediatorBuilder
                 $"_{identifier} = {identifier};"))
             .ToSyntaxList();
         
-        var implementationClassName = mediatorInfo.GetImplementationClassName();
+        var implementationClassName = facadeInfo.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(mediatorInfo.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeInfo.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ..fields,
@@ -268,13 +268,13 @@ internal static class MediatorBuilder
                           {{fieldAssignments}}
                       }
                       """)!,
-                ..entryPoints.Select(ep => GenerateEntryPointMethodImplementationDefinition(mediatorInfo, ep)),
+                ..entryPoints.Select(ep => GenerateEntryPointMethodImplementationDefinition(facadeInfo, ep)),
             ])
             .NormalizeWhitespace();
     }
 
     private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(
-        MediatorInterfaceInfo mediatorInfo,
+        FacadeInterfaceInfo facadeInfo,
         EntryPointMethodInfo entryPoint)
     {
         // Build return type
@@ -304,7 +304,7 @@ internal static class MediatorBuilder
 
         IEnumerable<StatementSyntax> GenerateBody()
         {
-            var serviceProviderExpression = mediatorInfo.Scoped
+            var serviceProviderExpression = facadeInfo.Scoped
                 ? "scope.ServiceProvider"
                 : "_serviceProvider";
             
@@ -356,7 +356,7 @@ internal static class MediatorBuilder
                 yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
             }
 
-            if (!mediatorInfo.Scoped)
+            if (!facadeInfo.Scoped)
             {
                 yield return innerStatement;
                 yield break;
@@ -368,7 +368,7 @@ internal static class MediatorBuilder
                     innerStatement,
                 
                 { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable } 
-                    when mediatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
+                    when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
                     GenerateUsingStatementWithCreateAsyncScope(innerStatement),
                 
                 _ => GenerateUsingStatementWithCreateScope(innerStatement)

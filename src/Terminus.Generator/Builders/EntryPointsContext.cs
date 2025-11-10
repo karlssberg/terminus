@@ -7,5 +7,5 @@ internal record EntryPointsContext(INamedTypeSymbol EntryPointAttributeType)
 {
     public INamedTypeSymbol EntryPointAttributeType { get; } = EntryPointAttributeType;
     public ImmutableArray<EntryPointMethodInfo> EntryPointMethodInfos { get; set; } = [];
-    public ImmutableArray<MediatorInterfaceInfo> Mediators { get; set;  } = [];
+    public ImmutableArray<FacadeInterfaceInfo> Facades { get; set;  } = [];
 }

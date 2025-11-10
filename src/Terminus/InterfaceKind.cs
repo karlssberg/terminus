@@ -2,6 +2,6 @@ namespace Terminus;
 
 public enum InterfaceKind
 {
-    Mediator,
+    Facade,
     EventPublisher
 }

@@ -44,7 +44,7 @@ internal static class ServiceRegistrationBuilder
 
     internal static string CreateAddEntryPointsMethods(
         INamedTypeSymbol entryPointAttributeType,
-        ImmutableArray<MediatorInterfaceInfo> mediators,
+        ImmutableArray<FacadeInterfaceInfo> facades,
         ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos)
     {
         var entryPointAttributeTypeDisplay = entryPointAttributeType.ToDisplayString();
@@ -69,7 +69,7 @@ internal static class ServiceRegistrationBuilder
                 
                 {{GenerateEntryPointContainingTypeRegistrations(entryPointMethodInfos)}}
 
-                {{GenerateMediatorServiceRegistrations(mediators)}}
+                {{GenerateFacadeServiceRegistrations(facades)}}
 
                 return services;
             }
@@ -125,11 +125,11 @@ internal static class ServiceRegistrationBuilder
             .ToSyntaxList();
     }
 
-    private static SyntaxList<ExpressionStatementSyntax> GenerateMediatorServiceRegistrations(ImmutableArray<MediatorInterfaceInfo> mediators)
+    private static SyntaxList<ExpressionStatementSyntax> GenerateFacadeServiceRegistrations(ImmutableArray<FacadeInterfaceInfo> facades)
     {
-        return mediators
-            .Select(mediator => SyntaxFactory.ParseExpression(
-                $"services.AddSingleton<{mediator.InterfaceSymbol.ToDisplayString()}, {mediator.GetImplementationClassFullName()}>()"))
+        return facades
+            .Select(facade => SyntaxFactory.ParseExpression(
+                $"services.AddSingleton<{facade.InterfaceSymbol.ToDisplayString()}, {facade.GetImplementationClassFullName()}>()"))
             .Select(SyntaxFactory.ExpressionStatement)
             .ToSyntaxList();
     }
