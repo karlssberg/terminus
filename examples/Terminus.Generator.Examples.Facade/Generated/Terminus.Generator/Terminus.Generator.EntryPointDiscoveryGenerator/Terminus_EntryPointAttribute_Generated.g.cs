@@ -28,10 +28,7 @@ namespace Terminus.Generator.Examples.HelloWorld
 
         public void Handle(string message)
         {
-            using (var scope = _serviceProvider.CreateScope())
-            {
-                scope.ServiceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(message);
-            }
+            _serviceProvider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(message);
         }
 
         public async System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken)

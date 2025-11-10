@@ -31,7 +31,7 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    [Facade(EntryPointAttribute = typeof(MyHttpPostAttribute))]
+    [Facade(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
     public partial interface IDispatcher;
     
     [AttributeUsage(AttributeTargets.Method)]
