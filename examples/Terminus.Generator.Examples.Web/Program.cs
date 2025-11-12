@@ -3,7 +3,7 @@ using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTransient<CustomRouter>();
-builder.Services.AddEntryPoints<MyHttpPostAttribute>();
+builder.Services.AddEntryPointFacade<MyHttpPostAttribute>();
 
 var app = builder.Build();
 
@@ -14,16 +14,14 @@ app.Use(async (HttpContext context, RequestDelegate _) =>
     var router = context.RequestServices.GetRequiredService<CustomRouter>();
     
     foreach (var entryPoint in entryPoints)
-    foreach (var attribute in entryPoint.Attributes)
     {
-        router.AddRoute(attribute.Path, httpContext =>
+        router.AddRoute(entryPoint.Attribute.Path, httpContext =>
         {
             var routeValues = httpContext.Request.RouteValues.ToDictionary(x => x.Key, x => x.Value);
             dispatcher.Publish(new ParameterBindingContext(routeValues), CancellationToken.None);
             return Task.CompletedTask;
         });
     }
-    await using (var scope = app.Services.CreateAsyncScope());
     await router.RouteAsync(context);
 });
 
@@ -31,7 +29,7 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    [Facade(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
+    [EntryPointFacade(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
     public partial interface IDispatcher;
     
     [AttributeUsage(AttributeTargets.Method)]

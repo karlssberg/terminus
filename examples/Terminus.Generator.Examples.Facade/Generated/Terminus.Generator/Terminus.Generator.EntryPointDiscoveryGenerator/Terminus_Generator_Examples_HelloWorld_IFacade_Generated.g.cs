@@ -19,8 +19,8 @@ namespace Terminus.Generator.Examples.HelloWorld
     internal sealed class IFacade_Generated : Terminus.Generator.Examples.HelloWorld.IFacade
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-        public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+        private readonly Terminus.Dispatcher<Terminus.Generator.Examples.HelloWorld.IFacade> _dispatcher;
+        public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.Generator.Examples.HelloWorld.IFacade> dispatcher)
         {
             _serviceProvider = serviceProvider;
             _dispatcher = dispatcher;
@@ -55,7 +55,7 @@ namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
-        private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        private static IServiceCollection AddEntryPointFacadeFor_Terminus_Generator_Examples_HelloWorld_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
             services.AddSingleton(provider =>
             {
@@ -63,11 +63,10 @@ namespace Terminus
                 configure?.Invoke(resolver);
                 return resolver;
             });
-            services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-            services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-            services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-            services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyService).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
-            services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyOtherService).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
+            services.AddTransient<Dispatcher<Terminus.Generator.Examples.HelloWorld.IFacade>>();
+            services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IFacade>, DefaultEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IFacade>>();
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyService).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyOtherService).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyService>();
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyOtherService>();
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IFacade, Terminus.Generator.Examples.HelloWorld.IFacade_Generated>();

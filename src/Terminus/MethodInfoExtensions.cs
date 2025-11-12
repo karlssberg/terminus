@@ -12,7 +12,7 @@ public static class MethodInfoExtensions
         
         foreach (var param in parameters)
         {
-            if (!namedArgs.TryGetValue(param.Name, out var argValue))
+            if (!namedArgs.TryGetValue(param.Name!, out var argValue))
             {
                 // If parameter is required (no default value), we can't invoke
                 if (!param.IsOptional)

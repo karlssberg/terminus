@@ -19,8 +19,8 @@ namespace Terminus.Generator.Examples.HelloWorld
     internal sealed class IMyListener_Generated : Terminus.Generator.Examples.HelloWorld.IMyListener
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-        public IMyListener_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+        private readonly Terminus.Dispatcher<Terminus.Generator.Examples.HelloWorld.IMyListener> _dispatcher;
+        public IMyListener_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.Generator.Examples.HelloWorld.IMyListener> dispatcher)
         {
             _serviceProvider = serviceProvider;
             _dispatcher = dispatcher;
@@ -55,7 +55,7 @@ namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
-        private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        private static IServiceCollection AddEntryPointFacadeFor_Terminus_Generator_Examples_HelloWorld_IMyListener(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
             services.AddSingleton(provider =>
             {
@@ -63,11 +63,10 @@ namespace Terminus
                 configure?.Invoke(resolver);
                 return resolver;
             });
-            services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-            services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-            services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-            services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyListener>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
-            services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyListener.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
+            services.AddTransient<Dispatcher<Terminus.Generator.Examples.HelloWorld.IMyListener>>();
+            services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IMyListener>, DefaultEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IMyListener>>();
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IMyListener), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyListener>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IMyListener), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyListener).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyListener.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyListener>();
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IMyListener, Terminus.Generator.Examples.HelloWorld.IMyListener_Generated>();
             return services;

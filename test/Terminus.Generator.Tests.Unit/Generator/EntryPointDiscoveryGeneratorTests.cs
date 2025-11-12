@@ -17,7 +17,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedFacade]
+                [ScopedEntryPointFacade]
                 public partial interface IFacade;
                 
                 public static class TestEntryPoints
@@ -52,8 +52,8 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IFacade_Generated : Demo.IFacade
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+                    private readonly Terminus.Dispatcher<Demo.IFacade> _dispatcher;
+                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Demo.IFacade> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
                         _dispatcher = dispatcher;
@@ -77,7 +77,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -85,10 +85,9 @@ public class EntryPointDiscoveryGeneratorTests
                             configure?.Invoke(resolver);
                             return resolver;
                         });
-                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
+                        services.AddTransient<ScopedDispatcher<Demo.IFacade>>();
+                        services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
                     }
@@ -106,20 +105,20 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
+                            case "Demo.IFacade":
+                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
+                        services.AddEntryPointFacadeFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -136,7 +135,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_EntryPointAttribute_Generated.g.cs", 
+            "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
         
         test.TestState.GeneratedSources.Add((
@@ -157,7 +156,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedFacade]
+                [ScopedEntryPointFacade]
                 public partial interface IFacade;
                 
                 public static class TestEntryPoints
@@ -192,8 +191,8 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IFacade_Generated : Demo.IFacade
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+                    private readonly Terminus.Dispatcher<Demo.IFacade> _dispatcher;
+                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Demo.IFacade> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
                         _dispatcher = dispatcher;
@@ -216,7 +215,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -224,10 +223,9 @@ public class EntryPointDiscoveryGeneratorTests
                             configure?.Invoke(resolver);
                             return resolver;
                         });
-                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddTransient<ScopedDispatcher<Demo.IFacade>>();
+                        services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
                     }
@@ -245,20 +243,20 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
+                            case "Demo.IFacade":
+                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
+                        services.AddEntryPointFacadeFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -275,7 +273,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_EntryPointAttribute_Generated.g.cs", 
+            "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
         
         test.TestState.GeneratedSources.Add((
@@ -297,7 +295,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedFacade]
+                [ScopedEntryPointFacade]
                 public partial interface IFacade;
                 
                 public class TestEntryPoints
@@ -349,8 +347,8 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IFacade_Generated : Demo.IFacade
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+                    private readonly Terminus.Dispatcher<Demo.IFacade> _dispatcher;
+                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Demo.IFacade> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
                         _dispatcher = dispatcher;
@@ -390,7 +388,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -398,11 +396,10 @@ public class EntryPointDiscoveryGeneratorTests
                             configure?.Invoke(resolver);
                             return resolver;
                         });
-                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddTransient<ScopedDispatcher<Demo.IFacade>>();
+                        services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
@@ -421,20 +418,20 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
+                            case "Demo.IFacade":
+                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
+                        services.AddEntryPointFacadeFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -451,7 +448,7 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_EntryPointAttribute_Generated.g.cs", 
+            "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
        
         test.TestState.GeneratedSources.Add((
@@ -474,7 +471,7 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [Facade]
+                [EntryPointFacade]
                 public partial interface IFacade;
                 
                 public class TestEntryPoints
@@ -532,8 +529,8 @@ public class EntryPointDiscoveryGeneratorTests
                 internal sealed class IFacade_Generated : Demo.IFacade
                 {
                     private readonly IServiceProvider _serviceProvider;
-                    private readonly Terminus.Dispatcher<Terminus.EntryPointAttribute> _dispatcher;
-                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Terminus.EntryPointAttribute> dispatcher)
+                    private readonly Terminus.Dispatcher<Demo.IFacade> _dispatcher;
+                    public IFacade_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Demo.IFacade> dispatcher)
                     {
                         _serviceProvider = serviceProvider;
                         _dispatcher = dispatcher;
@@ -553,7 +550,7 @@ public class EntryPointDiscoveryGeneratorTests
                     {
                         await _serviceProvider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync().ConfigureAwait(false);
                     }
-          
+            
                     public async System.Threading.Tasks.Task<string> HelloAsync(string world)
                     {
                         return await _serviceProvider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(world).ConfigureAwait(false);
@@ -589,7 +586,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Terminus_EntryPointAttribute(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -597,13 +594,12 @@ public class EntryPointDiscoveryGeneratorTests
                             configure?.Invoke(resolver);
                             return resolver;
                         });
-                        services.AddTransient<ScopedDispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<Dispatcher<Terminus.EntryPointAttribute>>();
-                        services.AddTransient<IEntryPointRouter<Terminus.EntryPointAttribute>, DefaultEntryPointRouter<Terminus.EntryPointAttribute>>();
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
-                        services.AddSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(provider => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddTransient<Dispatcher<Demo.IFacade>>();
+                        services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
@@ -622,20 +618,20 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                         where T : EntryPointAttribute
                     {
                         switch (typeof(T).FullName)
                         {
-                            case "Terminus.EntryPointAttribute":
-                                return services.AddEntryPointsFor_Terminus_EntryPointAttribute(configure);
+                            case "Demo.IFacade":
+                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
                         };
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointsFor_Terminus_EntryPointAttribute();
+                        services.AddEntryPointFacadeFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -652,7 +648,83 @@ public class EntryPointDiscoveryGeneratorTests
 
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
-            "Terminus_EntryPointAttribute_Generated.g.cs", 
+            "Demo_IFacade_Generated.g.cs", 
+            SourceText.From(expectedMainSource, Encoding.UTF8)));
+       
+        test.TestState.GeneratedSources.Add((
+            typeof(EntryPointDiscoveryGenerator), 
+            "__EntryPointServiceRegistration_Generated.g.cs",
+            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
+        
+
+        await test.RunAsync();
+    }
+    
+    [Fact]
+    public async Task Given_the_entry_point_attribute_is_derived_Should_generate_facade_methods()
+    {
+        const string source =
+            """
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [EntryPointFacade(EntryPointAttributes = typeof(MyEntryPointAttribute))]
+                public partial interface IFacade;
+                
+                public class MyEntryPointAttribute : EntryPointAttribute;
+                
+                public class TestEntryPoints
+                {
+                    [MyEntryPoint]
+                    public void Hello() 
+                    {
+                    }
+                    
+                    [MyEntryPoint]
+                    public string Hello(string world) 
+                    { 
+                        return world;
+                    }
+            
+                    [MyEntryPoint]
+                    public Task HelloAsync() 
+                    { 
+                        return Task.CompletedTask;
+                    }
+                    
+                    [MyEntryPoint]
+                    public async Task<string> HelloAsync(string world) 
+                    { 
+                        return await Task.FromResult(world);
+                    }
+                }
+            }
+            """;
+        
+        const string expectedMainSource =
+          $$"""
+            
+            """;
+        
+        const string expectedServiceRegistrationSource =
+            """
+            
+            """;
+
+    var test = new TerminusSourceGeneratorTest<EntryPointDiscoveryGenerator>
+        {
+            TestState =
+            {
+                Sources = { source }
+            }
+        };
+
+        test.TestState.GeneratedSources.Add((
+            typeof(EntryPointDiscoveryGenerator), 
+            "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
        
         test.TestState.GeneratedSources.Add((

@@ -2,56 +2,67 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator.Builders;
 
 internal static class ServiceRegistrationBuilder
 {
     internal static SwitchStatementSyntax GenerateRegistrationMethodSelector(
-        ImmutableArray<INamedTypeSymbol> entryPointAttributeTypes)
+        ImmutableArray<FacadeInterfaceInfo> facades)
     {
         var switchExpression =
-            SyntaxFactory.SwitchStatement(SyntaxFactory.ParseExpression("typeof(T).FullName"))
-                .AddSections(entryPointAttributeTypes
-                    .Select(attributeType =>
-                        SyntaxFactory.SwitchSection()
+            SwitchStatement(ParseExpression("typeof(T).FullName"))
+                .AddSections(facades
+                    .Select(facadeInfo =>
+                        SwitchSection()
                             .AddLabels(
-                                SyntaxFactory.CaseSwitchLabel(SyntaxFactory.LiteralExpression(
+                                CaseSwitchLabel(LiteralExpression(
                                     SyntaxKind.StringLiteralExpression,
-                                    SyntaxFactory.Literal(attributeType.ToDisplayString()))))
+                                    Literal(facadeInfo.InterfaceSymbol.ToDisplayString()))))
                             .AddStatements(
-                                SyntaxFactory.ReturnStatement(
-                                    SyntaxFactory.InvocationExpression(
-                                            SyntaxFactory.MemberAccessExpression(
+                                ReturnStatement(
+                                    InvocationExpression(
+                                            MemberAccessExpression(
                                                 SyntaxKind.SimpleMemberAccessExpression,
-                                                SyntaxFactory.IdentifierName("services"),
-                                                SyntaxFactory.IdentifierName(
-                                                    $"AddEntryPointsFor_{attributeType.ToIdentifierString()}")))
-                                        .WithArgumentList(SyntaxFactory.ParseArgumentList("(configure)")))))
+                                                IdentifierName("services"),
+                                                IdentifierName(
+                                                    $"AddEntryPointFacadeFor_{facadeInfo.InterfaceSymbol.ToIdentifierString()}")))
+                                        .WithArgumentList(ParseArgumentList("(configure)")))))
                     .ToArray())
                 .NormalizeWhitespace();
         return switchExpression;
     }
 
-    internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(ImmutableArray<INamedTypeSymbol> entryPointAttributeTypes)
+    
+    private static ExpressionStatementSyntax GenerateDispatcherServiceRegistrations(FacadeContext facadeContext)
     {
-        var registerAllEntryPoints = entryPointAttributeTypes
-            .Select(attributeType => SyntaxFactory.ParseStatement(
-                $"services.AddEntryPointsFor_{attributeType.ToIdentifierString()}();"))
+        return ExpressionStatement(
+            ParseExpression(
+                facadeContext.Facade.Scoped
+                    ? $"services.AddTransient<ScopedDispatcher<{facadeContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"
+                    : $"services.AddTransient<Dispatcher<{facadeContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"));
+    }
+
+    internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(
+        ImmutableArray<FacadeInterfaceInfo> facades)
+    {
+        var registerAllEntryPoints = facades
+            .Select(facadeInfo => ParseStatement(
+                $"services.AddEntryPointFacadeFor_{facadeInfo.InterfaceSymbol.ToIdentifierString()}();"))
             .ToSyntaxList();
         return registerAllEntryPoints;
     }
 
-    internal static string CreateAddEntryPointsMethods(
-        INamedTypeSymbol entryPointAttributeType,
-        ImmutableArray<FacadeInterfaceInfo> facades,
-        ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos)
+    internal static string CreateAddEntryPointsMethods(FacadeContext facadeContext)
     {
-        var entryPointAttributeTypeDisplay = entryPointAttributeType.ToDisplayString();
-
+        var facade = facadeContext.Facade;
+        var facadeFullNameIdentifier = facade.InterfaceSymbol.ToIdentifierString();
+        var facadeInterfaceType = facade.InterfaceSymbol.ToDisplayString();
+        
         return
           $$"""
-            private static IServiceCollection AddEntryPointsFor_{{entryPointAttributeType.ToIdentifierString()}}(
+            private static IServiceCollection AddEntryPointFacadeFor_{{facadeFullNameIdentifier}}(
                 this IServiceCollection services,
                 Action<ParameterBindingStrategyResolver>? configure = null)
             {
@@ -61,27 +72,26 @@ internal static class ServiceRegistrationBuilder
                     configure?.Invoke(resolver);
                     return resolver;
                 });
-                services.AddTransient<ScopedDispatcher<{{entryPointAttributeTypeDisplay}}>>();
-                services.AddTransient<Dispatcher<{{entryPointAttributeTypeDisplay}}>>();
-                services.AddTransient<IEntryPointRouter<{{entryPointAttributeTypeDisplay}}>, DefaultEntryPointRouter<{{entryPointAttributeTypeDisplay}}>>();
-
-                {{GenerateEntryPointDescriptorRegistrations(entryPointMethodInfos, entryPointAttributeTypeDisplay)}}
                 
-                {{GenerateEntryPointContainingTypeRegistrations(entryPointMethodInfos)}}
-
-                {{GenerateFacadeServiceRegistrations(facades)}}
+                {{GenerateDispatcherServiceRegistrations(facadeContext)}}
+                services.AddTransient<IEntryPointRouter<{{facadeInterfaceType}}>, DefaultEntryPointRouter<{{facadeInterfaceType}}>>();
+                {{GenerateEntryPointDescriptorRegistrations(facadeContext)}}
+                {{GenerateEntryPointContainingTypeRegistrations(facadeContext)}}
+                services.AddSingleton<{{facade.InterfaceSymbol.ToDisplayString()}}, {{facade.GetImplementationClassFullName()}}>();
 
                 return services;
             }
             """;
     }
 
-    private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos,
-        string attributeTypeName)
+    private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(FacadeContext facadeContext)
     {
+        var facadeInterfaceType = facadeContext.Facade.InterfaceSymbol.ToDisplayString();
+        var entryPointMethodInfos = facadeContext.EntryPointMethodInfos;
         var entryPointDescriptorRegistrations = entryPointMethodInfos
             .Select(ep =>
             {
+                var attributeTypeName = ep.AttributeData.AttributeClass!.ToDisplayString();
                 var methodName = ep.MethodSymbol.Name;
                 var containingType = ep.MethodSymbol.ContainingType.ToDisplayString();
                 var paramTypes = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
@@ -99,38 +109,30 @@ internal static class ServiceRegistrationBuilder
                     ? $"{containingType}.{methodName}({parameterInvocations})"
                     : $"provider.GetRequiredService<{containingType}>().{methodName}({parameterInvocations})";
                     
-                var invokeExpression = SyntaxFactory.ParseExpression(invokeExpressionSnippet);
+                var invokeExpression = ParseExpression(invokeExpressionSnippet);
 
                 var registrationExpressionStatement =
                     $"""
-                     services.AddSingleton<EntryPointDescriptor<{attributeTypeName}>>(provider =>
+                     services.AddKeyedSingleton<EntryPointDescriptor<{attributeTypeName}>>(typeof({facadeInterfaceType}), (provider, key) =>
                         new EntryPointDescriptor<{attributeTypeName}>(
                             typeof({containingType}).GetMethod("{methodName}", {paramArray})!,
                             (context, ct) => {invokeExpression}));
                      """;
-                return SyntaxFactory.ParseStatement(registrationExpressionStatement);
+                return ParseStatement(registrationExpressionStatement);
             })
             .ToSyntaxList();
         return entryPointDescriptorRegistrations;
     }
 
-    private static SyntaxList<StatementSyntax> GenerateEntryPointContainingTypeRegistrations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos)
+
+    private static SyntaxList<StatementSyntax> GenerateEntryPointContainingTypeRegistrations(FacadeContext facadeContext)
     {
-        return entryPointMethodInfos
+        return facadeContext.EntryPointMethodInfos
             .Where(ep => !ep.MethodSymbol.ContainingType.IsStatic)
             .Select(ep => ep.MethodSymbol.ContainingType.ToDisplayString())
             .Distinct()
-            .Select(containingType => SyntaxFactory.ParseStatement(
+            .Select(containingType => ParseStatement(
                 $"services.AddTransient<{containingType}>();"))
-            .ToSyntaxList();
-    }
-
-    private static SyntaxList<ExpressionStatementSyntax> GenerateFacadeServiceRegistrations(ImmutableArray<FacadeInterfaceInfo> facades)
-    {
-        return facades
-            .Select(facade => SyntaxFactory.ParseExpression(
-                $"services.AddSingleton<{facade.InterfaceSymbol.ToDisplayString()}, {facade.GetImplementationClassFullName()}>()"))
-            .Select(SyntaxFactory.ExpressionStatement)
             .ToSyntaxList();
     }
 }

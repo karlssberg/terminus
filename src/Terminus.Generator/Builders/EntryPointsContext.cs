@@ -1,11 +1,9 @@
 using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 
 namespace Terminus.Generator.Builders;
 
-internal record EntryPointsContext(INamedTypeSymbol EntryPointAttributeType)
+internal record FacadeContext(FacadeInterfaceInfo Facade)
 {
-    public INamedTypeSymbol EntryPointAttributeType { get; } = EntryPointAttributeType;
     public ImmutableArray<EntryPointMethodInfo> EntryPointMethodInfos { get; set; } = [];
-    public ImmutableArray<FacadeInterfaceInfo> Facades { get; set;  } = [];
+    public FacadeInterfaceInfo Facade { get; set;  } = Facade;
 }

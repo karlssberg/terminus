@@ -9,11 +9,8 @@ namespace Terminus.Generator.Builders;
 
 internal static class SourceBuilder
 {
-    internal static CompilationUnitSyntax GenerateEntryPoints(EntryPointsContext entryPointsContext)
+    internal static CompilationUnitSyntax GenerateFacadeEntryPoints(FacadeContext facadeContext)
     {
-        var entryPointAttributeType = entryPointsContext.EntryPointAttributeType;
-        var entryPointMethodInfos = entryPointsContext.EntryPointMethodInfos;
-        var facades = entryPointsContext.Facades;
 
         var rawCompilationUnit =
           $$"""
@@ -25,13 +22,13 @@ internal static class SourceBuilder
             using Terminus;
             using Terminus.Strategies;
 
-            {{GenerateFacadeTypeDeclarations(entryPointMethodInfos, facades)}}
+            {{GenerateFacadeTypeDeclarations(facadeContext)}}
 
             namespace Terminus
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    {{CreateAddEntryPointsMethods(entryPointAttributeType, facades, entryPointMethodInfos)}}
+                    {{CreateAddEntryPointsMethods(facadeContext)}}
                 }
             }
             """;
@@ -39,7 +36,8 @@ internal static class SourceBuilder
         return ParseCompilationUnit(rawCompilationUnit).NormalizeWhitespace();
     }
 
-    internal static CompilationUnitSyntax GenerateServiceRegistrations(ImmutableArray<INamedTypeSymbol> entryPointAttributeTypes)
+    internal static CompilationUnitSyntax GenerateServiceRegistrations(
+        ImmutableArray<FacadeInterfaceInfo> facades)
     {
         var compilationUnit =
           $$"""
@@ -51,20 +49,20 @@ internal static class SourceBuilder
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(
+                    public static IServiceCollection AddEntryPointFacade<T>(
                         this IServiceCollection services,
                         Action<ParameterBindingStrategyResolver>? configure = null) where T : EntryPointAttribute
                     {
-                        {{GenerateRegistrationMethodSelector(entryPointAttributeTypes)}};
+                        {{GenerateRegistrationMethodSelector(facades)}};
                                   
                         throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");   
                     }
                               
-                    public static IServiceCollection AddEntryPoints(
+                    public static IServiceCollection AddEntryPointFacades(
                         this IServiceCollection services,
                         Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        {{GenerateRegistrationsPerAttribute(entryPointAttributeTypes)}}
+                        {{GenerateRegistrationsPerAttribute(facades)}}
                                   
                         return services;
                     }

@@ -67,6 +67,10 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
                 public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
                     where TService : class
                     => services;
+        
+                public static IServiceCollection AddKeyedSingleton<TService>(this IServiceCollection services, object? key, Func<IServiceProvider, object?, TService> implementationFactory)
+                    where TService : class
+                    => services;
                 
                 public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services)
                     where TService : class

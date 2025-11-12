@@ -1,37 +1,38 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Terminus;
 
-public class EntryPointDescriptor<TEntryPointAttribute> where TEntryPointAttribute : EntryPointAttribute
+public class EntryPointDescriptor<TEntryPointAttribute>(
+    MethodInfo methodInfo,
+    Func<ParameterBindingContext, CancellationToken, object?> function)
+    : IEntryPointDescriptor
+    where TEntryPointAttribute : EntryPointAttribute
 {
-    public MethodInfo MethodInfo { get; }
-    public Func<ParameterBindingContext, CancellationToken, object?> Invoker { get; }
-
-    public IEnumerable<TEntryPointAttribute> Attributes { get; }
+    public MethodInfo MethodInfo { get; } = methodInfo;
     
-    public ReturnTypeKind ReturnKind { get; }
+    public ParameterInfo[] Parameters { get; } = methodInfo.GetParameters();
 
-    public EntryPointDescriptor(MethodInfo methodInfo, Action<ParameterBindingContext, CancellationToken> action)
+    public Func<ParameterBindingContext, CancellationToken, object?> Invoker { get; } = function;
+
+    public TEntryPointAttribute Attribute { get; } = methodInfo.GetCustomAttribute<TEntryPointAttribute>()!;
+
+    public ReturnTypeKind ReturnKind { get; } = methodInfo.ResolveReturnTypeKind();
+    
+    public Type EntryPointDescriptorType { get; } = typeof(TEntryPointAttribute);
+
+    public EntryPointDescriptor(MethodInfo methodInfo, Action<ParameterBindingContext, CancellationToken> action) 
+        : this(methodInfo, ConvertToFunc(action))
     {
-        MethodInfo = methodInfo;
-        Invoker = (context, cancellationToken) =>
+    }
+
+    private static Func<ParameterBindingContext, CancellationToken, object?> ConvertToFunc(Action<ParameterBindingContext, CancellationToken> action)
+    {
+        return (context, cancellationToken) =>
         {
             action(context, cancellationToken);
             return null;
         };
-        Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
-        ReturnKind = methodInfo.ResolveReturnTypeKind();
-    }
-
-    public EntryPointDescriptor(MethodInfo methodInfo, Func<ParameterBindingContext, CancellationToken, object?> function)
-    {
-        MethodInfo = methodInfo;
-        Invoker = function;
-        Attributes = methodInfo.GetCustomAttributes<TEntryPointAttribute>();
-        ReturnKind = methodInfo.ResolveReturnTypeKind();
     }
 }

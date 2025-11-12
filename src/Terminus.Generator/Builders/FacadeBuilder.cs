@@ -8,59 +8,49 @@ namespace Terminus.Generator.Builders;
 
 internal static class FacadeBuilder
 {
-    internal static SyntaxList<NamespaceDeclarationSyntax> GenerateFacadeTypeDeclarations(ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos, ImmutableArray<FacadeInterfaceInfo> facades)
+
+    internal static NamespaceDeclarationSyntax GenerateFacadeTypeDeclarations(FacadeContext facadeContext)
     {
-        return facades
-            .Select(facade => GenerateFacadeTypeDeclarations(facade, entryPointMethodInfos))
-            .ToSyntaxList();
-    }
-    
-    private static NamespaceDeclarationSyntax GenerateFacadeTypeDeclarations(FacadeInterfaceInfo facade, ImmutableArray<EntryPointMethodInfo> matchingEntryPoints)
-    {
-        var interfaceNamespace = facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = facadeContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
-                GenerateFacadeInterfaceExtensionDeclaration(facade, matchingEntryPoints),
-                GenerateFacadeClassImplementationWithScope(facade, matchingEntryPoints)
+                GenerateFacadeInterfaceExtensionDeclaration(facadeContext),
+                GenerateFacadeClassImplementationWithScope(facadeContext)
             ])
             .NormalizeWhitespace();
     }
 
-    private static InterfaceDeclarationSyntax GenerateFacadeInterfaceExtensionDeclaration(
-        FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<EntryPointMethodInfo> entryPoints)
+    private static InterfaceDeclarationSyntax GenerateFacadeInterfaceExtensionDeclaration(FacadeContext facadeContext)
     {
-        return InterfaceDeclaration(facadeInfo.InterfaceSymbol.Name)
+        return InterfaceDeclaration(facadeContext.Facade.InterfaceSymbol.Name)
             .WithModifiers(TokenList(Token(
                     SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
-            .WithMembers(GenerateInterfaceFacadeMethods(entryPoints).ToSyntaxList())
+            .WithMembers(GenerateInterfaceFacadeMethods(facadeContext.EntryPointMethodInfos).ToSyntaxList())
             .NormalizeWhitespace();
     }
 
-    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithScope(
-        FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<EntryPointMethodInfo> entryPoints)
+    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithScope(FacadeContext facadeContext)
     {
-        var entryPointAttributeType = facadeInfo.EntryPointAttributeType.ToDisplayString();
-        var implementationClassName = facadeInfo.GetImplementationClassName();
+        var interfaceName = facadeContext.Facade.InterfaceSymbol.ToDisplayString();
+        var implementationClassName = facadeContext.Facade.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeInfo.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeContext.Facade.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
-                ParseMemberDeclaration($"private readonly Terminus.Dispatcher<{entryPointAttributeType}> _dispatcher;")!,
+                ParseMemberDeclaration($"private readonly Terminus.Dispatcher<{interfaceName}> _dispatcher;")!,
                 ParseMemberDeclaration(
                     $$"""
-                      public {{implementationClassName}}(IServiceProvider serviceProvider, Terminus.Dispatcher<{{entryPointAttributeType}}> dispatcher)
+                      public {{implementationClassName}}(IServiceProvider serviceProvider, Terminus.Dispatcher<{{interfaceName}}> dispatcher)
                       {
                           _serviceProvider = serviceProvider;
                           _dispatcher = dispatcher;
                       }
                       """)!,
-                ..GenerateImplementationFacadeMethods(facadeInfo, entryPoints)
+                ..GenerateImplementationFacadeMethods(facadeContext)
             ]);
     }
 
@@ -91,15 +81,13 @@ internal static class FacadeBuilder
         }
     }
     
-    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(
-        FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<EntryPointMethodInfo> entryPoints)
+    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(FacadeContext facadeContext)
     {
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
-        foreach (var entryPoint in entryPoints)
+        foreach (var entryPoint in facadeContext.EntryPointMethodInfos)
         {
             returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
-            yield return GenerateEntryPointMethodImplementationDefinition(facadeInfo, entryPoint);
+            yield return GenerateEntryPointMethodImplementationDefinition(facadeContext.Facade, entryPoint);
         }
         
         foreach (var returnTypeKind in returnTypeKindsDiscovered)

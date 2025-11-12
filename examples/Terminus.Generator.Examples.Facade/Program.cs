@@ -4,7 +4,7 @@ using Terminus.Generator.Examples.HelloWorld;
 
 var services = new ServiceCollection();
 
-services.AddEntryPoints();
+services.AddEntryPointFacades();
 
 var serviceProvider = services.BuildServiceProvider();
 var facade = serviceProvider.GetRequiredService<IFacade>();
@@ -13,7 +13,7 @@ facade.Handle("hello world");
 
 namespace Terminus.Generator.Examples.HelloWorld
 {
-    [Facade]
+    [EntryPointFacade]
     public partial interface IFacade;
 
     public class MyService

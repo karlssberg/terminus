@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Terminus;
 
-public class Dispatcher<TEndpointAttribute>(
-    IEntryPointRouter<TEndpointAttribute> router)
-    where TEndpointAttribute : EntryPointAttribute
+public class Dispatcher<TFacade>(
+    IEntryPointRouter<TFacade> router,
+    IServiceProvider serviceProvider)
 {
     public virtual void Publish(
         ParameterBindingContext context, 
         CancellationToken cancellationToken = default)
     {
-        var descriptors = router.GetEntryPoints(context).ToList();
+        var descriptors = GetEntryPoints(context).ToList();
         
         var isValid = descriptors
             .Select(d => d.ReturnKind)
@@ -30,7 +31,7 @@ public class Dispatcher<TEndpointAttribute>(
         ParameterBindingContext context, 
         CancellationToken cancellationToken = default)
     {
-        var descriptors = router.GetEntryPoints(context).ToList();
+        var descriptors = GetEntryPoints(context).ToList();
         
         var isValid = descriptors
             .Select(d => d.ReturnKind)
@@ -59,7 +60,7 @@ public class Dispatcher<TEndpointAttribute>(
         ParameterBindingContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
+        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
         return result switch
         {
             T value => value,
@@ -71,7 +72,7 @@ public class Dispatcher<TEndpointAttribute>(
         ParameterBindingContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
+        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
         return result switch
         {
             T value => value,
@@ -85,7 +86,7 @@ public class Dispatcher<TEndpointAttribute>(
         ParameterBindingContext context,
         CancellationToken cancellationToken = default)
     {
-        var result = router.GetEntryPoint(context).Invoker(context, cancellationToken);
+        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
         return result switch
         {
             IAsyncEnumerable<T> value => value,
@@ -96,5 +97,18 @@ public class Dispatcher<TEndpointAttribute>(
     private static InvalidOperationException CreateTypeMismatchException()
     {
         return new InvalidOperationException("Mismatch between return type and expected return type.");
+    }
+    
+    private IEnumerable<IEntryPointDescriptor> GetEntryPoints(ParameterBindingContext context)
+    {  
+        return serviceProvider
+            .GetKeyedServices<IEntryPointDescriptor>(typeof(TFacade))
+            .Where(ep => router.IsMatch(ep, context));
+    }
+
+    private IEntryPointDescriptor GetEntryPoint(ParameterBindingContext context)
+    {
+        return GetEntryPoints(context).FirstOrDefault()
+               ?? throw new TerminusEntryPointNotFoundException(context);
     }
 }

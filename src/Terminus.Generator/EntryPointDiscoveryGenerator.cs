@@ -10,12 +10,12 @@ namespace Terminus.Generator;
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
     private const string EntryPointAttributeFullName = "Terminus.EntryPointAttribute";
-    private const string FacadeAttributeFullName = "Terminus.FacadeAttribute";
-    private const string ScopedFacadeAttributeFullName = "Terminus.ScopedFacadeAttribute";
+    private const string FacadeAttributeFullName = "Terminus.EntryPointFacadeAttribute";
+    private const string ScopedFacadeAttributeFullName = "Terminus.ScopedEntryPointFacadeAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Discover facade interfaces marked with [Facade]
+        // Discover facade interfaces marked with [EntryPointFacade]
         var discoveredFacades = context.SyntaxProvider
             .CreateSyntaxProvider( 
                 predicate: static (node, _) => IsCandidateFacadeInterface(node),
@@ -59,14 +59,14 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         var scopedFacadeAttributeTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName(ScopedFacadeAttributeFullName)
                                                ??  throw new InvalidOperationException($"{ScopedFacadeAttributeFullName} not found");
         
-        var typeByMetadataName = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
+        var asyncDisposableTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
         var dotnetFeatures = 
-            typeByMetadataName is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
+            asyncDisposableTypeSymbol is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
 
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, ct) is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [Facade] or    derived attribute
+        // Find [EntryPointFacade] or    derived attribute
         foreach (var facadeAttributeData in interfaceSymbol.GetAttributes())
         {
             var facadeAttributeMatch =
@@ -77,15 +77,15 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             if (facadeAttributeMatch is null) 
                 continue;
             
-            // Determine scoping behavior from [Facade] attribute (default: true)
+            // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
             var isScoped = SymbolEqualityComparer.Default.Equals(facadeAttributeMatch, scopedFacadeAttributeTypeSymbol);
-            var entryPointAttrType = facadeAttributeData.GetNamedArgument<INamedTypeSymbol?>("EntryPointAttributeType")
-                                     ?? entryPointTypeSymbol;
+            var entryPointAttrTypes = facadeAttributeData.GetNamedArgument<INamedTypeSymbol[]?>("EntryPointAttributeTypes")
+                                     ?? [entryPointTypeSymbol];
             
             return new FacadeInterfaceInfo(
                 interfaceSymbol,
                 facadeAttributeData,
-                entryPointAttrType,
+                [..entryPointAttrTypes],
                 dotnetFeatures,
                 isScoped
             );
@@ -160,7 +160,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private static void Execute(
         SourceProductionContext context,
-        (ImmutableArray<FacadeInterfaceInfo> Facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
+        (ImmutableArray<FacadeInterfaceInfo> facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
     {
         var (facades, entryPoints) = data;
 
@@ -177,38 +177,29 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
         
-        var autoGenerateAttributeTypesDictionary = facades
-            .GroupBy(m => m.EntryPointAttributeType, (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
-            .ToDictionary(
-                g => g.Key,
-                g => g.ToImmutableArray(),
-                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
         
-        foreach (var keyValuePair in entryPointsByAttributeTypesDictionary)
+        foreach (var facade in facades)
         {
-            var entryPointAttributeType = keyValuePair.Key!;
-            var entryPointMethodInfos = keyValuePair.Value;
+            var entryPointMethodInfos = facade.EntryPointAttributeTypes
+                .SelectMany(entryPointAttributeType => entryPointsByAttributeTypesDictionary[entryPointAttributeType])
+                .ToImmutableArray();
             
             // Generate facade implementation
-            var entryPointsContext =
-                new EntryPointsContext(entryPointAttributeType)
+            var facadeContext =
+                new FacadeContext(facade)
                 {
                     EntryPointMethodInfos = entryPointMethodInfos,
-                    Facades = autoGenerateAttributeTypesDictionary
-                        .TryGetValue(entryPointAttributeType, out var entryPointAttributeFacades)
-                            ? entryPointAttributeFacades
-                            : []
                 };
             
             var source = SourceBuilder
-                .GenerateEntryPoints(entryPointsContext)
+                .GenerateFacadeEntryPoints(facadeContext)
                 .ToFullString();
 
-            context.AddSource($"{entryPointAttributeType.ToIdentifierString()}_Generated.g.cs", source);
+            context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
         }
 
         var compilationUnitSyntax = SourceBuilder
-            .GenerateServiceRegistrations([..entryPointsByAttributeTypesDictionary.Keys])
+            .GenerateServiceRegistrations([..facades])
             .NormalizeWhitespace();
         
         context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());

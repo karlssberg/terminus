@@ -7,27 +7,28 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Terminus;
 
-public class ScopedDispatcher<TEndpointAttribute>(
-    IEntryPointRouter<TEndpointAttribute> router,
+public class ScopedDispatcher<TFacade>(
+    IEntryPointRouter<TFacade> router,
     IServiceProvider serviceProvider)
-    : Dispatcher<TEndpointAttribute>(router)
-    where TEndpointAttribute : EntryPointAttribute
+    : Dispatcher<TFacade>(router, serviceProvider)
 {
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+
     public override void Publish(ParameterBindingContext context, CancellationToken cancellationToken = default)
     {
-        using var scope = serviceProvider.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
         base.Publish(context, cancellationToken);
     }
 
     public override async Task PublishAsync(ParameterBindingContext context, CancellationToken cancellationToken = default)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         await base.PublishAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     public override T Send<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
     {
-        using var scope = serviceProvider.CreateScope();
+        using var scope = _serviceProvider.CreateScope();
         return base.Send<T>(context, cancellationToken);
     }
 
@@ -35,7 +36,7 @@ public class ScopedDispatcher<TEndpointAttribute>(
         ParameterBindingContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         await foreach (var item in base.CreateStream<T>(context, cancellationToken).ConfigureAwait(false))
         {
             yield return item;
@@ -44,7 +45,7 @@ public class ScopedDispatcher<TEndpointAttribute>(
 
     public override async Task<T> SendAsync<T>(ParameterBindingContext context, CancellationToken cancellationToken = default)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = _serviceProvider.CreateAsyncScope();
         return await base.SendAsync<T>(context, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -1,23 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
 
 namespace Terminus;
 
-public class DefaultEntryPointRouter<TEntryPointAttribute>(
-    IEnumerable<EntryPointDescriptor<TEntryPointAttribute>> entryPointDescriptors) 
-    : IEntryPointRouter<TEntryPointAttribute> 
-    where TEntryPointAttribute : EntryPointAttribute
+public class DefaultEntryPointRouter<TFacade>(
+    IServiceProvider serviceProvider) 
+    : IEntryPointRouter<TFacade>
 {
-    public EntryPointDescriptor<TEntryPointAttribute> GetEntryPoint(ParameterBindingContext context)
+    public bool IsMatch(IEntryPointDescriptor ep, ParameterBindingContext context)
     {
-        return GetEntryPoints(context).FirstOrDefault()
-               ?? throw new TerminusEntryPointNotFoundException(
-                   $"Cannot find suitable '{typeof(TEntryPointAttribute).Name}' entry point descriptor",
-                   context);
-    }
-
-    public IEnumerable<EntryPointDescriptor<TEntryPointAttribute>> GetEntryPoints(ParameterBindingContext context)
-    {
-        return entryPointDescriptors.Where(descriptor => descriptor.MethodInfo.CanInvokeWith(context.Data));
+        return ep.MethodInfo.CanInvokeWith(context.Data);
     }
 }
