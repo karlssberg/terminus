@@ -39,6 +39,56 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(combined, Execute);
     }
 
+    private static void Execute(
+        SourceProductionContext context,
+        (ImmutableArray<FacadeInterfaceInfo> facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
+    {
+        var (facades, entryPoints) = data;
+
+        if (entryPoints.IsEmpty && facades.IsEmpty)
+            return;
+
+        // Group entry points by their attribute type (exact match)
+        var entryPointsByAttributeTypesDictionary = entryPoints
+            .GroupBy(
+                ep => ep.AttributeData.AttributeClass!,
+                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToImmutableArray(),
+                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
+        
+        
+        foreach (var facade in facades)
+        {
+            var entryPointMethodInfos = facade.EntryPointAttributeTypes
+                .SelectMany(entryPointAttributeType => 
+                    entryPointsByAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var attrType)
+                        ? attrType
+                        : [])
+                .ToImmutableArray();
+            
+            // Generate facade implementation
+            var facadeContext =
+                new FacadeContext(facade)
+                {
+                    EntryPointMethodInfos = entryPointMethodInfos,
+                };
+            
+            var source = SourceBuilder
+                .GenerateFacadeEntryPoints(facadeContext)
+                .ToFullString();
+
+            context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
+        }
+
+        var compilationUnitSyntax = SourceBuilder
+            .GenerateServiceRegistrations([..facades])
+            .NormalizeWhitespace();
+        
+        context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
+    }
+
     private static bool IsCandidateFacadeInterface(SyntaxNode node) =>
         node is InterfaceDeclarationSyntax { AttributeLists.Count: > 0 } @interface &&
         @interface.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
@@ -79,8 +129,12 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             
             // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
             var isScoped = SymbolEqualityComparer.Default.Equals(facadeAttributeMatch, scopedFacadeAttributeTypeSymbol);
-            var entryPointAttrTypes = facadeAttributeData.GetNamedArgument<INamedTypeSymbol[]?>("EntryPointAttributeTypes")
-                                     ?? [entryPointTypeSymbol];
+            var entryPointAttrTypes = facadeAttributeData.NamedArguments
+                                          .Where(x => x.Key == "EntryPointAttributes")
+                                          .SelectMany(x => x.Value.Values)
+                                          .Select(x => x.Value)
+                                          .OfType<INamedTypeSymbol>()
+                                          .DefaultIfEmpty(entryPointTypeSymbol);
             
             return new FacadeInterfaceInfo(
                 interfaceSymbol,
@@ -93,7 +147,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
         return null;
     }
-    
+
     private static INamedTypeSymbol? GetSelfOrBaseType(
         INamedTypeSymbol? attributeClass, 
         params IEnumerable<INamedTypeSymbol> types)
@@ -142,7 +196,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
         return null;
     }
-    
+
     private static bool InheritsFromBaseAttribute(INamedTypeSymbol attributeClass)
     {
         var current = attributeClass;
@@ -156,52 +210,5 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         }
 
         return false;
-    }
-
-    private static void Execute(
-        SourceProductionContext context,
-        (ImmutableArray<FacadeInterfaceInfo> facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
-    {
-        var (facades, entryPoints) = data;
-
-        if (entryPoints.IsEmpty && facades.IsEmpty)
-            return;
-
-        // Group entry points by their attribute type (exact match)
-        var entryPointsByAttributeTypesDictionary = entryPoints
-            .GroupBy(
-                ep => ep.AttributeData.AttributeClass!,
-                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
-            .ToDictionary(
-                g => g.Key,
-                g => g.ToImmutableArray(),
-                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
-        
-        
-        foreach (var facade in facades)
-        {
-            var entryPointMethodInfos = facade.EntryPointAttributeTypes
-                .SelectMany(entryPointAttributeType => entryPointsByAttributeTypesDictionary[entryPointAttributeType])
-                .ToImmutableArray();
-            
-            // Generate facade implementation
-            var facadeContext =
-                new FacadeContext(facade)
-                {
-                    EntryPointMethodInfos = entryPointMethodInfos,
-                };
-            
-            var source = SourceBuilder
-                .GenerateFacadeEntryPoints(facadeContext)
-                .ToFullString();
-
-            context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
-        }
-
-        var compilationUnitSyntax = SourceBuilder
-            .GenerateServiceRegistrations([..facades])
-            .NormalizeWhitespace();
-        
-        context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
     }
 }
