@@ -3,7 +3,7 @@ using System;
 namespace Terminus;
 
 [AttributeUsage(AttributeTargets.Interface)]
-public sealed class ScopedEntryPointFacadeAttribute(params Type[] targetTypes) : Attribute, IFacadeAttribute
+public sealed class EntryPointMediatorAttribute(params Type[] targetTypes) : Attribute, IMediatorAttribute
 {
     public Type[] EntryPointAttributes { get; set; } = [typeof(EntryPointAttribute)];
     public Type[] TargetTypes { get; } = targetTypes;

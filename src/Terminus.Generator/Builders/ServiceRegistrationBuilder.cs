@@ -9,17 +9,17 @@ namespace Terminus.Generator.Builders;
 internal static class ServiceRegistrationBuilder
 {
     internal static SwitchStatementSyntax GenerateRegistrationMethodSelector(
-        ImmutableArray<FacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
     {
         var switchExpression =
             SwitchStatement(ParseExpression("typeof(T).FullName"))
                 .AddSections(facades
-                    .Select(facadeInfo =>
+                    .Select(aggregatorInfo =>
                         SwitchSection()
                             .AddLabels(
                                 CaseSwitchLabel(LiteralExpression(
                                     SyntaxKind.StringLiteralExpression,
-                                    Literal(facadeInfo.InterfaceSymbol.ToDisplayString()))))
+                                    Literal(aggregatorInfo.InterfaceSymbol.ToDisplayString()))))
                             .AddStatements(
                                 ReturnStatement(
                                     InvocationExpression(
@@ -27,7 +27,7 @@ internal static class ServiceRegistrationBuilder
                                                 SyntaxKind.SimpleMemberAccessExpression,
                                                 IdentifierName("services"),
                                                 IdentifierName(
-                                                    $"AddEntryPointFacadeFor_{facadeInfo.InterfaceSymbol.ToIdentifierString()}")))
+                                                    $"AddEntryPointFacadeFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}")))
                                         .WithArgumentList(ParseArgumentList("(configure)")))))
                     .ToArray())
                 .NormalizeWhitespace();
@@ -35,28 +35,28 @@ internal static class ServiceRegistrationBuilder
     }
 
     
-    private static ExpressionStatementSyntax GenerateDispatcherServiceRegistrations(FacadeContext facadeContext)
+    private static ExpressionStatementSyntax GenerateDispatcherServiceRegistrations(AggregatorContext aggregatorContext)
     {
         return ExpressionStatement(
             ParseExpression(
-                facadeContext.Facade.Scoped
-                    ? $"services.AddTransient<ScopedDispatcher<{facadeContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"
-                    : $"services.AddTransient<Dispatcher<{facadeContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"));
+                aggregatorContext.Facade.Scoped
+                    ? $"services.AddTransient<ScopedDispatcher<{aggregatorContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"
+                    : $"services.AddTransient<Dispatcher<{aggregatorContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"));
     }
 
     internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(
-        ImmutableArray<FacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
     {
         var registerAllEntryPoints = facades
-            .Select(facadeInfo => ParseStatement(
-                $"services.AddEntryPointFacadeFor_{facadeInfo.InterfaceSymbol.ToIdentifierString()}();"))
+            .Select(aggregatorInfo => ParseStatement(
+                $"services.AddEntryPointFacadeFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}();"))
             .ToSyntaxList();
         return registerAllEntryPoints;
     }
 
-    internal static string CreateAddEntryPointsMethods(FacadeContext facadeContext)
+    internal static string CreateAddEntryPointsMethods(AggregatorContext aggregatorContext)
     {
-        var facade = facadeContext.Facade;
+        var facade = aggregatorContext.Facade;
         var facadeFullNameIdentifier = facade.InterfaceSymbol.ToIdentifierString();
         var facadeInterfaceType = facade.InterfaceSymbol.ToDisplayString();
         
@@ -73,10 +73,10 @@ internal static class ServiceRegistrationBuilder
                     return resolver;
                 });
                 
-                {{GenerateDispatcherServiceRegistrations(facadeContext)}}
+                {{GenerateDispatcherServiceRegistrations(aggregatorContext)}}
                 services.AddTransient<IEntryPointRouter<{{facadeInterfaceType}}>, DefaultEntryPointRouter<{{facadeInterfaceType}}>>();
-                {{GenerateEntryPointDescriptorRegistrations(facadeContext)}}
-                {{GenerateEntryPointContainingTypeRegistrations(facadeContext)}}
+                {{GenerateEntryPointDescriptorRegistrations(aggregatorContext)}}
+                {{GenerateEntryPointContainingTypeRegistrations(aggregatorContext)}}
                 services.AddSingleton<{{facade.InterfaceSymbol.ToDisplayString()}}, {{facade.GetImplementationClassFullName()}}>();
 
                 return services;
@@ -84,10 +84,10 @@ internal static class ServiceRegistrationBuilder
             """;
     }
 
-    private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(FacadeContext facadeContext)
+    private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(AggregatorContext aggregatorContext)
     {
-        var facadeInterfaceType = facadeContext.Facade.InterfaceSymbol.ToDisplayString();
-        var entryPointMethodInfos = facadeContext.EntryPointMethodInfos;
+        var facadeInterfaceType = aggregatorContext.Facade.InterfaceSymbol.ToDisplayString();
+        var entryPointMethodInfos = aggregatorContext.EntryPointMethodInfos;
         var entryPointDescriptorRegistrations = entryPointMethodInfos
             .Select(ep =>
             {
@@ -125,9 +125,9 @@ internal static class ServiceRegistrationBuilder
     }
 
 
-    private static SyntaxList<StatementSyntax> GenerateEntryPointContainingTypeRegistrations(FacadeContext facadeContext)
+    private static SyntaxList<StatementSyntax> GenerateEntryPointContainingTypeRegistrations(AggregatorContext aggregatorContext)
     {
-        return facadeContext.EntryPointMethodInfos
+        return aggregatorContext.EntryPointMethodInfos
             .Where(ep => !ep.MethodSymbol.ContainingType.IsStatic)
             .Select(ep => ep.MethodSymbol.ContainingType.ToDisplayString())
             .Distinct()

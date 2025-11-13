@@ -2,14 +2,14 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Terminus.Generator.Builders.FacadeBuilder;
+using static Terminus.Generator.Builders.AggregatorBuilder;
 using static Terminus.Generator.Builders.ServiceRegistrationBuilder;
 
 namespace Terminus.Generator.Builders;
 
 internal static class SourceBuilder
 {
-    internal static CompilationUnitSyntax GenerateFacadeEntryPoints(FacadeContext facadeContext)
+    internal static CompilationUnitSyntax GenerateAggregatorEntryPoints(AggregatorContext aggregatorContext)
     {
 
         var rawCompilationUnit =
@@ -22,13 +22,13 @@ internal static class SourceBuilder
             using Terminus;
             using Terminus.Strategies;
 
-            {{GenerateFacadeTypeDeclarations(facadeContext)}}
+            {{GenerateAggregatorTypeDeclarations(aggregatorContext)}}
 
             namespace Terminus
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    {{CreateAddEntryPointsMethods(facadeContext)}}
+                    {{CreateAddEntryPointsMethods(aggregatorContext)}}
                 }
             }
             """;
@@ -37,7 +37,7 @@ internal static class SourceBuilder
     }
 
     internal static CompilationUnitSyntax GenerateServiceRegistrations(
-        ImmutableArray<FacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
     {
         var compilationUnit =
           $$"""

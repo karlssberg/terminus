@@ -6,38 +6,38 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator.Builders;
 
-internal static class FacadeBuilder
+internal static class AggregatorBuilder
 {
 
-    internal static NamespaceDeclarationSyntax GenerateFacadeTypeDeclarations(FacadeContext facadeContext)
+    internal static NamespaceDeclarationSyntax GenerateAggregatorTypeDeclarations(AggregatorContext aggregatorContext)
     {
-        var interfaceNamespace = facadeContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
-                GenerateFacadeInterfaceExtensionDeclaration(facadeContext),
-                GenerateFacadeClassImplementationWithScope(facadeContext)
+                GenerateAggregatorInterfaceExtensionDeclaration(aggregatorContext),
+                GenerateAggregatorClassImplementationWithScope(aggregatorContext)
             ])
             .NormalizeWhitespace();
     }
 
-    private static InterfaceDeclarationSyntax GenerateFacadeInterfaceExtensionDeclaration(FacadeContext facadeContext)
+    private static InterfaceDeclarationSyntax GenerateAggregatorInterfaceExtensionDeclaration(AggregatorContext aggregatorContext)
     {
-        return InterfaceDeclaration(facadeContext.Facade.InterfaceSymbol.Name)
+        return InterfaceDeclaration(aggregatorContext.Facade.InterfaceSymbol.Name)
             .WithModifiers(TokenList(Token(
                     SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
-            .WithMembers(GenerateInterfaceFacadeMethods(facadeContext.EntryPointMethodInfos).ToSyntaxList())
+            .WithMembers(GenerateInterfaceFacadeMethods(aggregatorContext).ToSyntaxList())
             .NormalizeWhitespace();
     }
 
-    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithScope(FacadeContext facadeContext)
+    private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithScope(AggregatorContext aggregatorContext)
     {
-        var interfaceName = facadeContext.Facade.InterfaceSymbol.ToDisplayString();
-        var implementationClassName = facadeContext.Facade.GetImplementationClassName();
+        var interfaceName = aggregatorContext.Facade.InterfaceSymbol.ToDisplayString();
+        var implementationClassName = aggregatorContext.Facade.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeContext.Facade.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(aggregatorContext.Facade.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
@@ -50,60 +50,95 @@ internal static class FacadeBuilder
                           _dispatcher = dispatcher;
                       }
                       """)!,
-                ..GenerateImplementationFacadeMethods(facadeContext)
+                ..GenerateImplementationFacadeMethods(aggregatorContext)
             ]);
     }
 
     private static IEnumerable<MemberDeclarationSyntax> GenerateInterfaceFacadeMethods(
-        ImmutableArray<EntryPointMethodInfo> entryPoints)
+        AggregatorContext aggregatorContext)
     {
-        HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
-        foreach (var entryPoint in entryPoints)
-        {
-            returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
-            yield return GenerateEntryPointMethodInterfaceDefinition(entryPoint);
-        }
+        HashSet<ReturnTypeKind> returnTypeKindsDiscovered = 
+            [..aggregatorContext.EntryPointMethodInfos.Select(ep => ep.ReturnTypeKind)];
         
-        foreach (var returnTypeKind in returnTypeKindsDiscovered)
+        switch (aggregatorContext.Facade.ServiceKind)
         {
-            yield return returnTypeKind switch
+            case ServiceKind.Facade:
             {
-                ReturnTypeKind.Void => GeneratePublishMethodInterfaceDefinition(),
-                ReturnTypeKind.Result => GenerateSendMethodInterfaceDefinition(),
-                ReturnTypeKind.Task => GeneratePublishAsyncMethodInterfaceDefinition(),
-                ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodInterfaceDefinition(),
-                ReturnTypeKind.AsyncEnumerable =>  GenerateStreamAsyncEnumerableMethodInterfaceDefinition(),
-                _ => throw new  ArgumentOutOfRangeException(
-                    nameof(returnTypeKind),
-                    returnTypeKind,
-                    $"Return type kind '{Enum.GetName(typeof(ReturnTypeKind), returnTypeKind)}' is unsupported.")
-            };
+                foreach (var entryPoint in aggregatorContext.EntryPointMethodInfos)
+                {
+                    returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
+                    yield return GenerateEntryPointMethodInterfaceDefinition(entryPoint);
+                }
+
+                break;
+            }
+            case ServiceKind.Mediator:
+            {
+                foreach (var returnTypeKind in returnTypeKindsDiscovered)
+                {
+                    yield return returnTypeKind switch
+                    {
+                        ReturnTypeKind.Void => GeneratePublishMethodInterfaceDefinition(),
+                        ReturnTypeKind.Result => GenerateSendMethodInterfaceDefinition(),
+                        ReturnTypeKind.Task => GeneratePublishAsyncMethodInterfaceDefinition(),
+                        ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodInterfaceDefinition(),
+                        ReturnTypeKind.AsyncEnumerable =>  GenerateStreamAsyncEnumerableMethodInterfaceDefinition(),
+                        _ => throw new  ArgumentOutOfRangeException(
+                            nameof(returnTypeKind),
+                            returnTypeKind,
+                            $"Return type kind '{Enum.GetName(typeof(ReturnTypeKind), returnTypeKind)}' is unsupported.")
+                    };
+                }
+
+                break;
+            }
+            case ServiceKind.None:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
     
-    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(FacadeContext facadeContext)
+    private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(AggregatorContext aggregatorContext)
     {
-        HashSet<ReturnTypeKind> returnTypeKindsDiscovered = [];
-        foreach (var entryPoint in facadeContext.EntryPointMethodInfos)
+        HashSet<ReturnTypeKind> returnTypeKindsDiscovered = 
+            [..aggregatorContext.EntryPointMethodInfos.Select(ep => ep.ReturnTypeKind)];
+
+        switch (aggregatorContext.Facade.ServiceKind)
         {
-            returnTypeKindsDiscovered.Add(entryPoint.ReturnTypeKind);
-            yield return GenerateEntryPointMethodImplementationDefinition(facadeContext.Facade, entryPoint);
-        }
-        
-        foreach (var returnTypeKind in returnTypeKindsDiscovered)
-        {
-            yield return returnTypeKind switch
+            case ServiceKind.Facade:
             {
-                ReturnTypeKind.Void => GeneratePublishMethodImplementation(),
-                ReturnTypeKind.Result => GenerateSendMethodImplementation(),
-                ReturnTypeKind.Task => GeneratePublishAsyncMethodImplementation(),
-                ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodImplementation(),
-                ReturnTypeKind.AsyncEnumerable =>  GenerateStreamAsyncEnumerableMethodImplementation(),
-                _ => throw new  ArgumentOutOfRangeException(
-                    nameof(returnTypeKind),
-                    returnTypeKind,
-                    $"Return type kind '{Enum.GetName(typeof(ReturnTypeKind), returnTypeKind)}' is unsupported.")
-            };
+                foreach (var entryPoint in aggregatorContext.EntryPointMethodInfos)
+                {
+                    yield return GenerateEntryPointMethodImplementationDefinition(aggregatorContext.Facade, entryPoint);
+                }
+
+                break;
+            }
+            case ServiceKind.Mediator:
+            {
+                foreach (var returnTypeKind in returnTypeKindsDiscovered)
+                {
+                    yield return returnTypeKind switch
+                    {
+                        ReturnTypeKind.Void => GeneratePublishMethodImplementation(),
+                        ReturnTypeKind.Result => GenerateSendMethodImplementation(),
+                        ReturnTypeKind.Task => GeneratePublishAsyncMethodImplementation(),
+                        ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodImplementation(),
+                        ReturnTypeKind.AsyncEnumerable => GenerateStreamAsyncEnumerableMethodImplementation(),
+                        _ => throw new ArgumentOutOfRangeException(
+                            nameof(returnTypeKind),
+                            returnTypeKind,
+                            $"Return type kind '{Enum.GetName(typeof(ReturnTypeKind), returnTypeKind)}' is unsupported.")
+                    };
+                }
+
+                break;
+            }
+            case ServiceKind.None:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -217,8 +252,8 @@ internal static class FacadeBuilder
     }
 
 
-    private static ClassDeclarationSyntax GenerateFacadeClassImplementationWithoutContext(
-        FacadeInterfaceInfo facadeInfo,
+    private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithoutContext(
+        AggregatorFacadeInterfaceInfo aggregatorInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         var types = entryPoints
@@ -242,10 +277,10 @@ internal static class FacadeBuilder
                 $"_{identifier} = {identifier};"))
             .ToSyntaxList();
         
-        var implementationClassName = facadeInfo.GetImplementationClassName();
+        var implementationClassName = aggregatorInfo.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(facadeInfo.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(aggregatorInfo.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ..fields,
@@ -256,13 +291,13 @@ internal static class FacadeBuilder
                           {{fieldAssignments}}
                       }
                       """)!,
-                ..entryPoints.Select(ep => GenerateEntryPointMethodImplementationDefinition(facadeInfo, ep)),
+                ..entryPoints.Select(ep => GenerateEntryPointMethodImplementationDefinition(aggregatorInfo, ep)),
             ])
             .NormalizeWhitespace();
     }
 
     private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(
-        FacadeInterfaceInfo facadeInfo,
+        AggregatorFacadeInterfaceInfo aggregatorInfo,
         EntryPointMethodInfo entryPoint)
     {
         // Build return type
@@ -286,84 +321,85 @@ internal static class FacadeBuilder
             method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
         }
 
-        method = method.WithBody(Block(GenerateBody()));
+        method = method.WithBody(Block(
+            GenerateEntryPointMethodImplementationMethodBody(aggregatorInfo, entryPoint)));
 
         return method.NormalizeWhitespace();
-
-        IEnumerable<StatementSyntax> GenerateBody()
-        {
-            var serviceProviderExpression = facadeInfo.Scoped
-                ? "scope.ServiceProvider"
-                : "_serviceProvider";
-            
-            // Build instance/service resolution expression
-            var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
-                ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
-                $"{serviceProviderExpression}.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
-
-            // Build method invocation
-            var methodAccess = MemberAccessExpression(
-                SyntaxKind.SimpleMemberAccessExpression,
-                instanceExpression,
-                IdentifierName(entryPoint.MethodSymbol.Name));
-            
-            var argumentList = ArgumentList(SeparatedList(
-                entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
-            ));
-
-            var invocationExpression = InvocationExpression(methodAccess, argumentList);
-
-            // For async Task/Task<T>, append ConfigureAwait(false) and await the call
-            var isAsyncTask = entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult;
-            if (isAsyncTask)
-            {
-                invocationExpression = InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        invocationExpression,
-                        IdentifierName("ConfigureAwait")))
-                    .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(LiteralExpression(SyntaxKind.FalseLiteralExpression)))));
-            }
-
-            // Return or expression statement depending on void / async kind
-            StatementSyntax innerStatement = entryPoint.ReturnTypeKind switch
-            {
-                ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
-                ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
-                ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
-                _ => ReturnStatement(invocationExpression)
-            };
-
-            var cancellationTokens = entryPoint.MethodSymbol.Parameters.Where(p =>
-                !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
-                .ToList();
-
-            if (cancellationTokens.Count == 1)
-            {
-                var parameterName = cancellationTokens[0].Name;
-                yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
-            }
-
-            if (!facadeInfo.Scoped)
-            {
-                yield return innerStatement;
-                yield break;
-            }
-
-            yield return entryPoint switch
-            {
-                { MethodSymbol.IsStatic: true } =>
-                    innerStatement,
-                
-                { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable } 
-                    when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
-                    GenerateUsingStatementWithCreateAsyncScope(innerStatement),
-                
-                _ => GenerateUsingStatementWithCreateScope(innerStatement)
-            };
-        }
     }
 
+    private static IEnumerable<StatementSyntax> GenerateEntryPointMethodImplementationMethodBody(AggregatorFacadeInterfaceInfo aggregatorInfo, EntryPointMethodInfo entryPoint)
+    {
+        var serviceProviderExpression = aggregatorInfo.Scoped
+            ? "scope.ServiceProvider"
+            : "_serviceProvider";
+        
+        // Build instance/service resolution expression
+        var instanceExpression = ParseExpression(entryPoint.MethodSymbol.IsStatic
+            ? entryPoint.MethodSymbol.ContainingType.ToDisplayString() : 
+            $"{serviceProviderExpression}.GetRequiredService<{entryPoint.MethodSymbol.ContainingType.ToDisplayString()}>()");
+
+        // Build method invocation
+        var methodAccess = MemberAccessExpression(
+            SyntaxKind.SimpleMemberAccessExpression,
+            instanceExpression,
+            IdentifierName(entryPoint.MethodSymbol.Name));
+        
+        var argumentList = ArgumentList(SeparatedList(
+            entryPoint.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))
+        ));
+
+        var invocationExpression = InvocationExpression(methodAccess, argumentList);
+
+        // For async Task/Task<T>, append ConfigureAwait(false) and await the call
+        var isAsyncTask = entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult;
+        if (isAsyncTask)
+        {
+            invocationExpression = InvocationExpression(
+                MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    invocationExpression,
+                    IdentifierName("ConfigureAwait")))
+                .WithArgumentList(ArgumentList(SingletonSeparatedList(Argument(LiteralExpression(SyntaxKind.FalseLiteralExpression)))));
+        }
+
+        // Return or expression statement depending on void / async kind
+        StatementSyntax innerStatement = entryPoint.ReturnTypeKind switch
+        {
+            ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
+            ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+            _ => ReturnStatement(invocationExpression)
+        };
+
+        var cancellationTokens = entryPoint.MethodSymbol.Parameters.Where(p =>
+            !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
+            .ToList();
+
+        if (cancellationTokens.Count == 1)
+        {
+            var parameterName = cancellationTokens[0].Name;
+            yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
+        }
+
+        if (!aggregatorInfo.Scoped)
+        {
+            yield return innerStatement;
+            yield break;
+        }
+
+        yield return entryPoint switch
+        {
+            { MethodSymbol.IsStatic: true } =>
+                innerStatement,
+            
+            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable } 
+                when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
+                GenerateUsingStatementWithCreateAsyncScope(innerStatement),
+            
+            _ => GenerateUsingStatementWithCreateScope(innerStatement)
+        };
+    }
+    
     private static UsingStatementSyntax GenerateUsingStatementWithCreateScope(StatementSyntax innerStatement)
     {
         // using (var scope = _serviceProvider.CreateScope()) { ... }

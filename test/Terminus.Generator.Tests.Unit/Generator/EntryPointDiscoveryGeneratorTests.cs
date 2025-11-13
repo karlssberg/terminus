@@ -46,7 +46,6 @@ public class EntryPointDiscoveryGeneratorTests
                 public partial interface IFacade
                 {
                     void Hello(string world, System.Threading.CancellationToken cancellationToken);
-                    void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IFacade_Generated : Demo.IFacade
@@ -63,12 +62,6 @@ public class EntryPointDiscoveryGeneratorTests
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         Demo.TestEntryPoints.Hello(world, cancellationToken);
-                    }
-            
-                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
                     }
                 }
             }
@@ -185,7 +178,6 @@ public class EntryPointDiscoveryGeneratorTests
                 public partial interface IFacade
                 {
                     void Hello(string world);
-                    void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IFacade_Generated : Demo.IFacade
@@ -201,12 +193,6 @@ public class EntryPointDiscoveryGeneratorTests
                     public void Hello(string world)
                     {
                         Demo.TestEntryPoints.Hello(world);
-                    }
-            
-                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
                     }
                 }
             }
@@ -340,8 +326,6 @@ public class EntryPointDiscoveryGeneratorTests
                 {
                     System.Threading.Tasks.Task Hello();
                     System.Threading.Tasks.Task<string> Hello(string world);
-                    System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IFacade_Generated : Demo.IFacade
@@ -368,18 +352,6 @@ public class EntryPointDiscoveryGeneratorTests
                         {
                             return await scope.ServiceProvider.GetRequiredService<Demo.TestEntryPoints>().Hello(world).ConfigureAwait(false);
                         }
-                    }
-            
-                    public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.PublishAsync(context, cancellationToken);
-                    }
-            
-                    public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.SendAsync<T>(context, cancellationToken);
                     }
                 }
             }
@@ -520,10 +492,6 @@ public class EntryPointDiscoveryGeneratorTests
                     string Hello(string world);
                     System.Threading.Tasks.Task HelloAsync();
                     System.Threading.Tasks.Task<string> HelloAsync(string world);
-                    void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IFacade_Generated : Demo.IFacade
@@ -554,30 +522,6 @@ public class EntryPointDiscoveryGeneratorTests
                     public async System.Threading.Tasks.Task<string> HelloAsync(string world)
                     {
                         return await _serviceProvider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(world).ConfigureAwait(false);
-                    }
-            
-                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
-                    }
-            
-                    public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.Send<T>(context, cancellationToken);
-                    }
-            
-                    public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.PublishAsync(context, cancellationToken);
-                    }
-            
-                    public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.SendAsync<T>(context, cancellationToken);
                     }
                 }
             }
@@ -722,10 +666,6 @@ public class EntryPointDiscoveryGeneratorTests
                     string Hello(string world);
                     System.Threading.Tasks.Task HelloAsync();
                     System.Threading.Tasks.Task<string> HelloAsync(string world);
-                    void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
                 }
             
                 internal sealed class IFacade_Generated : Demo.IFacade
@@ -756,30 +696,6 @@ public class EntryPointDiscoveryGeneratorTests
                     public async System.Threading.Tasks.Task<string> HelloAsync(string world)
                     {
                         return await _serviceProvider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(world).ConfigureAwait(false);
-                    }
-            
-                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
-                    }
-            
-                    public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.Send<T>(context, cancellationToken);
-                    }
-            
-                    public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.PublishAsync(context, cancellationToken);
-                    }
-            
-                    public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.SendAsync<T>(context, cancellationToken);
                     }
                 }
             }
@@ -851,6 +767,184 @@ public class EntryPointDiscoveryGeneratorTests
         test.TestState.GeneratedSources.Add((
             typeof(EntryPointDiscoveryGenerator), 
             "Demo_IFacade_Generated.g.cs", 
+            SourceText.From(expectedMainSource, Encoding.UTF8)));
+       
+        test.TestState.GeneratedSources.Add((
+            typeof(EntryPointDiscoveryGenerator), 
+            "__EntryPointServiceRegistration_Generated.g.cs",
+            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
+        
+
+        await test.RunAsync();
+    }
+    
+    [Fact]
+    public async Task Given_the_presence_of_the_mediator_attribute_Should_not_generate_facade_methods()
+    {
+        const string source =
+            """
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [EntryPointMediator(EntryPointAttributes = [typeof(MyEntryPointAttribute)])]
+                public partial interface IMediator;
+                
+                public class MyEntryPointAttribute : EntryPointAttribute;
+                
+                public class TestEntryPoints
+                {
+                    [MyEntryPoint]
+                    public void Hello() 
+                    {
+                    }
+                    
+                    [MyEntryPoint]
+                    public  string Hello(string world) 
+                    { 
+                        return world;
+                    }
+            
+                    [MyEntryPoint]
+                    public Task HelloAsync() 
+                    { 
+                        return Task.CompletedTask;
+                    }
+                    
+                    [MyEntryPoint]
+                    public async Task<string> HelloAsync(string world) 
+                    { 
+                        return await Task.FromResult(world);
+                    }
+                }
+            }
+            """;
+        
+        const string expectedMainSource =
+            """
+            // <auto-generated/> Generated by Terminus EntryPointDiscoveryGenerator
+            #nullable enable
+            using Microsoft.Extensions.DependencyInjection;
+            using System;
+            using System.Reflection;
+            using Terminus;
+            using Terminus.Strategies;
+            
+            namespace Demo
+            {
+                public partial interface IMediator
+                {
+                    void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+                    T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+                    System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+                    System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+                }
+            
+                internal sealed class IMediator_Generated : Demo.IMediator
+                {
+                    private readonly IServiceProvider _serviceProvider;
+                    private readonly Terminus.Dispatcher<Demo.IMediator> _dispatcher;
+                    public IMediator_Generated(IServiceProvider serviceProvider, Terminus.Dispatcher<Demo.IMediator> dispatcher)
+                    {
+                        _serviceProvider = serviceProvider;
+                        _dispatcher = dispatcher;
+                    }
+            
+                    public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        _dispatcher.Publish(context, cancellationToken);
+                    }
+            
+                    public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return _dispatcher.Send<T>(context, cancellationToken);
+                    }
+            
+                    public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return _dispatcher.PublishAsync(context, cancellationToken);
+                    }
+            
+                    public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        return _dispatcher.SendAsync<T>(context, cancellationToken);
+                    }
+                }
+            }
+            
+            namespace Terminus
+            {
+                public static partial class ServiceCollectionExtensions__Generated
+                {
+                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IMediator(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    {
+                        services.AddSingleton(provider =>
+                        {
+                            var resolver = new ParameterBindingStrategyResolver(provider);
+                            configure?.Invoke(resolver);
+                            return resolver;
+                        });
+                        services.AddTransient<Dispatcher<Demo.IMediator>>();
+                        services.AddTransient<IEntryPointRouter<Demo.IMediator>, DefaultEntryPointRouter<Demo.IMediator>>();
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddTransient<Demo.TestEntryPoints>();
+                        services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
+                        return services;
+                    }
+                }
+            }
+            """;
+        
+        const string expectedServiceRegistrationSource =
+            """
+            #nullable enable
+            using Microsoft.Extensions.DependencyInjection;
+            using System;
+            
+            namespace Terminus
+            {
+                public static partial class ServiceCollectionExtensions__Generated
+                {
+                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                        where T : EntryPointAttribute
+                    {
+                        switch (typeof(T).FullName)
+                        {
+                            case "Demo.IMediator":
+                                return services.AddEntryPointFacadeFor_Demo_IMediator(configure);
+                        };
+                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                    }
+            
+                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    {
+                        services.AddEntryPointFacadeFor_Demo_IMediator();
+                        return services;
+                    }
+                }
+            }
+            """;
+
+    var test = new TerminusSourceGeneratorTest<EntryPointDiscoveryGenerator>
+        {
+            TestState =
+            {
+                Sources = { source }
+            }
+        };
+
+        test.TestState.GeneratedSources.Add((
+            typeof(EntryPointDiscoveryGenerator), 
+            "Demo_IMediator_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
        
         test.TestState.GeneratedSources.Add((

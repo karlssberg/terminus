@@ -2,7 +2,7 @@ using System;
 
 namespace Terminus;
 
-public interface IFacadeAttribute
+public interface IMediatorAttribute
 {
     Type[] EntryPointAttributes { get; set; }
     Type[] TargetTypes { get; }
