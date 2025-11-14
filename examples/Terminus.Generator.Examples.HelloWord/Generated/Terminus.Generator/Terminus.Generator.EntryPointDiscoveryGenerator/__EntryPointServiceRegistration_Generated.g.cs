@@ -13,7 +13,7 @@ namespace Terminus
                 case "Terminus.Generator.Examples.HelloWorld.IMyListener":
                     return services.AddEntryPointsFor_Terminus_Generator_Examples_HelloWorld_IMyListener(configure);
             };
-            throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+            throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
         }
 
         public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)

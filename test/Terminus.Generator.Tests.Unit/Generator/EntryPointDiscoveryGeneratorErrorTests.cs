@@ -346,7 +346,7 @@ public class EntryPointDiscoveryGeneratorErrorTests
                             case "Demo.IDispatcher":
                                 return services.AddEntryPointsFor_Demo_IDispatcher(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)

@@ -105,7 +105,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -235,7 +235,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -395,7 +395,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -566,7 +566,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -739,7 +739,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -916,7 +916,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IMediator":
                                 return services.AddEntryPointsFor_Demo_IMediator(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
@@ -1062,7 +1062,7 @@ public class EntryPointDiscoveryGeneratorTests
                             case "Demo.IFacade":
                                 return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
                     public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)

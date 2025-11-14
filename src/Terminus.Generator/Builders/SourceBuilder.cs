@@ -55,7 +55,7 @@ internal static class SourceBuilder
                     {
                         {{GenerateRegistrationMethodSelector(facades)}};
                                   
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");   
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");   
                     }
                               
                     public static IServiceCollection AddEntryPoints(
