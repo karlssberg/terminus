@@ -47,6 +47,9 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         namespace Microsoft.Extensions.DependencyInjection
         {
             public interface IServiceCollection { }
+            
+            public class ServiceCollection : IServiceCollection { }
+            
             public interface IServiceScope : IDisposable
             {
                 IServiceProvider ServiceProvider { get; }

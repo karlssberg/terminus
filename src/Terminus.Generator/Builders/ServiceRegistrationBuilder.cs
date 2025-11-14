@@ -27,7 +27,7 @@ internal static class ServiceRegistrationBuilder
                                                 SyntaxKind.SimpleMemberAccessExpression,
                                                 IdentifierName("services"),
                                                 IdentifierName(
-                                                    $"AddEntryPointFacadeFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}")))
+                                                    $"AddEntryPointsFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}")))
                                         .WithArgumentList(ParseArgumentList("(configure)")))))
                     .ToArray())
                 .NormalizeWhitespace();
@@ -49,7 +49,7 @@ internal static class ServiceRegistrationBuilder
     {
         var registerAllEntryPoints = facades
             .Select(aggregatorInfo => ParseStatement(
-                $"services.AddEntryPointFacadeFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}();"))
+                $"services.AddEntryPointsFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}();"))
             .ToSyntaxList();
         return registerAllEntryPoints;
     }
@@ -62,7 +62,7 @@ internal static class ServiceRegistrationBuilder
         
         return
           $$"""
-            private static IServiceCollection AddEntryPointFacadeFor_{{facadeFullNameIdentifier}}(
+            private static IServiceCollection AddEntryPointsFor_{{facadeFullNameIdentifier}}(
                 this IServiceCollection services,
                 Action<ParameterBindingStrategyResolver>? configure = null)
             {

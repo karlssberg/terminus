@@ -3,7 +3,7 @@ using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTransient<CustomRouter>();
-builder.Services.AddEntryPointFacade<MyHttpPostAttribute>();
+builder.Services.AddEntryPoints<IDispatcher>();
 
 var app = builder.Build();
 

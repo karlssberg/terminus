@@ -70,7 +70,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -98,20 +98,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -201,7 +200,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -229,20 +228,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -360,7 +358,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -390,20 +388,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -530,7 +527,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -562,20 +559,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -704,7 +700,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -736,20 +732,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -882,7 +877,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IMediator(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IMediator(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -914,20 +909,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IMediator":
-                                return services.AddEntryPointFacadeFor_Demo_IMediator(configure);
+                                return services.AddEntryPointsFor_Demo_IMediator(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IMediator();
+                        services.AddEntryPointsFor_Demo_IMediator();
                         return services;
                     }
                 }
@@ -955,7 +949,8 @@ public class EntryPointDiscoveryGeneratorTests
 
         await test.RunAsync();
     }
-    
+
+#if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     [Fact]
     public async Task Given_IAsyncEnumerable_entry_point_in_scoped_facade_Should_create_async_method()
     {
@@ -1031,7 +1026,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointFacadeFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         services.AddSingleton(provider =>
                         {
@@ -1060,20 +1055,19 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
-                        where T : EntryPointAttribute
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
                             case "Demo.IFacade":
-                                return services.AddEntryPointFacadeFor_Demo_IFacade(configure);
+                                return services.AddEntryPointsFor_Demo_IFacade(configure);
                         };
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPointFacades(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddEntryPointFacadeFor_Demo_IFacade();
+                        services.AddEntryPointsFor_Demo_IFacade();
                         return services;
                     }
                 }
@@ -1092,4 +1086,5 @@ public class EntryPointDiscoveryGeneratorTests
 
         await test.RunAsync();
     }
+#endif
 }

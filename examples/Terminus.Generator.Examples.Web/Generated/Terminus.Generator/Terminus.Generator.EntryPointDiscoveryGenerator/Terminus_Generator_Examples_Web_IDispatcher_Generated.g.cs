@@ -35,7 +35,7 @@ namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
-        private static IServiceCollection AddEntryPointFacadeFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
             services.AddSingleton(provider =>
             {

@@ -49,16 +49,16 @@ internal static class SourceBuilder
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPointFacade<T>(
+                    public static IServiceCollection AddEntryPoints<T>(
                         this IServiceCollection services,
-                        Action<ParameterBindingStrategyResolver>? configure = null) where T : EntryPointAttribute
+                        Action<ParameterBindingStrategyResolver>? configure = null)
                     {
                         {{GenerateRegistrationMethodSelector(facades)}};
                                   
-                        throw new InvalidOperationException($"No entry point discovery strategy found for type '{typeof(T).FullName}'");   
+                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point Aggregator");   
                     }
                               
-                    public static IServiceCollection AddEntryPointFacades(
+                    public static IServiceCollection AddEntryPoints(
                         this IServiceCollection services,
                         Action<ParameterBindingStrategyResolver>? configure = null)
                     {

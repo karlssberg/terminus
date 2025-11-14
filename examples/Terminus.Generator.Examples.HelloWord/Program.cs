@@ -4,7 +4,7 @@ using Terminus.Generator.Examples.HelloWorld;
 
 var services = new ServiceCollection();
 
-services.AddEntryPointFacades();
+services.AddEntryPoints();
 
 var serviceProvider = services.BuildServiceProvider();
 var myListener = serviceProvider.GetRequiredService<IMyListener>();
