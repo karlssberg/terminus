@@ -12,8 +12,6 @@ namespace Terminus.Generator.Examples.HelloWorld
     {
         void Handle(string message);
         System.Threading.Tasks.Task<string> Query(string message1, string message2, System.Threading.CancellationToken cancellationToken);
-        void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
-        System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
     }
 
     internal sealed class IFacade_Generated : Terminus.Generator.Examples.HelloWorld.IFacade
@@ -35,18 +33,6 @@ namespace Terminus.Generator.Examples.HelloWorld
         {
             cancellationToken.ThrowIfCancellationRequested();
             return await Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(message1, message2, cancellationToken).ConfigureAwait(false);
-        }
-
-        public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            _dispatcher.Publish(context, cancellationToken);
-        }
-
-        public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            return _dispatcher.SendAsync<T>(context, cancellationToken);
         }
     }
 }

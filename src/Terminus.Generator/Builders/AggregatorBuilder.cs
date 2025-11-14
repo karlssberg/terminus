@@ -315,8 +315,10 @@ internal static class AggregatorBuilder
             .AddModifiers(Token(SyntaxKind.PublicKeyword))
             .WithParameterList(parameterList);
 
-        // Add async modifier when returning Task or Task<T>
-        if (entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult)
+        // Add async modifier when returning Task/Task<T> or when generating an async iterator
+        // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
+        if (entryPoint.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult
+            || (entryPoint.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && aggregatorInfo.Scoped))
         {
             method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
         }
@@ -368,6 +370,16 @@ internal static class AggregatorBuilder
             ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
             ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.AsyncEnumerable when aggregatorInfo.Scoped =>
+                // For scoped async streams, proxy enumeration via the facade interface within the scope
+                // as expected by tests: scope.ServiceProvider.GetRequiredService<IFacade>().Method(...)
+                ParseStatement(
+                    $$"""
+                    await foreach (var item in scope.ServiceProvider.GetRequiredService<{{aggregatorInfo.InterfaceSymbol.Name}}>().{{entryPoint.MethodSymbol.Name}}({{string.Join(", ", entryPoint.MethodSymbol.Parameters.Select(p => p.Name))}}))
+                    {
+                        yield return item;
+                    }
+                    """),
             _ => ReturnStatement(invocationExpression)
         };
 
@@ -387,15 +399,22 @@ internal static class AggregatorBuilder
             yield break;
         }
 
+        // In scoped facades, wrap the call into a scope. For async streams, we already built
+        // an await-foreach statement as innerStatement to proxy the stream.
         yield return entryPoint switch
         {
             { MethodSymbol.IsStatic: true } =>
                 innerStatement,
-            
-            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable } 
-                when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) => 
+
+            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
                 GenerateUsingStatementWithCreateAsyncScope(innerStatement),
-            
+
+            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } =>
+                GenerateUsingStatementWithCreateScope(innerStatement),
+
+            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult } when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
+                GenerateUsingStatementWithCreateAsyncScope(innerStatement),
+
             _ => GenerateUsingStatementWithCreateScope(innerStatement)
         };
     }

@@ -29,7 +29,7 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    [EntryPointFacade(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
+    [ScopedEntryPointMediator(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
     public partial interface IDispatcher;
     
     [AttributeUsage(AttributeTargets.Method)]

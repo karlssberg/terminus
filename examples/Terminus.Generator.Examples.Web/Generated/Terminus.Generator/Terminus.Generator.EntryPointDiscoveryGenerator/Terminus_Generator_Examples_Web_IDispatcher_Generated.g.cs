@@ -10,7 +10,6 @@ namespace Terminus.Generator.Examples.Web
 {
     public partial interface IDispatcher
     {
-        void GetPost(string id, string postId);
         void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
     }
 
@@ -22,11 +21,6 @@ namespace Terminus.Generator.Examples.Web
         {
             _serviceProvider = serviceProvider;
             _dispatcher = dispatcher;
-        }
-
-        public void GetPost(string id, string postId)
-        {
-            _serviceProvider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(id, postId);
         }
 
         public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
@@ -49,7 +43,7 @@ namespace Terminus
                 configure?.Invoke(resolver);
                 return resolver;
             });
-            services.AddTransient<Dispatcher<Terminus.Generator.Examples.Web.IDispatcher>>();
+            services.AddTransient<ScopedDispatcher<Terminus.Generator.Examples.Web.IDispatcher>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.Web.IDispatcher>, DefaultEntryPointRouter<Terminus.Generator.Examples.Web.IDispatcher>>();
             services.AddKeyedSingleton<EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, key) => new EntryPointDescriptor<Terminus.Generator.Examples.Web.MyHttpPostAttribute>(typeof(Terminus.Generator.Examples.Web.MyController).GetMethod("GetPost", new System.Type[] { typeof(string), typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.Web.MyController>().GetPost(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("id", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("postId", context))));
             services.AddTransient<Terminus.Generator.Examples.Web.MyController>();
