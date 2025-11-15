@@ -59,24 +59,35 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.Key,
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
-        
-        
+
+        var validFacades = new List<AggregatorFacadeInterfaceInfo>();
+
         foreach (var facade in facades)
         {
             var entryPointMethodInfos = facade.EntryPointAttributeTypes
-                .SelectMany(entryPointAttributeType => 
+                .SelectMany(entryPointAttributeType =>
                     entryPointsByAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var attrType)
                         ? attrType.AsEnumerable()
                         : [])
                 .ToImmutableArray();
-            
+
+            // Validate entry points for this facade
+            var hasErrors = UsageValidator.Validate(context, entryPointMethodInfos, facade);
+
+            // Skip code generation if there were errors
+            if (hasErrors)
+                continue;
+
+            // Track valid facades for service registration
+            validFacades.Add(facade);
+
             // Generate facade implementation
             var aggregatorContext =
                 new AggregatorContext(facade)
                 {
                     EntryPointMethodInfos = entryPointMethodInfos,
                 };
-            
+
             var source = SourceBuilder
                 .GenerateAggregatorEntryPoints(aggregatorContext)
                 .ToFullString();
@@ -84,11 +95,15 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
         }
 
-        var compilationUnitSyntax = SourceBuilder
-            .GenerateServiceRegistrations([..facades])
-            .NormalizeWhitespace();
-        
-        context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
+        // Only generate service registration for valid facades (no errors)
+        if (validFacades.Count > 0)
+        {
+            var compilationUnitSyntax = SourceBuilder
+                .GenerateServiceRegistrations([..validFacades])
+                .NormalizeWhitespace();
+
+            context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
+        }
     }
 
     private static bool IsCandidateFacadeInterface(SyntaxNode node) =>
@@ -223,7 +238,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     private static bool InheritsFromBaseAttribute(INamedTypeSymbol attributeClass)
     {
         var current = attributeClass;
-        
+
         while (current != null)
         {
             if (current.ToDisplayString() == EntryPointAttributeFullName)
@@ -234,4 +249,5 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
         return false;
     }
+
 }
