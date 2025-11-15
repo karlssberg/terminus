@@ -9,10 +9,12 @@ var app = builder.Build();
 
 app.Use(async (HttpContext context, RequestDelegate _) =>
 {
-    var entryPoints = context.RequestServices.GetServices<EntryPointDescriptor<MyHttpPostAttribute>>();
     var dispatcher = context.RequestServices.GetRequiredService<IDispatcher>();
     var router = context.RequestServices.GetRequiredService<CustomRouter>();
     
+    dispatcher.Publish(new ParameterBindingContext(router), CancellationToken.None);
+    
+    var entryPoints = context.RequestServices.GetServices<EntryPointDescriptor<MyHttpPostAttribute>>();
     foreach (var entryPoint in entryPoints)
     {
         router.AddRoute(entryPoint.Attribute.Path, httpContext =>
