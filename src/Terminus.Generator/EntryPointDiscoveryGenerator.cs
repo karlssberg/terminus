@@ -43,11 +43,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private static void Execute(
         SourceProductionContext context,
-        (ImmutableArray<AggregatorFacadeInterfaceInfo> facades, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
+        (ImmutableArray<AggregatorInterfaceInfo> aggregators, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
     {
-        var (facades, entryPoints) = data;
+        var (aggregators, entryPoints) = data;
 
-        if (entryPoints.IsEmpty && facades.IsEmpty)
+        if (entryPoints.IsEmpty && aggregators.IsEmpty)
             return;
 
         // Group entry points by their attribute type (exact match)
@@ -60,30 +60,39 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
 
-        var validFacades = new List<AggregatorFacadeInterfaceInfo>();
+        var validFacades = new List<AggregatorInterfaceInfo>();
 
-        foreach (var facade in facades)
+        foreach (var aggregator in aggregators)
         {
-            var entryPointMethodInfos = facade.EntryPointAttributeTypes
+            var entryPointMethodInfos = aggregator.EntryPointAttributeTypes
                 .SelectMany(entryPointAttributeType =>
                     entryPointsByAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var attrType)
                         ? attrType.AsEnumerable()
                         : [])
                 .ToImmutableArray();
 
+            // Filter by TargetTypes if specified
+            if (!aggregator.TargetTypes.IsEmpty)
+            {
+                entryPointMethodInfos = entryPointMethodInfos
+                    .Where(ep => aggregator.TargetTypes.Any(targetType =>
+                        SymbolEqualityComparer.Default.Equals(ep.MethodSymbol.ContainingType, targetType)))
+                    .ToImmutableArray();
+            }
+
             // Validate entry points for this facade
-            var hasErrors = UsageValidator.Validate(context, entryPointMethodInfos, facade);
+            var hasErrors = UsageValidator.Validate(context, entryPointMethodInfos, aggregator);
 
             // Skip code generation if there were errors
             if (hasErrors)
                 continue;
 
             // Track valid facades for service registration
-            validFacades.Add(facade);
+            validFacades.Add(aggregator);
 
             // Generate facade implementation
             var aggregatorContext =
-                new AggregatorContext(facade)
+                new AggregatorContext(aggregator)
                 {
                     EntryPointMethodInfos = entryPointMethodInfos,
                 };
@@ -92,7 +101,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 .GenerateAggregatorEntryPoints(aggregatorContext)
                 .ToFullString();
 
-            context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
+            context.AddSource($"{aggregator.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
         }
 
         // Only generate service registration for valid facades (no errors)
@@ -113,7 +122,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     private static bool IsCandidateMethod(SyntaxNode node) =>
         node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
 
-    private static AggregatorFacadeInterfaceInfo? GetAggregatorFacadeInterfaceInfo(
+    private static AggregatorInterfaceInfo? GetAggregatorFacadeInterfaceInfo(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
@@ -156,11 +165,17 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                                           .Select(x => x.Value)
                                           .OfType<INamedTypeSymbol>()
                                           .DefaultIfEmpty(entryPointTypeSymbol);
-            
-            return new AggregatorFacadeInterfaceInfo(
+
+            var targetTypes = aggregatorAttrData.ConstructorArguments
+                                  .SelectMany(x => x.Values)
+                                  .Select(x => x.Value)
+                                  .OfType<INamedTypeSymbol>();
+
+            return new AggregatorInterfaceInfo(
                 interfaceSymbol,
                 aggregatorAttrData,
                 [..entryPointAttrTypes],
+                [..targetTypes],
                 dotnetFeatures,
                 serviceKind,
                 isScoped

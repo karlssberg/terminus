@@ -25,7 +25,7 @@ internal static class Diagnostics
     public static readonly DiagnosticDescriptor RefOrOutParameter = new(
         id: "TM0003",
         title: "Ref or out parameter in entry point",
-        messageFormat: "Entry point method '{0}' cannot have ref or out parameters. Parameter '{1}' is invalid",
+        messageFormat: "Entry point method '{0}' cannot have ref or out parameters (Parameter '{1}' is invalid)",
         category: "Terminus.Generator",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,

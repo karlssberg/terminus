@@ -253,7 +253,7 @@ internal static class AggregatorBuilder
 
 
     private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithoutContext(
-        AggregatorFacadeInterfaceInfo aggregatorInfo,
+        AggregatorInterfaceInfo aggregatorInfo,
         ImmutableArray<EntryPointMethodInfo> entryPoints)
     {
         var types = entryPoints
@@ -297,7 +297,7 @@ internal static class AggregatorBuilder
     }
 
     private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(
-        AggregatorFacadeInterfaceInfo aggregatorInfo,
+        AggregatorInterfaceInfo aggregatorInfo,
         EntryPointMethodInfo entryPoint)
     {
         // Build return type
@@ -329,7 +329,7 @@ internal static class AggregatorBuilder
         return method.NormalizeWhitespace();
     }
 
-    private static IEnumerable<StatementSyntax> GenerateEntryPointMethodImplementationMethodBody(AggregatorFacadeInterfaceInfo aggregatorInfo, EntryPointMethodInfo entryPoint)
+    private static IEnumerable<StatementSyntax> GenerateEntryPointMethodImplementationMethodBody(AggregatorInterfaceInfo aggregatorInfo, EntryPointMethodInfo entryPoint)
     {
         var serviceProviderExpression = aggregatorInfo.Scoped
             ? "scope.ServiceProvider"

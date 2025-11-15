@@ -37,7 +37,7 @@ internal static class SourceBuilder
     }
 
     internal static CompilationUnitSyntax GenerateServiceRegistrations(
-        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorInterfaceInfo> facades)
     {
         var compilationUnit =
           $$"""

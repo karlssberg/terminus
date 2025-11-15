@@ -9,7 +9,7 @@ namespace Terminus.Generator.Builders;
 internal static class ServiceRegistrationBuilder
 {
     internal static SwitchStatementSyntax GenerateRegistrationMethodSelector(
-        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorInterfaceInfo> facades)
     {
         var switchExpression =
             SwitchStatement(ParseExpression("typeof(T).FullName"))
@@ -45,7 +45,7 @@ internal static class ServiceRegistrationBuilder
     }
 
     internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(
-        ImmutableArray<AggregatorFacadeInterfaceInfo> facades)
+        ImmutableArray<AggregatorInterfaceInfo> facades)
     {
         var registerAllEntryPoints = facades
             .Select(aggregatorInfo => ParseStatement(

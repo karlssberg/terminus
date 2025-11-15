@@ -6,7 +6,7 @@ namespace Terminus.Generator;
 internal static class UsageValidator
 {
     internal static bool Validate(SourceProductionContext context, ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos,
-        AggregatorFacadeInterfaceInfo facade)
+        AggregatorInterfaceInfo facade)
     {
         var hasErrors = false;
         
@@ -28,21 +28,18 @@ internal static class UsageValidator
             }
         }
 
-        // TM0002: Generic methods not allowed in mediators (but allowed in facades)
-        if (facade.ServiceKind == ServiceKind.Mediator)
+        // TM0002: Generic methods not allowed
+        var genericEntryPointMethods = entryPointMethodInfos
+            .Where(ep => ep.MethodSymbol.IsGenericMethod );
+        
+        foreach (var entryPoint in genericEntryPointMethods)
         {
-            var genericEntryPointMethods = entryPointMethodInfos
-                .Where(ep => ep.MethodSymbol.IsGenericMethod );
-            
-            foreach (var entryPoint in genericEntryPointMethods)
-            {
-                var diagnostic = Diagnostic.Create(
-                    Diagnostics.GenericEntryPointMethod,
-                    entryPoint.MethodSymbol.Locations.FirstOrDefault(),
-                    entryPoint.MethodSymbol.Name);
-                context.ReportDiagnostic(diagnostic);
-                hasErrors = true;
-            }
+            var diagnostic = Diagnostic.Create(
+                Diagnostics.GenericEntryPointMethod,
+                entryPoint.MethodSymbol.Locations.FirstOrDefault(),
+                entryPoint.MethodSymbol.Name);
+            context.ReportDiagnostic(diagnostic);
+            hasErrors = true;
         }
 
         // TM0001: Detect duplicate signatures
