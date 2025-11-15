@@ -81,7 +81,7 @@ public class Dispatcher<TFacade>(
             _ => throw CreateTypeMismatchException()
         };
     }
-    
+
     public virtual IAsyncEnumerable<T> CreateStream<T>(
         ParameterBindingContext context,
         CancellationToken cancellationToken = default)
@@ -92,6 +92,15 @@ public class Dispatcher<TFacade>(
             IAsyncEnumerable<T> value => value,
             _ => throw CreateTypeMismatchException()
         };
+    }
+
+    public virtual RouteResult Route(
+        ParameterBindingContext context,
+        CancellationToken cancellationToken = default)
+    {
+        var descriptor = GetEntryPoint(context);
+        var result = descriptor.Invoker(context, cancellationToken);
+        return new RouteResult(descriptor.ReturnKind, descriptor.MethodInfo.ReturnType, result);
     }
 
     private static InvalidOperationException CreateTypeMismatchException()

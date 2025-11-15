@@ -92,6 +92,11 @@ internal static class AggregatorBuilder
 
                 break;
             }
+            case ServiceKind.Router:
+            {
+                yield return GenerateRouteMethodInterfaceDefinition();
+                break;
+            }
             case ServiceKind.None:
                 break;
             default:
@@ -133,6 +138,11 @@ internal static class AggregatorBuilder
                     };
                 }
 
+                break;
+            }
+            case ServiceKind.Router:
+            {
+                yield return GenerateRouteMethodImplementation();
                 break;
             }
             case ServiceKind.None:
@@ -245,6 +255,26 @@ internal static class AggregatorBuilder
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 return _dispatcher.CreateStream<T>(context, cancellationToken);
+            }
+            """;
+
+        return ParseMemberDeclaration(methodDeclaration)!;
+    }
+
+    private static MemberDeclarationSyntax GenerateRouteMethodInterfaceDefinition()
+    {
+        return ParseMemberDeclaration(
+            "RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
+    }
+
+    private static MemberDeclarationSyntax GenerateRouteMethodImplementation()
+    {
+        const string methodDeclaration =
+            """
+            public RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return _dispatcher.Route(context, cancellationToken);
             }
             """;
 

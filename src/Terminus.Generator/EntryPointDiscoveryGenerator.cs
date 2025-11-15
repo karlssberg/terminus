@@ -14,6 +14,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
     private const string ScopedFacadeAttributeFullName = "Terminus.ScopedEntryPointFacadeAttribute";
     private const string MediatorAttributeFullName = "Terminus.EntryPointMediatorAttribute";
     private const string ScopedMediatorAttributeFullName = "Terminus.ScopedEntryPointMediatorAttribute";
+    private const string RouterAttributeFullName = "Terminus.EntryPointRouterAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -131,6 +132,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         var scopedFacadeAttributeTypeSymbol = GetTypeByMetadataName(context, ScopedFacadeAttributeFullName);
         var mediatorAttributeTypeSymbol = GetTypeByMetadataName(context, MediatorAttributeFullName);
         var scopedMediatorAttributeTypeSymbol = GetTypeByMetadataName(context, ScopedMediatorAttributeFullName);
+        var routerAttributeTypeSymbol = GetTypeByMetadataName(context, RouterAttributeFullName);
         
         var asyncDisposableTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
         var dotnetFeatures = 
@@ -142,17 +144,20 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         // Find [EntryPointFacade] or    derived attribute
         foreach (var aggregatorAttrData in interfaceSymbol.GetAttributes())
         {
-            var facadeAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass, 
-                    facadeAttributeTypeSymbol, 
+            var facadeAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
+                    facadeAttributeTypeSymbol,
                     scopedFacadeAttributeTypeSymbol);
-            
-            var mediatorAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass, 
+
+            var mediatorAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
                     mediatorAttributeTypeSymbol,
                     scopedMediatorAttributeTypeSymbol);
 
-            var serviceKind = ResolveServiceKind(facadeAttributeMatch, mediatorAttributeMatch);
-            
-            if (serviceKind ==  ServiceKind.None) 
+            var routerAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
+                    routerAttributeTypeSymbol);
+
+            var serviceKind = ResolveServiceKind(facadeAttributeMatch, mediatorAttributeMatch, routerAttributeMatch);
+
+            if (serviceKind ==  ServiceKind.None)
                 continue;
             
             // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
@@ -185,12 +190,14 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static ServiceKind ResolveServiceKind(INamedTypeSymbol? facadeAttributeMatch, INamedTypeSymbol? mediatorAttributeMatch)
+    private static ServiceKind ResolveServiceKind(INamedTypeSymbol? facadeAttributeMatch, INamedTypeSymbol? mediatorAttributeMatch, INamedTypeSymbol? routerAttributeMatch)
     {
         if (facadeAttributeMatch is not null)
             return  ServiceKind.Facade;
         if (mediatorAttributeMatch is not null)
             return ServiceKind.Mediator;
+        if (routerAttributeMatch is not null)
+            return ServiceKind.Router;
 
         return ServiceKind.None;
     }

@@ -4,5 +4,6 @@ public enum ServiceKind
 {
     None,
     Facade,
-    Mediator
+    Mediator,
+    Router
 }

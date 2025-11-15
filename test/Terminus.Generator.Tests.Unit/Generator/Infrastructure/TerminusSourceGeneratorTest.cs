@@ -34,9 +34,64 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             public ValueTask DisposeAsync() => default;
         }
         """;
+
+    private const string AsyncEnumerableShim = "";
 #else
     private const string CreateAsyncScopeMethod = "";
     private const string AsyncServiceScopeClass = "";
+
+    private const string AsyncEnumerableShim =
+        """
+        namespace System.Threading.Tasks
+        {
+            public struct ValueTask
+            {
+                public bool IsCompleted => true;
+                public void GetAwaiter() { }
+            }
+
+            public struct ValueTask<T>
+            {
+                private readonly T _value;
+                public ValueTask(T value) { _value = value; }
+                public bool IsCompleted => true;
+                public T Result => _value;
+                public System.Runtime.CompilerServices.ValueTaskAwaiter<T> GetAwaiter() => default;
+            }
+        }
+
+        namespace System.Runtime.CompilerServices
+        {
+            public struct ValueTaskAwaiter<T>
+            {
+                public bool IsCompleted => true;
+                public T GetResult() => default!;
+                public void OnCompleted(System.Action continuation) { }
+            }
+        }
+
+        namespace System.Collections.Generic
+        {
+            public interface IAsyncEnumerable<out T>
+            {
+                IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default);
+            }
+
+            public interface IAsyncEnumerator<out T> : System.IAsyncDisposable
+            {
+                T Current { get; }
+                System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
+            }
+        }
+
+        namespace System
+        {
+            public interface IAsyncDisposable
+            {
+                System.Threading.Tasks.ValueTask DisposeAsync();
+            }
+        }
+        """;
 #endif
 
     private const string DiShimSource =
@@ -98,7 +153,8 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
     {
         // Align reference assemblies with the current test target framework
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-        ReferenceAssemblies = ReferenceAssemblies.Net.Net80;
+        ReferenceAssemblies = ReferenceAssemblies.Net.Net80
+            .AddPackages([new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "8.0.0")]);
 #else
         ReferenceAssemblies = ReferenceAssemblies.NetStandard.NetStandard20;
 #endif
@@ -106,6 +162,11 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         // Common test inputs
         TestState.Sources.Add(IsExternalInitSource);
         TestState.Sources.Add(DiShimSource);
+
+        if (!string.IsNullOrEmpty(AsyncEnumerableShim))
+        {
+            TestState.Sources.Add(AsyncEnumerableShim);
+        }
         
         // Ensure the test compilation can resolve Terminus.EntryPointAttribute and other Terminus types
         TestState.AdditionalReferences.Add(
