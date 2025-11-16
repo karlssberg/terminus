@@ -9,13 +9,6 @@ namespace Terminus.Generator;
 [Generator]
 public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 {
-    private const string EntryPointAttributeFullName = "Terminus.EntryPointAttribute";
-    private const string FacadeAttributeFullName = "Terminus.EntryPointFacadeAttribute";
-    private const string ScopedFacadeAttributeFullName = "Terminus.ScopedEntryPointFacadeAttribute";
-    private const string MediatorAttributeFullName = "Terminus.EntryPointMediatorAttribute";
-    private const string ScopedMediatorAttributeFullName = "Terminus.ScopedEntryPointMediatorAttribute";
-    private const string RouterAttributeFullName = "Terminus.EntryPointRouterAttribute";
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Discover facade interfaces marked with [EntryPointFacade]
@@ -42,7 +35,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(combined, Execute);
     }
 
-    private static void Execute(
+    private void Execute(
         SourceProductionContext context,
         (ImmutableArray<AggregatorInterfaceInfo> aggregators, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
     {
@@ -75,10 +68,12 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             // Filter by TargetTypes if specified
             if (!aggregator.TargetTypes.IsEmpty)
             {
-                entryPointMethodInfos = entryPointMethodInfos
-                    .Where(ep => aggregator.TargetTypes.Any(targetType =>
-                        SymbolEqualityComparer.Default.Equals(ep.MethodSymbol.ContainingType, targetType)))
-                    .ToImmutableArray();
+                entryPointMethodInfos = 
+                [
+                    ..entryPointMethodInfos
+                        .Where(ep => aggregator.TargetTypes.Any(targetType =>
+                            SymbolEqualityComparer.Default.Equals(ep.MethodSymbol.ContainingType, targetType)))
+                ];
             }
 
             // Validate entry points for this facade
@@ -127,13 +122,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
-        var entryPointTypeSymbol = GetTypeByMetadataName(context, EntryPointAttributeFullName);
-        var facadeAttributeTypeSymbol = GetTypeByMetadataName(context, FacadeAttributeFullName);
-        var scopedFacadeAttributeTypeSymbol = GetTypeByMetadataName(context, ScopedFacadeAttributeFullName);
-        var mediatorAttributeTypeSymbol = GetTypeByMetadataName(context, MediatorAttributeFullName);
-        var scopedMediatorAttributeTypeSymbol = GetTypeByMetadataName(context, ScopedMediatorAttributeFullName);
-        var routerAttributeTypeSymbol = GetTypeByMetadataName(context, RouterAttributeFullName);
-        
+        var supportedAttributes = new SupportedAttributes(context);
         var asyncDisposableTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
         var dotnetFeatures = 
             asyncDisposableTypeSymbol is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
@@ -141,35 +130,21 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, ct) is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [EntryPointFacade] or    derived attribute
+        // Find [EntryPointFacade] or derived attribute
         foreach (var aggregatorAttrData in interfaceSymbol.GetAttributes())
         {
-            var facadeAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
-                    facadeAttributeTypeSymbol,
-                    scopedFacadeAttributeTypeSymbol);
 
-            var mediatorAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
-                    mediatorAttributeTypeSymbol,
-                    scopedMediatorAttributeTypeSymbol);
+            var aggregatorFeatures = new AggregatorFeatures(supportedAttributes, aggregatorAttrData);
 
-            var routerAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
-                    routerAttributeTypeSymbol);
-
-            var serviceKind = ResolveServiceKind(facadeAttributeMatch, mediatorAttributeMatch, routerAttributeMatch);
-
-            if (serviceKind ==  ServiceKind.None)
+            if (aggregatorFeatures.ServiceKind == ServiceKind.None)
                 continue;
-            
-            // Determine scoping behavior from [EntryPointFacade] attribute (default: true)
-            var isScoped = SymbolEqualityComparer.Default.Equals(facadeAttributeMatch, scopedFacadeAttributeTypeSymbol)
-                || SymbolEqualityComparer.Default.Equals(mediatorAttributeMatch, scopedMediatorAttributeTypeSymbol);
             
             var entryPointAttrTypes = aggregatorAttrData.NamedArguments
                                           .Where(x => x.Key == "EntryPointAttributes")
                                           .SelectMany(x => x.Value.Values)
                                           .Select(x => x.Value)
                                           .OfType<INamedTypeSymbol>()
-                                          .DefaultIfEmpty(entryPointTypeSymbol);
+                                          .DefaultIfEmpty(supportedAttributes.EntryPointTypeSymbol);
 
             var targetTypes = aggregatorAttrData.ConstructorArguments
                                   .SelectMany(x => x.Values)
@@ -182,45 +157,9 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 [..entryPointAttrTypes],
                 [..targetTypes],
                 dotnetFeatures,
-                serviceKind,
-                isScoped
+                aggregatorFeatures.ServiceKind,
+                aggregatorFeatures.IsScoped
             );
-        }
-
-        return null;
-    }
-
-    private static ServiceKind ResolveServiceKind(INamedTypeSymbol? facadeAttributeMatch, INamedTypeSymbol? mediatorAttributeMatch, INamedTypeSymbol? routerAttributeMatch)
-    {
-        if (facadeAttributeMatch is not null)
-            return  ServiceKind.Facade;
-        if (mediatorAttributeMatch is not null)
-            return ServiceKind.Mediator;
-        if (routerAttributeMatch is not null)
-            return ServiceKind.Router;
-
-        return ServiceKind.None;
-    }
-
-    private static INamedTypeSymbol GetTypeByMetadataName(GeneratorSyntaxContext context, string fullTypeName)
-    {
-        return context.SemanticModel.Compilation.GetTypeByMetadataName(fullTypeName)
-               ?? throw new InvalidOperationException($"{fullTypeName} not found");
-    }
-
-    private static INamedTypeSymbol? GetSelfOrBaseType(
-        INamedTypeSymbol? attributeClass, 
-        params IEnumerable<INamedTypeSymbol> types)
-    {
-        var typeSet =  new HashSet<INamedTypeSymbol>(types,  SymbolEqualityComparer.Default);
-        var current = attributeClass;
-
-        while (current is not null)
-        {
-            if (typeSet.Contains(current))
-                return current;
-
-            current = current.BaseType;
         }
 
         return null;
@@ -263,7 +202,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
         while (current != null)
         {
-            if (current.ToDisplayString() == EntryPointAttributeFullName)
+            if (current.ToDisplayString() == SupportedAttributes.EntryPointAttributeFullName)
                 return true;
 
             current = current.BaseType;

@@ -69,28 +69,6 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
                 public void OnCompleted(System.Action continuation) { }
             }
         }
-
-        namespace System.Collections.Generic
-        {
-            public interface IAsyncEnumerable<out T>
-            {
-                IAsyncEnumerator<T> GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default);
-            }
-
-            public interface IAsyncEnumerator<out T> : System.IAsyncDisposable
-            {
-                T Current { get; }
-                System.Threading.Tasks.ValueTask<bool> MoveNextAsync();
-            }
-        }
-
-        namespace System
-        {
-            public interface IAsyncDisposable
-            {
-                System.Threading.Tasks.ValueTask DisposeAsync();
-            }
-        }
         """;
 #endif
 

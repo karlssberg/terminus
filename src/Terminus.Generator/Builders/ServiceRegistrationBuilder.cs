@@ -39,9 +39,9 @@ internal static class ServiceRegistrationBuilder
     {
         return ExpressionStatement(
             ParseExpression(
-                aggregatorContext.Facade.Scoped
-                    ? $"services.AddTransient<ScopedDispatcher<{aggregatorContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"
-                    : $"services.AddTransient<Dispatcher<{aggregatorContext.Facade.InterfaceSymbol.ToDisplayString()}>>()"));
+                aggregatorContext.Aggregator.Scoped
+                    ? $"services.AddTransient<ScopedDispatcher<{aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString()}>>()"
+                    : $"services.AddTransient<Dispatcher<{aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString()}>>()"));
     }
 
     internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(
@@ -56,7 +56,7 @@ internal static class ServiceRegistrationBuilder
 
     internal static string CreateAddEntryPointsMethods(AggregatorContext aggregatorContext)
     {
-        var facade = aggregatorContext.Facade;
+        var facade = aggregatorContext.Aggregator;
         var facadeFullNameIdentifier = facade.InterfaceSymbol.ToIdentifierString();
         var facadeInterfaceType = facade.InterfaceSymbol.ToDisplayString();
         
@@ -86,7 +86,7 @@ internal static class ServiceRegistrationBuilder
 
     private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(AggregatorContext aggregatorContext)
     {
-        var facadeInterfaceType = aggregatorContext.Facade.InterfaceSymbol.ToDisplayString();
+        var facadeInterfaceType = aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString();
         var entryPointMethodInfos = aggregatorContext.EntryPointMethodInfos;
         var entryPointDescriptorRegistrations = entryPointMethodInfos
             .Select(ep =>

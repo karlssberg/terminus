@@ -252,7 +252,10 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                     public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
+                        using (var scope = _serviceProvider.CreateScope())
+                        {
+                            _dispatcher.Publish(context, cancellationToken);
+                        }
                     }
                 }
             }

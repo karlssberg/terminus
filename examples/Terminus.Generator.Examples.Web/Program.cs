@@ -10,20 +10,10 @@ var app = builder.Build();
 app.Use(async (HttpContext context, RequestDelegate _) =>
 {
     var dispatcher = context.RequestServices.GetRequiredService<IDispatcher>();
-    var router = context.RequestServices.GetRequiredService<CustomRouter>();
     
-    dispatcher.Publish(new ParameterBindingContext(router), CancellationToken.None);
+    var response = dispatcher.Router(new ParameterBindingContext(context.GetRouteData().DataTokens), CancellationToken.None);
     
-    var entryPoints = context.RequestServices.GetServices<EntryPointDescriptor<MyHttpPostAttribute>>();
-    foreach (var entryPoint in entryPoints)
-    {
-        router.AddRoute(entryPoint.Attribute.Path, httpContext =>
-        {
-            var routeValues = httpContext.Request.RouteValues.ToDictionary(x => x.Key, x => x.Value);
-            dispatcher.Publish(new ParameterBindingContext(routeValues), CancellationToken.None);
-            return Task.CompletedTask;
-        });
-    }
+    
     await router.RouteAsync(context);
 });
 
@@ -31,7 +21,7 @@ await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
-    [ScopedEntryPointMediator(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
+    [ScopedEntryPointRouter(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
     public partial interface IDispatcher;
     
     [AttributeUsage(AttributeTargets.Method)]

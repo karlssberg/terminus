@@ -11,7 +11,7 @@ internal static class AggregatorBuilder
 
     internal static NamespaceDeclarationSyntax GenerateAggregatorTypeDeclarations(AggregatorContext aggregatorContext)
     {
-        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = aggregatorContext.Aggregator.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
@@ -23,7 +23,7 @@ internal static class AggregatorBuilder
 
     private static InterfaceDeclarationSyntax GenerateAggregatorInterfaceExtensionDeclaration(AggregatorContext aggregatorContext)
     {
-        return InterfaceDeclaration(aggregatorContext.Facade.InterfaceSymbol.Name)
+        return InterfaceDeclaration(aggregatorContext.Aggregator.InterfaceSymbol.Name)
             .WithModifiers(TokenList(Token(
                     SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
@@ -33,11 +33,11 @@ internal static class AggregatorBuilder
 
     private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithScope(AggregatorContext aggregatorContext)
     {
-        var interfaceName = aggregatorContext.Facade.InterfaceSymbol.ToDisplayString();
-        var implementationClassName = aggregatorContext.Facade.GetImplementationClassName();
+        var interfaceName = aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString();
+        var implementationClassName = aggregatorContext.Aggregator.GetImplementationClassName();
         return ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(aggregatorContext.Facade.InterfaceSymbol.ToDisplayString())))
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString())))
             .WithMembers(
             [
                 ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
@@ -60,7 +60,7 @@ internal static class AggregatorBuilder
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = 
             [..aggregatorContext.EntryPointMethodInfos.Select(ep => ep.ReturnTypeKind)];
         
-        switch (aggregatorContext.Facade.ServiceKind)
+        switch (aggregatorContext.Aggregator.ServiceKind)
         {
             case ServiceKind.Facade:
             {
@@ -109,13 +109,13 @@ internal static class AggregatorBuilder
         HashSet<ReturnTypeKind> returnTypeKindsDiscovered = 
             [..aggregatorContext.EntryPointMethodInfos.Select(ep => ep.ReturnTypeKind)];
 
-        switch (aggregatorContext.Facade.ServiceKind)
+        switch (aggregatorContext.Aggregator.ServiceKind)
         {
             case ServiceKind.Facade:
             {
                 foreach (var entryPoint in aggregatorContext.EntryPointMethodInfos)
                 {
-                    yield return GenerateEntryPointMethodImplementationDefinition(aggregatorContext.Facade, entryPoint);
+                    yield return GenerateEntryPointMethodImplementationDefinition(aggregatorContext.Aggregator, entryPoint);
                 }
 
                 break;
@@ -126,11 +126,11 @@ internal static class AggregatorBuilder
                 {
                     yield return returnTypeKind switch
                     {
-                        ReturnTypeKind.Void => GeneratePublishMethodImplementation(),
-                        ReturnTypeKind.Result => GenerateSendMethodImplementation(),
-                        ReturnTypeKind.Task => GeneratePublishAsyncMethodImplementation(),
-                        ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodImplementation(),
-                        ReturnTypeKind.AsyncEnumerable => GenerateStreamAsyncEnumerableMethodImplementation(),
+                        ReturnTypeKind.Void => GeneratePublishMethodImplementation(aggregatorContext),
+                        ReturnTypeKind.Result => GenerateSendMethodImplementation(aggregatorContext),
+                        ReturnTypeKind.Task => GeneratePublishAsyncMethodImplementation(aggregatorContext),
+                        ReturnTypeKind.TaskWithResult => GenerateSendAsyncMethodImplementation(aggregatorContext),
+                        ReturnTypeKind.AsyncEnumerable => GenerateStreamAsyncEnumerableMethodImplementation(aggregatorContext),
                         _ => throw new ArgumentOutOfRangeException(
                             nameof(returnTypeKind),
                             returnTypeKind,
@@ -142,7 +142,7 @@ internal static class AggregatorBuilder
             }
             case ServiceKind.Router:
             {
-                yield return GenerateRouteMethodImplementation();
+                yield return GenerateRouteMethodImplementation(aggregatorContext);
                 break;
             }
             case ServiceKind.None:
@@ -167,16 +167,22 @@ internal static class AggregatorBuilder
             "void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
-    private static MemberDeclarationSyntax GeneratePublishMethodImplementation()
+    private static MemberDeclarationSyntax GeneratePublishMethodImplementation(AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                _dispatcher.Publish(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("_dispatcher.Publish(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
+        }
+            
+        var methodDeclaration =
+            $$"""
+              public void Publish(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
@@ -187,16 +193,24 @@ internal static class AggregatorBuilder
             "System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
     
-    private static MemberDeclarationSyntax GeneratePublishAsyncMethodImplementation()
+    private static MemberDeclarationSyntax GeneratePublishAsyncMethodImplementation(AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return _dispatcher.PublishAsync(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("return _dispatcher.PublishAsync(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
+                ? GenerateUsingStatementWithCreateAsyncScope(statement).NormalizeWhitespace()
+                : GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();;
+        }
+        
+        var  methodDeclaration =
+            $$"""
+              public System.Threading.Tasks.Task PublishAsync(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
@@ -207,16 +221,21 @@ internal static class AggregatorBuilder
             "T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
-    private static MemberDeclarationSyntax GenerateSendMethodImplementation()
+    private static MemberDeclarationSyntax GenerateSendMethodImplementation(AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return _dispatcher.Send<T>(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("return _dispatcher.Send<T>(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
+        }
+        var methodDeclaration =
+            $$"""
+              public T Send<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
@@ -227,16 +246,24 @@ internal static class AggregatorBuilder
             "System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
-    private static MemberDeclarationSyntax GenerateSendAsyncMethodImplementation()
+    private static MemberDeclarationSyntax GenerateSendAsyncMethodImplementation(AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return _dispatcher.SendAsync<T>(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("return _dispatcher.SendAsync<T>(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
+                ? GenerateUsingStatementWithCreateAsyncScope(statement).NormalizeWhitespace()
+                : GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();;
+        }
+        
+        var methodDeclaration =
+            $$"""
+              public System.Threading.Tasks.Task<T> SendAsync<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
@@ -247,16 +274,24 @@ internal static class AggregatorBuilder
             "System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
-    private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodImplementation()
+    private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodImplementation(
+        AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return _dispatcher.CreateStream<T>(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("return _dispatcher.CreateStream<T>(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
+                ? GenerateUsingStatementWithCreateAsyncScope(statement).NormalizeWhitespace()
+                : GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();;
+        }
+        var methodDeclaration =
+            $$"""
+              public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
@@ -267,16 +302,22 @@ internal static class AggregatorBuilder
             "RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
-    private static MemberDeclarationSyntax GenerateRouteMethodImplementation()
+    private static MemberDeclarationSyntax GenerateRouteMethodImplementation(AggregatorContext aggregatorContext)
     {
-        const string methodDeclaration =
-            """
-            public RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                return _dispatcher.Route(context, cancellationToken);
-            }
-            """;
+        var statement = ParseStatement("return _dispatcher.Route(context, cancellationToken);");
+        if (aggregatorContext.Aggregator.Scoped)
+        {
+            statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
+        }
+        
+        var methodDeclaration =
+            $$"""
+              public RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+              {
+                  cancellationToken.ThrowIfCancellationRequested();
+                  {{statement}}
+              }
+              """;
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }

@@ -5,6 +5,8 @@ namespace Terminus.Generator.Tests.Unit.Generator;
 
 public class EntryPointDiscoveryGeneratorErrorTests
 {
+    private const string SourceFilename = "Source.cs";
+
     [Fact]
     public async Task Given_duplicate_entry_point_signatures_Should_fail_compilation_with_custom_diagnostic_error_TM0001()
     {
@@ -35,20 +37,20 @@ public class EntryPointDiscoveryGeneratorErrorTests
         {
             TestState =
             {
-                Sources = { source }
+                Sources = { (SourceFilename, source) },
             }
         };
         test.TestBehaviors |= TestBehaviors.SkipGeneratedSourcesCheck;
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0001")
-                .WithSpan("/0/Test2.cs", 11, 28, 11, 33) // A.Hello() method identifier
+                .WithSpan(SourceFilename, 11, 28, 11, 33) // A.Hello() method identifier
                 .WithArguments("Hello")
         );
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0001")
-                .WithSpan("/0/Test2.cs", 17, 28, 17, 33) // B.Hello() method identifier
+                .WithSpan(SourceFilename, 17, 28, 17, 33) // B.Hello() method identifier
                 .WithArguments("Hello")
         );
 
@@ -79,7 +81,7 @@ public class EntryPointDiscoveryGeneratorErrorTests
         {
             TestState =
             {
-                Sources = { source }
+                Sources = { (SourceFilename, source) },
             }
         };
         
@@ -87,7 +89,7 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0002")
-                .WithSpan("/0/Test2.cs", 11, 25, 11, 29) // TestEntryPoints.Echo<T>() method identifier
+                .WithSpan(SourceFilename, 11, 25, 11, 29) // TestEntryPoints.Echo<T>() method identifier
                 .WithArguments("Echo")
         );
 
@@ -122,20 +124,20 @@ public class EntryPointDiscoveryGeneratorErrorTests
         {
             TestState =
             {
-                Sources = { source }
+                Sources = { (SourceFilename, source) },
             }
         };
         test.TestBehaviors |= TestBehaviors.SkipGeneratedSourcesCheck;
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan("/0/Test2.cs", 11, 47, 11, 52) // TestEntryPoints.ProcessRef(ref int value) parameter 'value'
+                .WithSpan(SourceFilename, 11, 47, 11, 52) // TestEntryPoints.ProcessRef(ref int value) parameter 'value'
                 .WithArguments("ProcessRef", "value")
         );
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan("/0/Test2.cs", 14, 47, 14, 52) // TestEntryPoints.ProcessOut(out int value) parameter 'value'
+                .WithSpan(SourceFilename, 14, 47, 14, 52) // TestEntryPoints.ProcessOut(out int value) parameter 'value'
                 .WithArguments("ProcessOut", "value")
         );
         
