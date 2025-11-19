@@ -85,7 +85,7 @@ public class EntryPointDiscoveryGeneratorAgnosticTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -93,7 +93,7 @@ public class EntryPointDiscoveryGeneratorAgnosticTests
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context), ct)));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
                     }

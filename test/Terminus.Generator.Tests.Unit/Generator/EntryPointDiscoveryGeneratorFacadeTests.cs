@@ -72,7 +72,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -80,7 +80,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context), ct)));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
                     }
@@ -202,7 +202,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -210,7 +210,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
                     }
@@ -360,7 +360,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -369,7 +369,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
                         services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
@@ -529,7 +529,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -538,9 +538,9 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
                         services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
@@ -702,7 +702,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -711,9 +711,9 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
                         services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
                         return services;
@@ -851,7 +851,7 @@ public class EntryPointDiscoveryGeneratorFacadeTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);

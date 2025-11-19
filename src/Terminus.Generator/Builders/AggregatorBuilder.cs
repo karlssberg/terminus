@@ -164,12 +164,12 @@ internal static class AggregatorBuilder
     private static MemberDeclarationSyntax GeneratePublishMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);")!;
+            "void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GeneratePublishMethodImplementation(AggregatorContext aggregatorContext)
     {
-        var statement = ParseStatement("_dispatcher.Publish(context, cancellationToken);");
+        var statement = ParseStatement("_dispatcher.Publish(arguments, cancellationToken);");
         if (aggregatorContext.Aggregator.Scoped)
         {
             statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
@@ -177,7 +177,7 @@ internal static class AggregatorBuilder
             
         var methodDeclaration =
             $$"""
-              public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+              public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
               {
                   cancellationToken.ThrowIfCancellationRequested();
                   {{statement}}
@@ -190,12 +190,12 @@ internal static class AggregatorBuilder
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
     }
     
     private static MemberDeclarationSyntax GeneratePublishAsyncMethodImplementation(AggregatorContext aggregatorContext)
     {
-        var statement = ParseStatement("return _dispatcher.PublishAsync(context, cancellationToken);");
+        var statement = ParseStatement("return _dispatcher.PublishAsync(arguments, cancellationToken);");
         if (aggregatorContext.Aggregator.Scoped)
         {
             statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
@@ -205,7 +205,7 @@ internal static class AggregatorBuilder
         
         var  methodDeclaration =
             $$"""
-              public System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+              public System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
               {
                   cancellationToken.ThrowIfCancellationRequested();
                   {{statement}}
@@ -218,19 +218,19 @@ internal static class AggregatorBuilder
     private static MemberDeclarationSyntax GenerateSendMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);")!;
+            "T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendMethodImplementation(AggregatorContext aggregatorContext)
     {
-        var statement = ParseStatement("return _dispatcher.Send<T>(context, cancellationToken);");
+        var statement = ParseStatement("return _dispatcher.Send<T>(arguments, cancellationToken);");
         if (aggregatorContext.Aggregator.Scoped)
         {
             statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
         }
         var methodDeclaration =
             $$"""
-              public T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+              public T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
               {
                   cancellationToken.ThrowIfCancellationRequested();
                   {{statement}}
@@ -243,12 +243,12 @@ internal static class AggregatorBuilder
     private static MemberDeclarationSyntax GenerateSendAsyncMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateSendAsyncMethodImplementation(AggregatorContext aggregatorContext)
     {
-        var statement = ParseStatement("return _dispatcher.SendAsync<T>(context, cancellationToken);");
+        var statement = ParseStatement("return _dispatcher.SendAsync<T>(arguments, cancellationToken);");
         if (aggregatorContext.Aggregator.Scoped)
         {
             statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
@@ -258,7 +258,7 @@ internal static class AggregatorBuilder
         
         var methodDeclaration =
             $$"""
-              public System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+              public System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
               {
                   cancellationToken.ThrowIfCancellationRequested();
                   {{statement}}
@@ -271,13 +271,13 @@ internal static class AggregatorBuilder
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodInterfaceDefinition()
     {
         return ParseMemberDeclaration(
-            "System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);")!;
+            "System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
     }
 
     private static MemberDeclarationSyntax GenerateStreamAsyncEnumerableMethodImplementation(
         AggregatorContext aggregatorContext)
     {
-        var statement = ParseStatement("return _dispatcher.CreateStream<T>(context, cancellationToken);");
+        var statement = ParseStatement("return _dispatcher.CreateStream<T>(arguments, cancellationToken);");
         if (aggregatorContext.Aggregator.Scoped)
         {
             statement = aggregatorContext.Aggregator.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) 
@@ -286,7 +286,7 @@ internal static class AggregatorBuilder
         }
         var methodDeclaration =
             $$"""
-              public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+              public System.Collections.Generic.IAsyncEnumerable<T> CreateStream<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
               {
                   cancellationToken.ThrowIfCancellationRequested();
                   {{statement}}

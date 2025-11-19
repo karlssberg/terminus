@@ -111,7 +111,7 @@ public class EntryPointDiscoveryGeneratorRouterTests
                   {
                       private static IServiceCollection AddEntryPointsFor_Demo_IRouter(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                       {
-                          services.AddSingleton(provider =>
+                          services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IRouter), (provider, _) =>
                           {
                               var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                               configure?.Invoke(resolver);
@@ -120,9 +120,9 @@ public class EntryPointDiscoveryGeneratorRouterTests
                           services.AddTransient<Dispatcher<Demo.IRouter>>();
                           services.AddTransient<IEntryPointRouter<Demo.IRouter>, DefaultEntryPointRouter<Demo.IRouter>>();
                           services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                          services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                          services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IRouter)).ResolveParameter<string>("world", context))));
                           services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
-                          services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                          services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IRouter), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IRouter)).ResolveParameter<string>("world", context))));
                           {{expectedAsyncEnumerableRegistration}}services.AddTransient<Demo.TestEntryPoints>();
                           services.AddSingleton<Demo.IRouter, Demo.IRouter_Generated>();
                           return services;

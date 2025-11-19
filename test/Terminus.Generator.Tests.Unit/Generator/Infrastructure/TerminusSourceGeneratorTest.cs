@@ -123,6 +123,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
                 public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
                 {{CreateAsyncScopeMethod}}
                 public static T GetRequiredService<T>(this IServiceProvider provider) => default!;
+                public static T GetRequiredKeyedService<T>(this IServiceProvider provider, object? key) => default!;
             }
         }
         """;

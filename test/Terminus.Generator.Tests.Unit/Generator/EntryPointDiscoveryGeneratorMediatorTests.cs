@@ -64,10 +64,10 @@ public class EntryPointDiscoveryGeneratorMediatorTests
             {
                 public partial interface IMediator
                 {
-                    void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);
-                    T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);
-                    System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);
+                    void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
+                    T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
+                    System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
+                    System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
                 }
 
                 internal sealed class IMediator_Generated : Demo.IMediator
@@ -80,28 +80,28 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                         _dispatcher = dispatcher;
                     }
 
-                    public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+                    public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        _dispatcher.Publish(context, cancellationToken);
+                        _dispatcher.Publish(arguments, cancellationToken);
                     }
 
-                    public T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+                    public T Send<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.Send<T>(context, cancellationToken);
+                        return _dispatcher.Send<T>(arguments, cancellationToken);
                     }
 
-                    public System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+                    public System.Threading.Tasks.Task PublishAsync(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.PublishAsync(context, cancellationToken);
+                        return _dispatcher.PublishAsync(arguments, cancellationToken);
                     }
 
-                    public System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+                    public System.Threading.Tasks.Task<T> SendAsync<T>(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
-                        return _dispatcher.SendAsync<T>(context, cancellationToken);
+                        return _dispatcher.SendAsync<T>(arguments, cancellationToken);
                     }
                 }
             }
@@ -112,7 +112,7 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IMediator(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IMediator), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -121,9 +121,9 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                         services.AddTransient<Dispatcher<Demo.IMediator>>();
                         services.AddTransient<IEntryPointRouter<Demo.IMediator>, DefaultEntryPointRouter<Demo.IMediator>>();
                         services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IMediator)).ResolveParameter<string>("world", context))));
                         services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync()));
-                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyEntryPointAttribute>>(typeof(Demo.IMediator), (provider, key) => new EntryPointDescriptor<Demo.MyEntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestEntryPoints>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IMediator)).ResolveParameter<string>("world", context))));
                         services.AddTransient<Demo.TestEntryPoints>();
                         services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
                         return services;
@@ -236,7 +236,7 @@ public class EntryPointDiscoveryGeneratorMediatorTests
             {
                 public partial interface IDispatcher
                 {
-                    void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default);
+                    void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
                 }
 
                 internal sealed class IDispatcher_Generated : Demo.IDispatcher
@@ -249,12 +249,12 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                         _dispatcher = dispatcher;
                     }
 
-                    public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments,, System.Threading.CancellationToken cancellationToken = default)
+                    public void Publish(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         using (var scope = _serviceProvider.CreateScope())
                         {
-                            _dispatcher.Publish(context, cancellationToken);
+                            _dispatcher.Publish(arguments, cancellationToken);
                         }
                     }
                 }
@@ -266,7 +266,7 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                 {
                     private static IServiceCollection AddEntryPointsFor_Demo_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
                     {
-                        services.AddSingleton(provider =>
+                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IDispatcher), (provider, _) =>
                         {
                             var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
@@ -274,7 +274,7 @@ public class EntryPointDiscoveryGeneratorMediatorTests
                         });
                         services.AddTransient<Dispatcher<Demo.IDispatcher>>();
                         services.AddTransient<IEntryPointRouter<Demo.IDispatcher>, DefaultEntryPointRouter<Demo.IDispatcher>>();
-                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyCustomAttribute>>(typeof(Demo.IDispatcher), (provider, key) => new EntryPointDescriptor<Demo.MyCustomAttribute>(typeof(Demo.MyController).GetMethod("GetUser", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.MyController>().GetUser(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("id", context))));
+                        services.AddKeyedSingleton<EntryPointDescriptor<Demo.MyCustomAttribute>>(typeof(Demo.IDispatcher), (provider, key) => new EntryPointDescriptor<Demo.MyCustomAttribute>(typeof(Demo.MyController).GetMethod("GetUser", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.MyController>().GetUser(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IDispatcher)).ResolveParameter<string>("id", context))));
                         services.AddTransient<Demo.MyController>();
                         services.AddSingleton<Demo.IDispatcher, Demo.IDispatcher_Generated>();
                         return services;
