@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
@@ -7,9 +8,10 @@ namespace Terminus;
 public interface IEntryPointDescriptor
 {
     MethodInfo MethodInfo { get; }
-    Func<ParameterBindingContext, CancellationToken, object?> Invoker { get; }
     ReturnTypeKind ReturnKind { get; }
-    
+
     Type EntryPointDescriptorType { get; }
-    ParameterInfo[] Parameters { get; }
+    IReadOnlyDictionary<string, Type> ParameterWithAttributeBinders { get; }
+    IReadOnlyDictionary<string, IParameterBinder> GetParameterBinders(IServiceProvider provider);
+    object? Invoke(IBindingContext bindingContext, CancellationToken ct);
 }

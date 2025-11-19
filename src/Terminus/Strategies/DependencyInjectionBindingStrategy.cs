@@ -1,4 +1,5 @@
 ﻿using System;
+using Terminus.Exceptions;
 
 namespace Terminus.Strategies;
 
@@ -15,12 +16,6 @@ public sealed class DependencyInjectionBindingStrategy(IServiceProvider serviceP
         var service = serviceProvider.GetService(context.ParameterType);
         if (service is not null) return service;
         
-        // Use default if available
-        if (context.HasDefaultValue)
-        {
-            return context.DefaultValue;
-        }
-            
         // If nullable, return null
         if (IsNullable(context.ParameterType))
         {

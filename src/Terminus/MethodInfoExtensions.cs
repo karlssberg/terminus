@@ -6,42 +6,48 @@ namespace Terminus;
 
 public static class MethodInfoExtensions
 {
-    public static bool CanInvokeWith(this MethodInfo method, IReadOnlyDictionary<string, object?> namedArgs)
+    extension(IEntryPointDescriptor entryPointDescriptor)
     {
-        var parameters = method.GetParameters();
-        
-        foreach (var param in parameters)
+        public bool CanInvokeWith(IReadOnlyDictionary<string, object?> arguments)
         {
-            if (!namedArgs.TryGetValue(param.Name!, out var argValue))
+            foreach (var param in entryPointDescriptor.MethodInfo.GetParameters())
             {
-                // If parameter is required (no default value), we can't invoke
-                if (!param.IsOptional)
+                if (entryPointDescriptor.ParameterWithAttributeBinders.ContainsKey(param.Name!))
+                {
+                    continue;
+                }
+                
+                if (!arguments.TryGetValue(param.Name!, out var argValue))
+                {
+                    // If parameter is required (no default value), we can't invoke
+                    if (!param.IsOptional)
+                    {
+                        return false;
+                    }
+                
+                    // Optional parameter without provided value is OK
+                    continue;
+                }
+
+                if (argValue is null)
+                {
+                    // Null is only valid for nullable types or reference types
+                    if (param.ParameterType.IsValueType && 
+                        Nullable.GetUnderlyingType(param.ParameterType) == null)
+                    {
+                        return false; // Can't pass null to non-nullable value type
+                    }
+                    continue;
+                }
+            
+                // Check (polymorphic) type compatibility
+                if (!param.ParameterType.IsInstanceOfType(argValue))
                 {
                     return false;
                 }
-                
-                // Optional parameter without provided value is OK
-                continue;
             }
-
-            if (argValue is null)
-            {
-                // Null is only valid for nullable types or reference types
-                if (param.ParameterType.IsValueType && 
-                    Nullable.GetUnderlyingType(param.ParameterType) == null)
-                {
-                    return false; // Can't pass null to non-nullable value type
-                }
-                continue;
-            }
-            
-            // Check (polymorphic) type compatibility
-            if (!param.ParameterType.IsInstanceOfType(argValue))
-            {
-                return false;
-            }
-        }
         
-        return true;
+            return true;
+        }
     }
 }

@@ -87,11 +87,11 @@ public class EntryPointDiscoveryGeneratorAgnosticTests
                     {
                         services.AddSingleton(provider =>
                         {
-                            var resolver = new ParameterBindingStrategyResolver(provider);
+                            var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                             configure?.Invoke(resolver);
                             return resolver;
                         });
-                        services.AddTransient<ScopedDispatcher<Demo.IFacade>>();
+                        services.AddTransient<Dispatcher<Demo.IFacade>>();
                         services.AddTransient<IEntryPointRouter<Demo.IFacade>, DefaultEntryPointRouter<Demo.IFacade>>();
                         services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Demo.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Demo.TestEntryPoints).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestEntryPoints.Hello(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("world", context), ct)));
                         services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();

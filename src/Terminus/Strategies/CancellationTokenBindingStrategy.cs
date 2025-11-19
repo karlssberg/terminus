@@ -9,5 +9,5 @@ public sealed class CancellationTokenBindingStrategy : IParameterBindingStrategy
         => context.ParameterType == typeof(CancellationToken);
     
     public object? Bind(ParameterBindingContext context) 
-        => context.Data.Values.FirstOrDefault(value => value is CancellationToken);
+        => context.Arguments.Values.FirstOrDefault(value => value is CancellationToken);
 }

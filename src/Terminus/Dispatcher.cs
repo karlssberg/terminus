@@ -4,18 +4,20 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Terminus.Exceptions;
 
 namespace Terminus;
 
-public class Dispatcher<TFacade>(
+public sealed class Dispatcher<TFacade>(
     IEntryPointRouter<TFacade> router,
     IServiceProvider serviceProvider)
 {
-    public virtual void Publish(
-        ParameterBindingContext context, 
+    public void Publish(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var descriptors = GetEntryPoints(context).ToList();
+
+        var descriptors = GetEntryPoints(arguments).ToList();
         
         var isValid = descriptors
             .Select(d => d.ReturnKind)
@@ -24,14 +26,17 @@ public class Dispatcher<TFacade>(
         if (!isValid) throw CreateTypeMismatchException();
 
         foreach (var descriptor in descriptors)
-            descriptor.Invoker(context, cancellationToken);
+        {
+            var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+            descriptor.Invoke(context, cancellationToken);
+        }
     }
 
-    public virtual async Task PublishAsync(
-        ParameterBindingContext context, 
+    public async Task PublishAsync(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var descriptors = GetEntryPoints(context).ToList();
+        var descriptors = GetEntryPoints(arguments).ToList();
         
         var isValid = descriptors
             .Select(d => d.ReturnKind)
@@ -39,9 +44,15 @@ public class Dispatcher<TFacade>(
         
         if (!isValid) throw CreateTypeMismatchException();
 
-        foreach (var descriptor in descriptors)
+        var results = descriptors
+            .Select(descriptor =>
+            {
+                var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+                return descriptor.Invoke(context, cancellationToken);
+            });
+        
+        foreach (var result in results)
         {
-            var result = descriptor.Invoker(context, cancellationToken);
             switch (result)
             {
                 case Task task:
@@ -56,11 +67,13 @@ public class Dispatcher<TFacade>(
         }
     }
 
-    public virtual T Send<T>(
-        ParameterBindingContext context,
+    public T Send<T>(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
+        var descriptor = GetEntryPoint(arguments) ??  throw new TerminusEntryPointNotFoundException();
+        var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+        var result = descriptor.Invoke(context, cancellationToken);
         return result switch
         {
             T value => value,
@@ -68,11 +81,14 @@ public class Dispatcher<TFacade>(
         };
     }
 
-    public virtual async Task<T> SendAsync<T>(
-        ParameterBindingContext context,
+    public async Task<T> SendAsync<T>(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
+
+        var descriptor = GetEntryPoint(arguments) ??  throw new TerminusEntryPointNotFoundException();
+        var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+        var result = descriptor.Invoke(context, cancellationToken);
         return result switch
         {
             T value => value,
@@ -82,11 +98,13 @@ public class Dispatcher<TFacade>(
         };
     }
 
-    public virtual IAsyncEnumerable<T> CreateStream<T>(
-        ParameterBindingContext context,
+    public IAsyncEnumerable<T> CreateStream<T>(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var result = GetEntryPoint(context).Invoker(context, cancellationToken);
+        var descriptor = GetEntryPoint(arguments) ??  throw new TerminusEntryPointNotFoundException();
+        var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+        var result = descriptor.Invoke(context, cancellationToken);
         return result switch
         {
             IAsyncEnumerable<T> value => value,
@@ -94,30 +112,58 @@ public class Dispatcher<TFacade>(
         };
     }
 
-    public virtual RouteResult Route(
-        ParameterBindingContext context,
+    public async Task<RouteResult> Route(
+        IReadOnlyDictionary<string, object?> arguments, 
         CancellationToken cancellationToken = default)
     {
-        var descriptor = GetEntryPoint(context);
-        var result = descriptor.Invoker(context, cancellationToken);
-        return new RouteResult(descriptor.ReturnKind, descriptor.MethodInfo.ReturnType, result);
+        var descriptor = GetEntryPoint(arguments);
+        if (descriptor == null)
+        {
+            return RouteResult.NotFound;
+        }
+        
+        var context = new BindingContext(arguments, descriptor.GetParameterBinders(serviceProvider));
+        var result = descriptor.Invoke(context, cancellationToken);
+        var resultType = descriptor.MethodInfo.ReturnType;
+        return new RouteResult(descriptor, await GetTaskResultAsync(resultType, result).ConfigureAwait(false));
     }
 
     private static InvalidOperationException CreateTypeMismatchException()
     {
         return new InvalidOperationException("Mismatch between return type and expected return type.");
     }
-    
-    private IEnumerable<IEntryPointDescriptor> GetEntryPoints(ParameterBindingContext context)
+
+    private IEntryPointDescriptor? GetEntryPoint(IReadOnlyDictionary<string, object?> arguments)
+    {
+        return GetEntryPoints(arguments).FirstOrDefault();
+    }
+
+    private IEnumerable<IEntryPointDescriptor> GetEntryPoints(IReadOnlyDictionary<string, object?> arguments)
     {  
         return serviceProvider
             .GetKeyedServices<IEntryPointDescriptor>(typeof(TFacade))
-            .Where(ep => router.IsMatch(ep, context));
+            .Where(ep => router.IsMatch(ep, arguments));
     }
 
-    private IEntryPointDescriptor GetEntryPoint(ParameterBindingContext context)
+    private static async Task<object?> GetTaskResultAsync(Type type, object? obj)
     {
-        return GetEntryPoints(context).FirstOrDefault()
-               ?? throw new TerminusEntryPointNotFoundException(context);
+        if (obj == null) return null;
+    
+        if (!typeof(Task).IsAssignableFrom(type))
+            return obj;
+    
+        var task = (Task)obj;
+    
+        // Only use dynamic for Task<T>, not Task
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            // Safe to use dynamic here - we know it has a result
+            dynamic dynamicTask = task;
+            return await dynamicTask;
+        }
+    
+        // Non-generic Task
+        await task.ConfigureAwait(false);
+        return null;
     }
 }

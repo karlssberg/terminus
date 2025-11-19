@@ -1,8 +1,9 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
 using Terminus;
 using Terminus.Generator.Examples.Web;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddTransient<CustomRouter>();
 builder.Services.AddEntryPoints<IDispatcher>();
 
 var app = builder.Build();
@@ -10,32 +11,58 @@ var app = builder.Build();
 app.Use(async (HttpContext context, RequestDelegate _) =>
 {
     var dispatcher = context.RequestServices.GetRequiredService<IDispatcher>();
+    var response = await dispatcher.Route(context.GetRouteData().DataTokens, CancellationToken.None);
+
+    if (!response.EntryPointExists)
+    {
+        context.Response.StatusCode = 404;
+        return;
+    }
     
-    var response = dispatcher.Router(new ParameterBindingContext(context.GetRouteData().DataTokens), CancellationToken.None);
-    
-    
-    await router.RouteAsync(context);
+    context.Response.StatusCode = 200;
+    context.Response.ContentType = "application/json";
+    await context.Response.WriteAsJsonAsync(response);
 });
 
 await app.RunAsync().WaitAsync(CancellationToken.None);
 
 namespace Terminus.Generator.Examples.Web
 {
+    public class MyFromBodyAttribute : ParameterBinderAttribute<HttpBodyBinder>;
+    public class HttpBodyBinder(HttpContext httpContext) : IParameterBinder
+    {
+        public TParameter BindParameter<TParameter>(ParameterBindingContext context)
+        {
+            using var reader = new StreamReader(httpContext.Request.Body);
+            var body = reader.ReadToEndAsync().Result;
+            return JsonSerializer.Deserialize<TParameter>(body)
+                ?? throw new InvalidOperationException($"Failed to deserialize request body to type {typeof(TParameter).FullName}");
+        }
+    }
+
     [ScopedEntryPointRouter(EntryPointAttributes = [typeof(MyHttpPostAttribute)])]
     public partial interface IDispatcher;
-    
+
     [AttributeUsage(AttributeTargets.Method)]
     public class MyHttpPostAttribute(string path) : EntryPointAttribute
     {
         public string Path { get; } = path;
     }
 
+
     public class MyController
     {
         [MyHttpPost("/users/{id}/posts/{postId}")]
-        public void GetPost(string id, string postId)
+        public void GetPost([MyFromBody]MyModel model, string id, string postId)
         {
-            Console.WriteLine($"GetPost: {id} {postId}");
+            Console.WriteLine($"POST querystring parameters: {id} {postId}");
+            Console.WriteLine($"POST body: {JsonSerializer.Serialize(model)}");
         }
+    }
+
+    public class MyModel
+    {
+        public required string FirstName { get; init; }
+        public required string LastName { get; init; }
     }
 }

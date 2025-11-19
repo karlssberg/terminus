@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Terminus.Exceptions;
 
 namespace Terminus.Strategies;
 
@@ -26,15 +27,9 @@ public sealed class ParameterNameBindingStrategy : IParameterBindingStrategy
     public object? Bind(ParameterBindingContext context)
     {
         // Look for parameter by name in the generic data bag
-        if (context.Data.TryGetValue(context.ParameterName, out var value))
+        if (context.Arguments.TryGetValue(context.ParameterName, out var value))
         {
             return ConvertValue(value, context.ParameterType);
-        }
-        
-        // Use default if available
-        if (context.HasDefaultValue)
-        {
-            return context.DefaultValue;
         }
         
         // Check if nullable

@@ -84,7 +84,7 @@ public class EntryPointDiscoveryGeneratorRouterTests
               {
                   public partial interface IRouter
                   {
-                      RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default);
+                      System.Threading.Tasks.Task<RouteResult> Route(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);
                   }
 
                   internal sealed class IRouter_Generated : Demo.IRouter
@@ -97,10 +97,10 @@ public class EntryPointDiscoveryGeneratorRouterTests
                           _dispatcher = dispatcher;
                       }
 
-                      public RouteResult Route(Terminus.ParameterBindingContext context, System.Threading.CancellationToken cancellationToken = default)
+                      public System.Threading.Tasks.Task<RouteResult> Route(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
                       {
                           cancellationToken.ThrowIfCancellationRequested();
-                          return _dispatcher.Route(context, cancellationToken);
+                          return _dispatcher.Route(arguments, cancellationToken);
                       }
                   }
               }
@@ -113,7 +113,7 @@ public class EntryPointDiscoveryGeneratorRouterTests
                       {
                           services.AddSingleton(provider =>
                           {
-                              var resolver = new ParameterBindingStrategyResolver(provider);
+                              var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                               configure?.Invoke(resolver);
                               return resolver;
                           });

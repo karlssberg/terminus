@@ -1,13 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Terminus;
 
-public class DefaultEntryPointRouter<TFacade>(
-    IServiceProvider serviceProvider) 
+public class DefaultEntryPointRouter<TFacade>
     : IEntryPointRouter<TFacade>
 {
-    public bool IsMatch(IEntryPointDescriptor ep, ParameterBindingContext context)
+    public bool IsMatch(IEntryPointDescriptor ep, IReadOnlyDictionary<string, object?> arguments)
     {
-        return ep.MethodInfo.CanInvokeWith(context.Data);
+        return ep.CanInvokeWith(arguments);
     }
 }

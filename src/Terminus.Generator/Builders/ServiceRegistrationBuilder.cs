@@ -9,11 +9,11 @@ namespace Terminus.Generator.Builders;
 internal static class ServiceRegistrationBuilder
 {
     internal static SwitchStatementSyntax GenerateRegistrationMethodSelector(
-        ImmutableArray<AggregatorInterfaceInfo> facades)
+        ImmutableArray<AggregatorInterfaceInfo> aggregator)
     {
         var switchExpression =
             SwitchStatement(ParseExpression("typeof(T).FullName"))
-                .AddSections(facades
+                .AddSections(aggregator
                     .Select(aggregatorInfo =>
                         SwitchSection()
                             .AddLabels(
@@ -38,16 +38,13 @@ internal static class ServiceRegistrationBuilder
     private static ExpressionStatementSyntax GenerateDispatcherServiceRegistrations(AggregatorContext aggregatorContext)
     {
         return ExpressionStatement(
-            ParseExpression(
-                aggregatorContext.Aggregator.Scoped
-                    ? $"services.AddTransient<ScopedDispatcher<{aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString()}>>()"
-                    : $"services.AddTransient<Dispatcher<{aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString()}>>()"));
+            ParseExpression($"services.AddTransient<Dispatcher<{aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString()}>>()"));
     }
 
     internal static SyntaxList<StatementSyntax> GenerateRegistrationsPerAttribute(
-        ImmutableArray<AggregatorInterfaceInfo> facades)
+        ImmutableArray<AggregatorInterfaceInfo> aggregators)
     {
-        var registerAllEntryPoints = facades
+        var registerAllEntryPoints = aggregators
             .Select(aggregatorInfo => ParseStatement(
                 $"services.AddEntryPointsFor_{aggregatorInfo.InterfaceSymbol.ToIdentifierString()}();"))
             .ToSyntaxList();
@@ -56,28 +53,28 @@ internal static class ServiceRegistrationBuilder
 
     internal static string CreateAddEntryPointsMethods(AggregatorContext aggregatorContext)
     {
-        var facade = aggregatorContext.Aggregator;
-        var facadeFullNameIdentifier = facade.InterfaceSymbol.ToIdentifierString();
-        var facadeInterfaceType = facade.InterfaceSymbol.ToDisplayString();
+        var aggregator = aggregatorContext.Aggregator;
+        var aggregatorFullNameIdentifier = aggregator.InterfaceSymbol.ToIdentifierString();
+        var aggregatorInterfaceType = aggregator.InterfaceSymbol.ToDisplayString();
         
         return
           $$"""
-            private static IServiceCollection AddEntryPointsFor_{{facadeFullNameIdentifier}}(
+            private static IServiceCollection AddEntryPointsFor_{{aggregatorFullNameIdentifier}}(
                 this IServiceCollection services,
                 Action<ParameterBindingStrategyResolver>? configure = null)
             {
-                services.AddSingleton(provider =>
+                services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof({{aggregatorInterfaceType}}), (provider, _) =>
                 {
-                    var resolver = new ParameterBindingStrategyResolver(provider);
+                    var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                     configure?.Invoke(resolver);
                     return resolver;
                 });
                 
                 {{GenerateDispatcherServiceRegistrations(aggregatorContext)}}
-                services.AddTransient<IEntryPointRouter<{{facadeInterfaceType}}>, DefaultEntryPointRouter<{{facadeInterfaceType}}>>();
+                services.AddTransient<IEntryPointRouter<{{aggregatorInterfaceType}}>, DefaultEntryPointRouter<{{aggregatorInterfaceType}}>>();
                 {{GenerateEntryPointDescriptorRegistrations(aggregatorContext)}}
                 {{GenerateEntryPointContainingTypeRegistrations(aggregatorContext)}}
-                services.AddSingleton<{{facade.InterfaceSymbol.ToDisplayString()}}, {{facade.GetImplementationClassFullName()}}>();
+                services.AddSingleton<{{aggregator.InterfaceSymbol.ToDisplayString()}}, {{aggregator.GetImplementationClassFullName()}}>();
 
                 return services;
             }
@@ -86,7 +83,7 @@ internal static class ServiceRegistrationBuilder
 
     private static SyntaxList<StatementSyntax> GenerateEntryPointDescriptorRegistrations(AggregatorContext aggregatorContext)
     {
-        var facadeInterfaceType = aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString();
+        var aggregatorInterfaceType = aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString();
         var entryPointMethodInfos = aggregatorContext.EntryPointMethodInfos;
         var entryPointDescriptorRegistrations = entryPointMethodInfos
             .Select(ep =>
@@ -103,7 +100,7 @@ internal static class ServiceRegistrationBuilder
                 var parameterInvocations = string.Join(", ", ep.MethodSymbol.Parameters.Select(p =>
                     p.Type.ToDisplayString() == "System.Threading.CancellationToken"
                         ? "ct"
-                        : $"provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
+                        : $"provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof({aggregatorInterfaceType})).ResolveParameter<{p.Type.ToDisplayString()}>(\"{p.Name}\", context)"));
 
                 var invokeExpressionSnippet = ep.MethodSymbol.IsStatic
                     ? $"{containingType}.{methodName}({parameterInvocations})"
@@ -113,7 +110,7 @@ internal static class ServiceRegistrationBuilder
 
                 var registrationExpressionStatement =
                     $"""
-                     services.AddKeyedSingleton<EntryPointDescriptor<{attributeTypeName}>>(typeof({facadeInterfaceType}), (provider, key) =>
+                     services.AddKeyedSingleton<EntryPointDescriptor<{attributeTypeName}>>(typeof({aggregatorInterfaceType}), (provider, key) =>
                         new EntryPointDescriptor<{attributeTypeName}>(
                             typeof({containingType}).GetMethod("{methodName}", {paramArray})!,
                             (context, ct) => {invokeExpression}));

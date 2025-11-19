@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Terminus;
+namespace Terminus.Exceptions;
 
 public class ParameterBindingException : Exception
 {

@@ -43,16 +43,16 @@ namespace Terminus
     {
         private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_HelloWorld_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
         {
-            services.AddSingleton(provider =>
+            services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, _) =>
             {
-                var resolver = new ParameterBindingStrategyResolver(provider);
+                var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
                 configure?.Invoke(resolver);
                 return resolver;
             });
             services.AddTransient<Dispatcher<Terminus.Generator.Examples.HelloWorld.IFacade>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IFacade>, DefaultEntryPointRouter<Terminus.Generator.Examples.HelloWorld.IFacade>>();
-            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyService).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message", context))));
-            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyOtherService).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message1", context), provider.GetRequiredService<ParameterBindingStrategyResolver>().ResolveParameter<string>("message2", context), ct)));
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyService).GetMethod("Handle", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Terminus.Generator.Examples.HelloWorld.MyService>().Handle(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade)).ResolveParameter<string>("message", context))));
+            services.AddKeyedSingleton<EntryPointDescriptor<Terminus.EntryPointAttribute>>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade), (provider, key) => new EntryPointDescriptor<Terminus.EntryPointAttribute>(typeof(Terminus.Generator.Examples.HelloWorld.MyOtherService).GetMethod("Query", new System.Type[] { typeof(string), typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Terminus.Generator.Examples.HelloWorld.MyOtherService.Query(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade)).ResolveParameter<string>("message1", context), provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.HelloWorld.IFacade)).ResolveParameter<string>("message2", context), ct)));
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyService>();
             services.AddTransient<Terminus.Generator.Examples.HelloWorld.MyOtherService>();
             services.AddSingleton<Terminus.Generator.Examples.HelloWorld.IFacade, Terminus.Generator.Examples.HelloWorld.IFacade_Generated>();

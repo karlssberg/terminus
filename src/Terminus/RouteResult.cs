@@ -1,21 +1,40 @@
 using System;
-using System.Threading.Tasks;
+using Terminus.Exceptions;
 
 namespace Terminus;
 
-public class RouteResult(ReturnTypeKind returnTypeKind, Type returnType, object? result)
+public class RouteResult
 {
-    public ReturnTypeKind ReturnTypeKind { get; } = returnTypeKind;
-    
-    public Type ReturnType { get; } = returnType;
+    private readonly IEntryPointDescriptor? _descriptor;
 
-    public async Task<T?> GetResult<T>() => result switch
+    private readonly object? _result;
+
+    private RouteResult()
     {
-        null when ReturnTypeKind == ReturnTypeKind.Void => default,
-        Task<T> task => await task,
-        T castValue => castValue,
-        _ => throw new InvalidCastException($"Cannot convert {result} to type {typeof(T).FullName}")
+        _result = null;
+        _descriptor = null;
+    }
+
+    public RouteResult(IEntryPointDescriptor descriptor, object? result)
+    {
+        _result = result;
+        _descriptor = descriptor;
+    }
+
+    private IEntryPointDescriptor Descriptor => _descriptor ?? throw new TerminusEntryPointNotFoundException();
+
+    public bool IsVoid => Descriptor.ReturnKind == ReturnTypeKind.Void;
+
+    public Type Type => Descriptor.MethodInfo.ReturnType;
+
+    public T GetResult<T>() => _result switch
+    {
+        T match => match,
+        _ => throw new InvalidCastException(
+            $"Cannot convert '{Type.FullName}' to type '{typeof(T).FullName}'")
     };
     
-    public Task<object?> GetResult() => Task.FromResult(result);
+    public bool EntryPointExists => _descriptor != null;
+
+    public static RouteResult NotFound { get; } = new();
 }

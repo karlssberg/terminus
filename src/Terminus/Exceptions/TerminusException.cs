@@ -1,10 +1,9 @@
 using System;
 
-namespace Terminus;
+namespace Terminus.Exceptions;
 
 public class TerminusException : Exception
 {
-    public TerminusException() : base("Terminus exception") { }
     public TerminusException(string message) : base(message) { }
     public TerminusException(string message, Exception innerException) : base(message, innerException) { }
 }

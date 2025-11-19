@@ -9,7 +9,6 @@ namespace Terminus;
 public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider)
 {
     private readonly List<IParameterBindingStrategy> _strategies = [..DefaultParameterBindingStrategies.Create()];
-    private readonly Dictionary<Type, IParameterBinder> _customBinders = [];
 
     public ParameterBindingStrategyResolver Clear()
     {
@@ -51,28 +50,17 @@ public sealed class ParameterBindingStrategyResolver(IServiceProvider servicePro
         return this;
     }
     
-    public ParameterBindingStrategyResolver RegisterParameterBinder<TAttribute>(IParameterBinder binder) 
-        where TAttribute : ParameterBinderAttribute
+    public TParameter ResolveParameter<TParameter>(string parameterName, IBindingContext context)
     {
-        _customBinders[typeof(TAttribute)] = binder;
-        return this;
-    }
-    
-    public TParameter ResolveParameter<TParameter>(string parameterName, ParameterBindingContext context)
-    {
-        var scopedContext = context.ForParameter(parameterName, typeof(TParameter));
-        if (scopedContext.ParameterAttributeType is not null)
+        var parameterBindingContext = context.ForParameter(parameterName, typeof(TParameter));
+        if (parameterBindingContext.GetCustomBinderOrDefault() is {} customBinder)
         {
-            return _customBinders.TryGetValue(scopedContext.ParameterAttributeType, out var customBinder)
-                ? customBinder.BindParameter<TParameter>(scopedContext)!
-                : throw new InvalidOperationException(
-                     $"No custom binder registered for attribute type '{scopedContext.ParameterAttributeType.Name}'.");
-
+            return customBinder.BindParameter<TParameter>(parameterBindingContext);
         }
         
-        var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(scopedContext))
+        var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(parameterBindingContext))
                     ?? serviceProvider.GetRequiredService<DependencyInjectionBindingStrategy>();
         
-        return (TParameter)strategyBinder.Bind(scopedContext)!;
+        return (TParameter)strategyBinder.Bind(parameterBindingContext)!;
     }
 }
