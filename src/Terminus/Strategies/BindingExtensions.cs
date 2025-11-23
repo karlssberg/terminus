@@ -8,7 +8,7 @@ public static class BindingExtensions
     {
         public T? Bind<T>(ParameterBindingContext context)
         {
-            var boundValue = bindingStrategy.Bind(context);
+            var boundValue = bindingStrategy.BindParameter(context);
             return boundValue switch
             {
                 T value => value,

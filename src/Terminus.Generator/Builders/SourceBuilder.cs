@@ -51,7 +51,7 @@ internal static class SourceBuilder
                 {
                     public static IServiceCollection AddEntryPoints<T>(
                         this IServiceCollection services,
-                        Action<ParameterBindingStrategyResolver>? configure = null)
+                        Action<ParameterBindingStrategyCollection>? configure = null)
                     {
                         {{GenerateRegistrationMethodSelector(facades)}};
                                   
@@ -60,7 +60,7 @@ internal static class SourceBuilder
                               
                     public static IServiceCollection AddEntryPoints(
                         this IServiceCollection services,
-                        Action<ParameterBindingStrategyResolver>? configure = null)
+                        Action<ParameterBindingStrategyCollection>? configure = null)
                     {
                         {{GenerateRegistrationsPerAttribute(facades)}}
                                   

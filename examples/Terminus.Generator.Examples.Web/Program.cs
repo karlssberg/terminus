@@ -1,10 +1,16 @@
+using System.Collections;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Terminus;
 using Terminus.Generator.Examples.Web;
+using Terminus.Strategies;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddEntryPoints<IDispatcher>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<QueryStringBinderStrategy>();
+builder.Services.AddEntryPoints<IDispatcher>(strategies =>
+    strategies.AddStrategy<QueryStringBinderStrategy>());
 
 var app = builder.Build();
 
@@ -64,5 +70,29 @@ namespace Terminus.Generator.Examples.Web
     {
         public required string FirstName { get; init; }
         public required string LastName { get; init; }
+    }
+    
+    public class QueryStringBinderStrategy(HttpContext httpContext) : IParameterBindingStrategy
+    {
+        public bool CanBind(ParameterBindingContext context) =>
+            httpContext.Request.Query.ContainsKey(context.ParameterName);
+
+        public object? BindParameter(ParameterBindingContext context)
+        {
+            var value = httpContext.Request.Query[context.ParameterName];
+
+            return value switch
+            {
+                [var item] =>
+                    Convert.ChangeType(item, context.ParameterType),
+                _ => value
+                        .Select(item => item switch
+                        {
+                            null => null,
+                            _ => Convert.ChangeType(item, context.ParameterType.GetGenericArguments()[0])
+                        })
+            };
+
+        }
     }
 }

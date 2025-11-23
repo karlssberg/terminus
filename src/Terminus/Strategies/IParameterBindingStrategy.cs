@@ -3,5 +3,5 @@
 public interface IParameterBindingStrategy
 {
     bool CanBind(ParameterBindingContext context);
-    object? Bind(ParameterBindingContext context);
+    object? BindParameter(ParameterBindingContext context);
 }

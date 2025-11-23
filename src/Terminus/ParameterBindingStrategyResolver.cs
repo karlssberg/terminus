@@ -2,54 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
+using Terminus.Exceptions;
 using Terminus.Strategies;
 
 namespace Terminus;
 
-public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider)
+public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider, ParameterBindingStrategyCollection collection)
 {
-    private readonly List<IParameterBindingStrategy> _strategies = [..DefaultParameterBindingStrategies.Create()];
-
-    public ParameterBindingStrategyResolver Clear()
-    {
-        _strategies.Clear();
-        return this;
-    }
-    
-    public ParameterBindingStrategyResolver AddStrategy(IParameterBindingStrategy strategy)
-    {
-        _strategies.Add(strategy);
-        return this;
-    }
-    
-    public ParameterBindingStrategyResolver InsertStrategy(int index, IParameterBindingStrategy strategy)
-    {
-        _strategies.Insert(index, strategy);
-        return this;
-    }
-    
-    public ParameterBindingStrategyResolver AddStrategyBefore<TStrategy>(IParameterBindingStrategy strategy) 
-        where TStrategy : IParameterBindingStrategy
-    {
-        var index = _strategies.FindIndex(s => s is TStrategy);
-        if (index == -1)
-            throw new InvalidOperationException($"Strategy of type {typeof(TStrategy).Name} not found");
-        
-        _strategies.Insert(index, strategy);
-        return this;
-    }
-    
-    public ParameterBindingStrategyResolver AddStrategyAfter<TStrategy>(IParameterBindingStrategy strategy) 
-        where TStrategy : IParameterBindingStrategy
-    {
-        var index = _strategies.FindIndex(s => s is TStrategy);
-        if (index == -1)
-            throw new InvalidOperationException($"Strategy of type {typeof(TStrategy).FullName} not found");
-        
-        _strategies.Insert(index + 1, strategy);
-        return this;
-    }
-    
     public TParameter ResolveParameter<TParameter>(string parameterName, IBindingContext context)
     {
         var parameterBindingContext = context.ForParameter(parameterName, typeof(TParameter));
@@ -57,10 +16,14 @@ public sealed class ParameterBindingStrategyResolver(IServiceProvider servicePro
         {
             return customBinder.BindParameter<TParameter>(parameterBindingContext);
         }
+
+        var parameterBindingStrategy = 
+            collection.Strategies
+               .Select(serviceProvider.GetRequiredService)
+               .OfType<IParameterBindingStrategy>()
+               .FirstOrDefault(strategy => strategy.CanBind(parameterBindingContext)) 
+           ?? throw new TerminusParameterBindingException("Unable to find a suitable parameter binding strategy");
         
-        var strategyBinder = _strategies.FirstOrDefault(strategy => strategy.CanBind(parameterBindingContext))
-                    ?? serviceProvider.GetRequiredService<DependencyInjectionBindingStrategy>();
-        
-        return (TParameter)strategyBinder.Bind(parameterBindingContext)!;
+        return (TParameter)parameterBindingStrategy.BindParameter(parameterBindingContext)!;
     }
 }

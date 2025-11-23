@@ -24,7 +24,7 @@ public sealed class ParameterNameBindingStrategy : IParameterBindingStrategy
         return SimpleTypes.Contains(underlyingType) || underlyingType.IsEnum;
     }
     
-    public object? Bind(ParameterBindingContext context)
+    public object? BindParameter(ParameterBindingContext context)
     {
         // Look for parameter by name in the generic data bag
         if (context.Arguments.TryGetValue(context.ParameterName, out var value))
@@ -46,46 +46,40 @@ public sealed class ParameterNameBindingStrategy : IParameterBindingStrategy
     {
         if (value == null)
         {
-            return IsNullable(targetType) ? null 
+            return IsNullable(targetType) ? null
                 : throw new ParameterBindingException($"Cannot convert null to non-nullable type {targetType.Name}");
         }
-        
+
         var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
-        
+
         // If already correct type, return as-is
         if (underlyingType.IsInstanceOfType(value))
         {
             return value;
         }
-        
-        try
+
+        return value switch
         {
-            if (value is not string stringValue) 
-                return Convert.ChangeType(value, underlyingType);
-            
-            // Handle string conversion
-            if (underlyingType.IsEnum)
-            {
-                return Enum.Parse(underlyingType, stringValue, ignoreCase: true);
-            }
-                
-            if (underlyingType == typeof(Guid))
-            {
-                return Guid.Parse(stringValue);
-            }
-                
-            if (underlyingType == typeof(Uri))
-            {
-                return new Uri(stringValue);
-            }
-                
-            return Convert.ChangeType(stringValue, underlyingType);
-        }
-        catch (Exception ex)
-        {
-            throw new ParameterBindingException(
-                $"Failed to convert value '{value}' to type '{targetType.Name}'.", ex);
-        }
+            string stringValue when underlyingType.IsEnum =>
+                Enum.Parse(underlyingType, stringValue, ignoreCase: true),
+
+            string stringValue when underlyingType == typeof(Guid) =>
+                Guid.Parse(stringValue),
+
+            string stringValue when underlyingType == typeof(DateTime) =>
+                DateTime.Parse(stringValue),
+
+            string stringValue when underlyingType == typeof(DateTimeOffset) =>
+                DateTimeOffset.Parse(stringValue),
+
+            string stringValue when underlyingType == typeof(TimeSpan) =>
+                TimeSpan.Parse(stringValue),
+
+            string stringValue when underlyingType == typeof(Uri) =>
+                new Uri(stringValue),
+
+            _ => Convert.ChangeType(value, underlyingType)
+        };
     }
     
     private static bool IsNullable(Type type)

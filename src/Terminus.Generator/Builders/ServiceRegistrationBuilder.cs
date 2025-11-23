@@ -61,13 +61,19 @@ internal static class ServiceRegistrationBuilder
           $$"""
             private static IServiceCollection AddEntryPointsFor_{{aggregatorFullNameIdentifier}}(
                 this IServiceCollection services,
-                Action<ParameterBindingStrategyResolver>? configure = null)
+                Action<ParameterBindingStrategyCollection>? configure = null)
             {
-                services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof({{aggregatorInterfaceType}}), (provider, _) =>
+                services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof({{aggregatorInterfaceType}}), (provider, _) =>
                 {
-                    var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
-                    configure?.Invoke(resolver);
-                    return resolver;
+                    var collection = new Terminus.ParameterBindingStrategyCollection();
+                    configure?.Invoke(collection);
+                    return collection;
+                });
+
+                services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof({{aggregatorInterfaceType}}), (provider, key) =>
+                {
+                     var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                     return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                 });
                 
                 {{GenerateDispatcherServiceRegistrations(aggregatorContext)}}
@@ -75,7 +81,7 @@ internal static class ServiceRegistrationBuilder
                 {{GenerateEntryPointDescriptorRegistrations(aggregatorContext)}}
                 {{GenerateEntryPointContainingTypeRegistrations(aggregatorContext)}}
                 services.AddSingleton<{{aggregator.InterfaceSymbol.ToDisplayString()}}, {{aggregator.GetImplementationClassFullName()}}>();
-
+                
                 return services;
             }
             """;

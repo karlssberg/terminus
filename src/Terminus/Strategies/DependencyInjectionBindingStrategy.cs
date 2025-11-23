@@ -11,7 +11,7 @@ public sealed class DependencyInjectionBindingStrategy(IServiceProvider serviceP
         return true;
     }
     
-    public object? Bind(ParameterBindingContext context)
+    public object? BindParameter(ParameterBindingContext context)
     {
         var service = serviceProvider.GetService(context.ParameterType);
         if (service is not null) return service;

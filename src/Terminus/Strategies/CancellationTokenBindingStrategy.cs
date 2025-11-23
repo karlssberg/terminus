@@ -8,6 +8,6 @@ public sealed class CancellationTokenBindingStrategy : IParameterBindingStrategy
     public bool CanBind(ParameterBindingContext context) 
         => context.ParameterType == typeof(CancellationToken);
     
-    public object? Bind(ParameterBindingContext context) 
+    public object? BindParameter(ParameterBindingContext context) 
         => context.Arguments.Values.FirstOrDefault(value => value is CancellationToken);
 }

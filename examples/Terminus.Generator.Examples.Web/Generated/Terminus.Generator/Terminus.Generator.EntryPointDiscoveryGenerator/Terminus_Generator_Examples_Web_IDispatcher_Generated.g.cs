@@ -38,13 +38,18 @@ namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
-        private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyResolver>? configure = null)
+        private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
         {
-            services.AddKeyedSingleton<Terminus.ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, _) =>
+            services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, _) =>
             {
-                var resolver = new Terminus.ParameterBindingStrategyResolver(provider);
-                configure?.Invoke(resolver);
-                return resolver;
+                var collection = new Terminus.ParameterBindingStrategyCollection();
+                configure?.Invoke(collection);
+                return collection;
+            });
+            services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, key) =>
+            {
+                var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                return new Terminus.ParameterBindingStrategyResolver(provider, collection);
             });
             services.AddTransient<Dispatcher<Terminus.Generator.Examples.Web.IDispatcher>>();
             services.AddTransient<IEntryPointRouter<Terminus.Generator.Examples.Web.IDispatcher>, DefaultEntryPointRouter<Terminus.Generator.Examples.Web.IDispatcher>>();
