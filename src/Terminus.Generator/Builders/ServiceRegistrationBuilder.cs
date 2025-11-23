@@ -61,18 +61,18 @@ internal static class ServiceRegistrationBuilder
           $$"""
             private static IServiceCollection AddEntryPointsFor_{{aggregatorFullNameIdentifier}}(
                 this IServiceCollection services,
-                Action<ParameterBindingStrategyCollection>? configure = null)
+                Action<EntryPointOptions>? configure = null)
             {
-                services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof({{aggregatorInterfaceType}}), (provider, _) =>
+                services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof({{aggregatorInterfaceType}}), (provider, _) =>
                 {
-                    var collection = new Terminus.ParameterBindingStrategyCollection();
+                    var collection = new Terminus.EntryPointOptions();
                     configure?.Invoke(collection);
                     return collection;
                 });
 
                 services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof({{aggregatorInterfaceType}}), (provider, key) =>
                 {
-                     var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                     var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                      return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                 });
                 

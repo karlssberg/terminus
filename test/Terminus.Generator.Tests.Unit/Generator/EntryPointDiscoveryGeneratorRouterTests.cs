@@ -109,17 +109,17 @@ public class EntryPointDiscoveryGeneratorRouterTests
               {
                   public static partial class ServiceCollectionExtensions__Generated
                   {
-                      private static IServiceCollection AddEntryPointsFor_Demo_IRouter(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                      private static IServiceCollection AddEntryPointsFor_Demo_IRouter(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                       {
-                          services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IRouter), (provider, _) =>
+                          services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IRouter), (provider, _) =>
                           {
-                              var collection = new Terminus.ParameterBindingStrategyCollection();
+                              var collection = new Terminus.EntryPointOptions();
                               configure?.Invoke(collection);
                               return collection;
                           });
                           services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IRouter), (provider, key) =>
                           {
-                              var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                              var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                               return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                           });
                           services.AddTransient<Dispatcher<Demo.IRouter>>();
@@ -146,7 +146,7 @@ public class EntryPointDiscoveryGeneratorRouterTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -156,7 +156,7 @@ public class EntryPointDiscoveryGeneratorRouterTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
 
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IRouter();
                         return services;

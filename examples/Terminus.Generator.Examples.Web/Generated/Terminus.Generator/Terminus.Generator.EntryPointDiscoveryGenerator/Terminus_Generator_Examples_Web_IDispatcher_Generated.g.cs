@@ -38,17 +38,17 @@ namespace Terminus
 {
     public static partial class ServiceCollectionExtensions__Generated
     {
-        private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+        private static IServiceCollection AddEntryPointsFor_Terminus_Generator_Examples_Web_IDispatcher(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
         {
-            services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, _) =>
+            services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, _) =>
             {
-                var collection = new Terminus.ParameterBindingStrategyCollection();
+                var collection = new Terminus.EntryPointOptions();
                 configure?.Invoke(collection);
                 return collection;
             });
             services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Terminus.Generator.Examples.Web.IDispatcher), (provider, key) =>
             {
-                var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                 return new Terminus.ParameterBindingStrategyResolver(provider, collection);
             });
             services.AddTransient<Dispatcher<Terminus.Generator.Examples.Web.IDispatcher>>();

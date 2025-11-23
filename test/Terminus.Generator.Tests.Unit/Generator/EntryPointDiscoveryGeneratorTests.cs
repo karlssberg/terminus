@@ -70,17 +70,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -103,7 +103,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -113,7 +113,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -205,17 +205,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -238,7 +238,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -248,7 +248,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -368,17 +368,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -403,7 +403,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -413,7 +413,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -542,17 +542,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -579,7 +579,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -589,7 +589,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -720,17 +720,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -757,7 +757,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -767,7 +767,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -902,17 +902,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IMediator(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IMediator(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IMediator), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IMediator), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IMediator), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IMediator>>();
@@ -939,7 +939,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -949,7 +949,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IMediator();
                         return services;
@@ -1056,17 +1056,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -1090,7 +1090,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -1100,7 +1100,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;
@@ -1204,17 +1204,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IDispatcher(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IDispatcher(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IDispatcher), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IDispatcher), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IDispatcher), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IDispatcher>>();
@@ -1238,7 +1238,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -1248,7 +1248,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IDispatcher();
                         return services;
@@ -1357,17 +1357,17 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    private static IServiceCollection AddEntryPointsFor_Demo_IFacade(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
-                        services.AddKeyedSingleton<Terminus.ParameterBindingStrategyCollection>(typeof(Demo.IFacade), (provider, _) =>
+                        services.AddKeyedSingleton<Terminus.EntryPointOptions>(typeof(Demo.IFacade), (provider, _) =>
                         {
-                            var collection = new Terminus.ParameterBindingStrategyCollection();
+                            var collection = new Terminus.EntryPointOptions();
                             configure?.Invoke(collection);
                             return collection;
                         });
                         services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
                         {
-                            var collection = provider.GetRequiredKeyedService<Terminus.ParameterBindingStrategyCollection>(key);
+                            var collection = provider.GetRequiredKeyedService<Terminus.EntryPointOptions>(key);
                             return new Terminus.ParameterBindingStrategyResolver(provider, collection);
                         });
                         services.AddTransient<Dispatcher<Demo.IFacade>>();
@@ -1390,7 +1390,7 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 public static partial class ServiceCollectionExtensions__Generated
                 {
-                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints<T>(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         switch (typeof(T).FullName)
                         {
@@ -1400,7 +1400,7 @@ public class EntryPointDiscoveryGeneratorTests
                         throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
                     }
             
-                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<ParameterBindingStrategyCollection>? configure = null)
+                    public static IServiceCollection AddEntryPoints(this IServiceCollection services, Action<EntryPointOptions>? configure = null)
                     {
                         services.AddEntryPointsFor_Demo_IFacade();
                         return services;

@@ -7,7 +7,7 @@ using Terminus.Strategies;
 
 namespace Terminus;
 
-public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider, ParameterBindingStrategyCollection collection)
+public sealed class ParameterBindingStrategyResolver(IServiceProvider serviceProvider, EntryPointOptions collection)
 {
     public TParameter ResolveParameter<TParameter>(string parameterName, IBindingContext context)
     {

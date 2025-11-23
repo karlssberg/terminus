@@ -4,7 +4,7 @@ using Terminus.Strategies;
 
 namespace Terminus;
 
-public sealed class ParameterBindingStrategyCollection
+public sealed class EntryPointOptions
 {
     private readonly Stack<Type> _strategies = new(
     [
@@ -15,13 +15,13 @@ public sealed class ParameterBindingStrategyCollection
 
     public IEnumerable<Type> Strategies => _strategies;
 
-    public ParameterBindingStrategyCollection Clear()
+    public EntryPointOptions ClearStrategies()
     {
         _strategies.Clear();
         return this;
     }
     
-    public ParameterBindingStrategyCollection AddStrategy<TBindingStrategy>() where TBindingStrategy : IParameterBindingStrategy
+    public EntryPointOptions AddStrategy<TBindingStrategy>() where TBindingStrategy : IParameterBindingStrategy
     {
         _strategies.Push(typeof(TBindingStrategy));
         return this;
