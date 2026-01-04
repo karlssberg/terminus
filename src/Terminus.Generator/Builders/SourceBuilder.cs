@@ -1,9 +1,7 @@
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 using static Terminus.Generator.Builders.AggregatorBuilder;
-using static Terminus.Generator.Builders.ServiceRegistrationBuilder;
 
 namespace Terminus.Generator.Builders;
 
@@ -23,53 +21,8 @@ internal static class SourceBuilder
             using Terminus.Strategies;
 
             {{GenerateAggregatorTypeDeclarations(aggregatorContext)}}
-
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    {{CreateAddEntryPointsMethods(aggregatorContext)}}
-                }
-            }
             """;
 
         return ParseCompilationUnit(rawCompilationUnit).NormalizeWhitespace();
-    }
-
-    internal static CompilationUnitSyntax GenerateServiceRegistrations(
-        ImmutableArray<AggregatorInterfaceInfo> facades)
-    {
-        var compilationUnit =
-          $$"""
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddEntryPoints<T>(
-                        this IServiceCollection services,
-                        Action<EntryPointOptions>? configure = null)
-                    {
-                        {{GenerateRegistrationMethodSelector(facades)}};
-                                  
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");   
-                    }
-                              
-                    public static IServiceCollection AddEntryPoints(
-                        this IServiceCollection services,
-                        Action<EntryPointOptions>? configure = null)
-                    {
-                        {{GenerateRegistrationsPerAttribute(facades)}}
-                                  
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        return ParseCompilationUnit(compilationUnit).NormalizeWhitespace();
     }
 }

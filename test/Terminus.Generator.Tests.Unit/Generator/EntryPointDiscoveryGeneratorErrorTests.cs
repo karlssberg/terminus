@@ -16,8 +16,10 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
 
                 public static class A
                 {
@@ -106,8 +108,10 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
 
                 public static class TestEntryPoints
                 {

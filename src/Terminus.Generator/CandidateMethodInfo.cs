@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Terminus.Generator;
 
-internal readonly record struct EntryPointMethodInfo(
+internal readonly record struct CandidateMethodInfo(
     IMethodSymbol MethodSymbol,
     AttributeData AttributeData,
     ReturnTypeKind ReturnTypeKind)

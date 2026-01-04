@@ -17,8 +17,10 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
                 
                 public static class TestEntryPoints
                 {
@@ -153,8 +155,10 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
                 
                 public static class TestEntryPoints
                 {
@@ -289,8 +293,10 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
                 
                 public class TestEntryPoints
                 {
@@ -457,6 +463,8 @@ public class EntryPointDiscoveryGeneratorTests
             {
                 [EntryPointFacade]
                 public partial interface IFacade;
+                
+                public EntryPointFacadeAttribute : Attribute;
                 
                 public class TestEntryPoints
                 {
@@ -991,8 +999,10 @@ public class EntryPointDiscoveryGeneratorTests
 
             namespace Demo
             {
-                [ScopedEntryPointFacade]
+                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
                 public partial interface IFacade;
+            
+                public class EntryPointAttribute : Attribute;
 
                 public class TestEntryPoints
                 {

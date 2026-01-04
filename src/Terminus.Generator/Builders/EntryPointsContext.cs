@@ -4,6 +4,6 @@ namespace Terminus.Generator.Builders;
 
 internal record AggregatorContext(AggregatorInterfaceInfo Aggregator)
 {
-    public ImmutableArray<EntryPointMethodInfo> EntryPointMethodInfos { get; set; } = [];
+    public ImmutableArray<CandidateMethodInfo> EntryPointMethodInfos { get; set; } = [];
     public AggregatorInterfaceInfo Aggregator { get; set;  } = Aggregator;
 }

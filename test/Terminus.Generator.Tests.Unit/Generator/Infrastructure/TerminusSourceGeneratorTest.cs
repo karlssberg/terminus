@@ -150,11 +150,5 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         {
             TestState.Sources.Add(AsyncEnumerableShim);
         }
-        
-        // Ensure the test compilation can resolve Terminus.EntryPointAttribute and other Terminus types
-        TestState.AdditionalReferences.Add(
-            MetadataReference.CreateFromFile(typeof(EntryPointAttribute).Assembly.Location));
-        TestState.AdditionalReferences.Add(
-            MetadataReference.CreateFromFile(typeof(Terminus.EntryPointDescriptor<>).Assembly.Location));
     }
 }

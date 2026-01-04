@@ -5,7 +5,7 @@ namespace Terminus.Generator;
 
 internal static class UsageValidator
 {
-    internal static bool Validate(SourceProductionContext context, ImmutableArray<EntryPointMethodInfo> entryPointMethodInfos,
+    internal static bool Validate(SourceProductionContext context, ImmutableArray<CandidateMethodInfo> entryPointMethodInfos,
         AggregatorInterfaceInfo facade)
     {
         var hasErrors = false;

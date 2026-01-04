@@ -15,16 +15,16 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         var discoveredFacades = context.SyntaxProvider
             .CreateSyntaxProvider( 
                 predicate: static (node, _) => IsCandidateFacadeInterface(node),
-                transform: GetAggregatorFacadeInterfaceInfo)
+                transform: GetFacadeAttributeInfo)
             .Where(static m => m.HasValue)
             .Select((m, _) => m!.Value)
             .Collect();
 
-        // Discover methods that have an attribute deriving from EntryPointAttribute
+        // Discover methods that have an attribute deriving from entry point attribute
         var discoveredMethods = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => IsCandidateMethod(node),
-                transform: GetMethodWithDerivedAttribute)
+                transform: GetMethodWithEntryPointAttribute)
             .Where(static m => m.HasValue)
             .Select((m, _) => m!.Value)
             .Collect();
@@ -37,7 +37,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private void Execute(
         SourceProductionContext context,
-        (ImmutableArray<AggregatorInterfaceInfo> aggregators, ImmutableArray<EntryPointMethodInfo> EntryPoints) data)
+        (ImmutableArray<AggregatorInterfaceInfo> Aggregators, ImmutableArray<CandidateMethodInfo> EntryPoints) data)
     {
         var (aggregators, entryPoints) = data;
 
@@ -99,30 +99,18 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
             context.AddSource($"{aggregator.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
         }
-
-        // Only generate service registration for valid facades (no errors)
-        if (validFacades.Count > 0)
-        {
-            var compilationUnitSyntax = SourceBuilder
-                .GenerateServiceRegistrations([..validFacades])
-                .NormalizeWhitespace();
-
-            context.AddSource("__EntryPointServiceRegistration_Generated.g.cs", compilationUnitSyntax.ToFullString());
-        }
     }
 
     private static bool IsCandidateFacadeInterface(SyntaxNode node) =>
         node is InterfaceDeclarationSyntax { AttributeLists.Count: > 0 } @interface &&
         @interface.Modifiers.Any(m => m.IsKind(SyntaxKind.PartialKeyword));
 
-    private static bool IsCandidateMethod(SyntaxNode node) =>
-        node is MethodDeclarationSyntax { AttributeLists.Count: > 0 };
+    private static bool IsCandidateMethod(SyntaxNode node) => node is MethodDeclarationSyntax;
 
-    private static AggregatorInterfaceInfo? GetAggregatorFacadeInterfaceInfo(
+    private static AggregatorInterfaceInfo? GetFacadeAttributeInfo(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
-        var supportedAttributes = new SupportedAttributes(context);
         var asyncDisposableTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
         var dotnetFeatures = 
             asyncDisposableTypeSymbol is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
@@ -134,17 +122,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         foreach (var aggregatorAttrData in interfaceSymbol.GetAttributes())
         {
 
-            var aggregatorFeatures = new AggregatorFeatures(supportedAttributes, aggregatorAttrData);
+            var generationFeatures = new GenerationFeatures(aggregatorAttrData);
 
-            if (aggregatorFeatures.ServiceKind == ServiceKind.None)
-                continue;
-            
-            var entryPointAttrTypes = aggregatorAttrData.NamedArguments
-                                          .Where(x => x.Key == "EntryPointAttributes")
-                                          .SelectMany(x => x.Value.Values)
-                                          .Select(x => x.Value)
-                                          .OfType<INamedTypeSymbol>()
-                                          .DefaultIfEmpty(supportedAttributes.EntryPointTypeSymbol);
+            var entryPointAttrTypes = aggregatorAttrData.ConstructorArguments
+                .Select(x => x.Value)
+                .OfType<INamedTypeSymbol>();
 
             var targetTypes = aggregatorAttrData.ConstructorArguments
                                   .SelectMany(x => x.Values)
@@ -153,19 +135,17 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
             return new AggregatorInterfaceInfo(
                 interfaceSymbol,
-                aggregatorAttrData,
                 [..entryPointAttrTypes],
                 [..targetTypes],
                 dotnetFeatures,
-                aggregatorFeatures.ServiceKind,
-                aggregatorFeatures.IsScoped
+                generationFeatures.IsScoped
             );
         }
 
         return null;
     }
 
-    private static EntryPointMethodInfo? GetMethodWithDerivedAttribute(
+    private static CandidateMethodInfo? GetMethodWithEntryPointAttribute(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
@@ -181,34 +161,15 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             if (attributeData.AttributeClass == null)
                 continue;
 
-            // Walk up the inheritance chain to check if it derives from our base
-            if (InheritsFromBaseAttribute(attributeData.AttributeClass))
-            {
-                var isTaskLike = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
-                return new EntryPointMethodInfo(
-                    methodSymbol,
-                    attributeData,
-                    isTaskLike
-                );
-            }
+            var isTaskLike = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
+            return new CandidateMethodInfo(
+                methodSymbol,
+                attributeData,
+                isTaskLike
+            );
         }
 
         return null;
-    }
-
-    private static bool InheritsFromBaseAttribute(INamedTypeSymbol attributeClass)
-    {
-        var current = attributeClass;
-
-        while (current != null)
-        {
-            if (current.ToDisplayString() == SupportedAttributes.EntryPointAttributeFullName)
-                return true;
-
-            current = current.BaseType;
-        }
-
-        return false;
     }
 
 }
