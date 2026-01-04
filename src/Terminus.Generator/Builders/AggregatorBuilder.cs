@@ -92,11 +92,6 @@ internal static class AggregatorBuilder
 
                 break;
             }
-            case ServiceKind.Router:
-            {
-                yield return GenerateRouteMethodInterfaceDefinition();
-                break;
-            }
             case ServiceKind.None:
                 break;
             default:
@@ -138,11 +133,6 @@ internal static class AggregatorBuilder
                     };
                 }
 
-                break;
-            }
-            case ServiceKind.Router:
-            {
-                yield return GenerateRouteMethodImplementation(aggregatorContext);
                 break;
             }
             case ServiceKind.None:
@@ -295,33 +285,6 @@ internal static class AggregatorBuilder
 
         return ParseMemberDeclaration(methodDeclaration)!;
     }
-
-    private static MemberDeclarationSyntax GenerateRouteMethodInterfaceDefinition()
-    {
-        return ParseMemberDeclaration(
-            "System.Threading.Tasks.Task<RouteResult> Route(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default);")!;
-    }
-
-    private static MemberDeclarationSyntax GenerateRouteMethodImplementation(AggregatorContext aggregatorContext)
-    {
-        var statement = ParseStatement("return _dispatcher.Route(arguments, cancellationToken);");
-        if (aggregatorContext.Aggregator.Scoped)
-        {
-            statement = GenerateUsingStatementWithCreateScope(statement).NormalizeWhitespace();
-        }
-        
-        var methodDeclaration =
-            $$"""
-              public System.Threading.Tasks.Task<RouteResult> Route(System.Collections.Generic.IReadOnlyDictionary<string, object?> arguments, System.Threading.CancellationToken cancellationToken = default)
-              {
-                  cancellationToken.ThrowIfCancellationRequested();
-                  {{statement}}
-              }
-              """;
-
-        return ParseMemberDeclaration(methodDeclaration)!;
-    }
-
 
     private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithoutContext(
         AggregatorInterfaceInfo aggregatorInfo,

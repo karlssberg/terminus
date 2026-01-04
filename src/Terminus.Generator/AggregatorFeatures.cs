@@ -12,10 +12,6 @@ internal class AggregatorFeatures(SupportedAttributes supportedAttributes,  Attr
         supportedAttributes.MediatorAttributeTypeSymbol,
         supportedAttributes.ScopedMediatorAttributeTypeSymbol);
 
-    private readonly INamedTypeSymbol? _routerAttributeMatch = GetSelfOrBaseType(aggregatorAttrData.AttributeClass,
-        supportedAttributes.RouterAttributeTypeSymbol,
-        supportedAttributes.ScopedRouterAttributeTypeSymbol);
-
 
     public ServiceKind ServiceKind => ResolveServiceKind();
     public bool IsScoped => ResolveIsScoped();
@@ -26,8 +22,6 @@ internal class AggregatorFeatures(SupportedAttributes supportedAttributes,  Attr
             return  ServiceKind.Facade;
         if (_mediatorAttributeMatch is not null)
             return ServiceKind.Mediator;
-        if (_routerAttributeMatch is not null)
-            return ServiceKind.Router;
 
         return ServiceKind.None;
     }
@@ -35,8 +29,7 @@ internal class AggregatorFeatures(SupportedAttributes supportedAttributes,  Attr
     private bool ResolveIsScoped()
     {
         return SymbolEqualityComparer.Default.Equals(_facadeAttributeMatch, supportedAttributes.ScopedFacadeAttributeTypeSymbol)
-               || SymbolEqualityComparer.Default.Equals(_mediatorAttributeMatch, supportedAttributes.ScopedMediatorAttributeTypeSymbol)
-               || SymbolEqualityComparer.Default.Equals(_routerAttributeMatch, supportedAttributes.ScopedRouterAttributeTypeSymbol);
+               || SymbolEqualityComparer.Default.Equals(_mediatorAttributeMatch, supportedAttributes.ScopedMediatorAttributeTypeSymbol);
     }
         
     private static INamedTypeSymbol? GetSelfOrBaseType(
