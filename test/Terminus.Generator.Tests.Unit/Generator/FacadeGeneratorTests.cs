@@ -65,61 +65,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestFacadeMethods.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context), ct)));
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -134,11 +79,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-        
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
 
         await test.RunAsync();
     }
@@ -200,61 +140,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => Demo.TestFacadeMethods.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -269,11 +154,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-        
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
 
         await test.RunAsync();
     }
@@ -363,63 +243,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddTransient<Demo.TestFacadeMethods>();
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -434,12 +257,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-       
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
-        
 
         await test.RunAsync();
     }
@@ -537,65 +354,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddTransient<Demo.TestFacadeMethods>();
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -610,12 +368,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-       
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
-        
 
         await test.RunAsync();
     }
@@ -713,65 +465,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context))));
-                        services.AddTransient<Demo.TestFacadeMethods>();
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -786,12 +479,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-       
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
-        
 
         await test.RunAsync();
     }
@@ -894,65 +581,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IMediator(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IMediator), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IMediator), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IMediator>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IMediator>, DefaultFacadeMethodRouter<Demo.IMediator>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IMediator), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IMediator), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IMediator)).ResolveParameter<string>("world", context))));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IMediator), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync()));
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>>(typeof(Demo.IMediator), (provider, key) => new FacadeMethodDescriptor<Demo.MyFacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("HelloAsync", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().HelloAsync(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IMediator)).ResolveParameter<string>("world", context))));
-                        services.AddTransient<Demo.TestFacadeMethods>();
-                        services.AddSingleton<Demo.IMediator, Demo.IMediator_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IMediator":
-                                return services.AddFacadeMethodsFor_Demo_IMediator(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IMediator();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -967,12 +595,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IMediator_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-       
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
-        
 
         await test.RunAsync();
     }
@@ -1048,73 +670,12 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Stream", new System.Type[] { })!, (context, ct) => provider.GetRequiredService<Demo.TestFacadeMethods>().Stream()));
-                        services.AddTransient<Demo.TestFacadeMethods>();
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-        
-        string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
         
         test.TestState.GeneratedSources.Add((
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-        
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
 
         await test.RunAsync();
     }
@@ -1195,62 +756,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IDispatcher(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IDispatcher), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IDispatcher), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IDispatcher>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IDispatcher>, DefaultFacadeMethodRouter<Demo.IDispatcher>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Demo.MyCustomAttribute>>(typeof(Demo.IDispatcher), (provider, key) => new FacadeMethodDescriptor<Demo.MyCustomAttribute>(typeof(Demo.MyController).GetMethod("GetUser", new System.Type[] { typeof(string) })!, (context, ct) => provider.GetRequiredService<Demo.MyController>().GetUser(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IDispatcher)).ResolveParameter<string>("id", context))));
-                        services.AddTransient<Demo.MyController>();
-                        services.AddSingleton<Demo.IDispatcher, Demo.IDispatcher_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IDispatcher":
-                                return services.AddFacadeMethodsFor_Demo_IDispatcher(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IDispatcher();
-                        return services;
-                    }
-                }
-            }
             """;
         
         var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -1265,12 +770,7 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IDispatcher_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
-
+        
         await test.RunAsync();
 
         await test.RunAsync();
@@ -1346,61 +846,6 @@ public class FacadeGeneratorTests
                     }
                 }
             }
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    private static IServiceCollection AddFacadeMethodsFor_Demo_IFacade(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddKeyedSingleton<Terminus.FacadeMethodOptions>(typeof(Demo.IFacade), (provider, _) =>
-                        {
-                            var collection = new Terminus.FacadeMethodOptions();
-                            configure?.Invoke(collection);
-                            return collection;
-                        });
-                        services.AddKeyedTransient<Terminus.ParameterBindingStrategyResolver>(typeof(Demo.IFacade), (provider, key) =>
-                        {
-                            var collection = provider.GetRequiredKeyedService<Terminus.FacadeMethodOptions>(key);
-                            return new Terminus.ParameterBindingStrategyResolver(provider, collection);
-                        });
-                        services.AddTransient<Dispatcher<Demo.IFacade>>();
-                        services.AddTransient<IFacadeMethodRouter<Demo.IFacade>, DefaultFacadeMethodRouter<Demo.IFacade>>();
-                        services.AddKeyedSingleton<FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>>(typeof(Demo.IFacade), (provider, key) => new FacadeMethodDescriptor<Terminus.FacadeMethodAttribute>(typeof(Demo.TestFacadeMethods).GetMethod("Hello", new System.Type[] { typeof(string), typeof(System.Threading.CancellationToken) })!, (context, ct) => Demo.TestFacadeMethods.Hello(provider.GetRequiredKeyedService<ParameterBindingStrategyResolver>(typeof(Demo.IFacade)).ResolveParameter<string>("world", context), ct)));
-                        services.AddSingleton<Demo.IFacade, Demo.IFacade_Generated>();
-                        return services;
-                    }
-                }
-            }
-            """;
-
-        const string expectedServiceRegistrationSource =
-            """
-            #nullable enable
-            using Microsoft.Extensions.DependencyInjection;
-            using System;
-            
-            namespace Terminus
-            {
-                public static partial class ServiceCollectionExtensions__Generated
-                {
-                    public static IServiceCollection AddFacadeMethods<T>(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        switch (typeof(T).FullName)
-                        {
-                            case "Demo.IFacade":
-                                return services.AddFacadeMethodsFor_Demo_IFacade(configure);
-                        };
-                        throw new InvalidOperationException($"The type '{typeof(T).FullName}' is not an entry point aggregator");
-                    }
-            
-                    public static IServiceCollection AddFacadeMethods(this IServiceCollection services, Action<FacadeMethodOptions>? configure = null)
-                    {
-                        services.AddFacadeMethodsFor_Demo_IFacade();
-                        return services;
-                    }
-                }
-            }
             """;
 
     var test = new TerminusSourceGeneratorTest<FacadeGenerator>
@@ -1415,11 +860,6 @@ public class FacadeGeneratorTests
             typeof(FacadeGenerator), 
             "Demo_IFacade_Generated.g.cs", 
             SourceText.From(expectedMainSource, Encoding.UTF8)));
-        
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator), 
-            "__FacadeMethodServiceRegistration_Generated.g.cs",
-            SourceText.From(expectedServiceRegistrationSource, Encoding.UTF8)));
 
         await test.RunAsync();
     }
