@@ -20,13 +20,13 @@ public class FacadeGenerator : IIncrementalGenerator
             .Select((m, _) => m!.Value)
             .Collect();
 
-        // Discover methods that have an attribute deriving from entry point attribute
+        // Discover methods that have attributes - we'll filter later
         var discoveredMethods = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => IsCandidateMethod(node),
-                transform: GetMethodWithFacadeMethodAttribute)
-            .Where(static m => m.HasValue)
-            .Select((m, _) => m!.Value)
+                transform: GetCandidateMethodsWithAttributes)
+            .Where(static m => m.HasValue && !m.Value.IsEmpty)
+            .SelectMany((m, _) => m!.Value)
             .Collect();
 
         // Combine both providers
@@ -58,11 +58,10 @@ public class FacadeGenerator : IIncrementalGenerator
 
         foreach (var aggregator in aggregators)
         {
-            var facadeMethodMethodInfos = aggregator.FacadeMethodAttributeTypes
-                .SelectMany(facadeMethodAttributeType =>
-                    facadeMethodsByAttributeTypesDictionary.TryGetValue(facadeMethodAttributeType, out var attrType)
-                        ? attrType.AsEnumerable()
-                        : [])
+            // Match methods where the attribute is or inherits from the specified FacadeMethodAttributeTypes
+            var facadeMethodMethodInfos = facadeMethods
+                .Where(method => aggregator.FacadeMethodAttributeTypes.Any(facadeAttrType =>
+                    InheritsFromAttribute(method.AttributeData.AttributeClass!, facadeAttrType)))
                 .ToImmutableArray();
 
             // Filter by TargetTypes if specified
@@ -137,19 +136,29 @@ public class FacadeGenerator : IIncrementalGenerator
             var generationFeatures = new GenerationFeatures(aggregatorAttrData, isOfficialAttribute);
 
             // Get constructor arguments (first parameter is params Type[] facadeMethodAttributes)
-            // For params arrays, the values are in ConstructorArguments[0].Values
-            var facadeMethodAttrTypes = aggregatorAttrData.ConstructorArguments.Length > 0
-                ? aggregatorAttrData.ConstructorArguments[0].Values
-                    .Select(x => x.Value)
-                    .OfType<INamedTypeSymbol>()
-                    .ToImmutableArray()
-                : ImmutableArray<INamedTypeSymbol>.Empty;
+            // Roslyn represents params arrays as: ConstructorArguments[0].Kind == TypedConstantKind.Array
+            // and the values are in ConstructorArguments[0].Values
+            var facadeMethodAttrTypes = ImmutableArray<INamedTypeSymbol>.Empty;
+            if (aggregatorAttrData.ConstructorArguments.Length > 0)
+            {
+                var firstArg = aggregatorAttrData.ConstructorArguments[0];
+                if (firstArg.Kind == TypedConstantKind.Array && !firstArg.Values.IsDefaultOrEmpty)
+                {
+                    // Array of types
+                    facadeMethodAttrTypes = firstArg.Values
+                        .Select(x => x.Value)
+                        .OfType<INamedTypeSymbol>()
+                        .ToImmutableArray();
+                }
+                else if (firstArg.Kind == TypedConstantKind.Type && firstArg.Value is INamedTypeSymbol singleType)
+                {
+                    // Single type (shouldn't happen for params, but handle it)
+                    facadeMethodAttrTypes = ImmutableArray.Create(singleType);
+                }
+            }
 
-            var targetTypes = aggregatorAttrData.ConstructorArguments
-                                  .SelectMany(x => x.Values)
-                                  .Select(x => x.Value)
-                                  .OfType<INamedTypeSymbol>()
-                                  .ToImmutableArray();
+            // TargetTypes is not supported in the current design - always empty
+            var targetTypes = ImmutableArray<INamedTypeSymbol>.Empty;
 
             return new FacadeInterfaceInfo(
                 interfaceSymbol,
@@ -183,7 +192,22 @@ public class FacadeGenerator : IIncrementalGenerator
         return false;
     }
 
-    private static CandidateMethodInfo? GetMethodWithFacadeMethodAttribute(
+    private static bool InheritsFromAttribute(INamedTypeSymbol attributeClass, INamedTypeSymbol targetAttributeType)
+    {
+        var current = attributeClass;
+        while (current != null)
+        {
+            // Check by symbol equality
+            if (SymbolEqualityComparer.Default.Equals(current, targetAttributeType))
+                return true;
+
+            current = current.BaseType;
+        }
+
+        return false;
+    }
+
+    private static ImmutableArray<CandidateMethodInfo>? GetCandidateMethodsWithAttributes(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
@@ -193,22 +217,17 @@ public class FacadeGenerator : IIncrementalGenerator
         if (methodSymbol == null)
             return null;
 
-        // Check each attribute on the method
-        // We collect all methods with any attribute, then filter by facade requirements in Execute
-        foreach (var attributeData in methodSymbol.GetAttributes())
-        {
-            if (attributeData.AttributeClass == null)
-                continue;
+        var attributes = methodSymbol.GetAttributes();
+        if (attributes.IsEmpty)
+            return null;
 
-            var returnTypeKind = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
-            return new CandidateMethodInfo(
-                methodSymbol,
-                attributeData,
-                returnTypeKind
-            );
-        }
-
-        return null;
+        var returnTypeKind = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
+        
+        // Return one CandidateMethodInfo per attribute on the method
+        return attributes
+            .Where(attr => attr.AttributeClass != null)
+            .Select(attr => new CandidateMethodInfo(methodSymbol, attr, returnTypeKind))
+            .ToImmutableArray();
     }
 
 }

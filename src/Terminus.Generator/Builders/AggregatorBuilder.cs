@@ -10,7 +10,7 @@ internal static class AggregatorBuilder
 
     internal static NamespaceDeclarationSyntax GenerateAggregatorTypeDeclarations(AggregatorContext aggregatorContext)
     {
-        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
@@ -23,8 +23,8 @@ internal static class AggregatorBuilder
     private static InterfaceDeclarationSyntax GenerateAggregatorInterfaceExtensionDeclaration(AggregatorContext aggregatorContext)
     {
         return InterfaceDeclaration(aggregatorContext.Facade.InterfaceSymbol.Name)
-            .WithModifiers(TokenList(Token(
-                    SyntaxKind.PublicKeyword), 
+            .WithModifiers(TokenList(
+                Token(SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
             .WithMembers(aggregatorContext.FacadeMethodMethodInfos.Select(GenerateFacadeMethodMethodInterfaceDefinition).ToSyntaxList())
             .NormalizeWhitespace();
@@ -39,35 +39,58 @@ internal static class AggregatorBuilder
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
 
-        // Add [FacadeImplementation(typeof(IFacade))] attribute
-        var facadeImplAttribute = Attribute(
-            ParseName("global::Terminus.FacadeImplementation"),
-            AttributeArgumentList(SingletonSeparatedList(
-                AttributeArgument(TypeOfExpression(ParseTypeName(interfaceName))))));
+        // Determine if we need IServiceProvider based on whether we have instance methods
+        var hasInstanceMethods = aggregatorContext.FacadeMethodMethodInfos.Any(m => !m.MethodSymbol.IsStatic);
 
-        classDeclaration = classDeclaration.WithAttributeLists(
-            SingletonList(AttributeList(SingletonSeparatedList(facadeImplAttribute))));
-
-        var members = new List<MemberDeclarationSyntax>
+        // For non-scoped facades, always add [FacadeImplementation] attribute
+        // For scoped facades, only add if there are instance methods (static-only facades don't need it)
+        if (!aggregatorContext.Facade.Scoped || hasInstanceMethods)
         {
-            ParseMemberDeclaration("private readonly global::System.IServiceProvider _serviceProvider;")!
-        };
+            var facadeImplAttribute = Attribute(
+                ParseName("global::Terminus.FacadeImplementation"),
+                AttributeArgumentList(SingletonSeparatedList(
+                    AttributeArgument(TypeOfExpression(ParseTypeName(interfaceName))))));
 
-        // Add Dispatcher field and constructor parameter only for scoped facades
-        if (aggregatorContext.Facade.Scoped)
+            classDeclaration = classDeclaration.WithAttributeLists(
+                SingletonList(AttributeList(SingletonSeparatedList(facadeImplAttribute))));
+        }
+
+        var members = new List<MemberDeclarationSyntax>();
+
+        // Add IServiceProvider for:
+        // - Non-scoped facades: always (even for static-only)
+        // - Scoped facades: only if there are instance methods
+        if (!aggregatorContext.Facade.Scoped || hasInstanceMethods)
         {
-            members.Add(ParseMemberDeclaration($"private readonly global::Terminus.Dispatcher<{interfaceName}> _dispatcher;")!);
+            members.Add(ParseMemberDeclaration("private readonly global::System.IServiceProvider _serviceProvider;")!);
+        }
+
+        // For scoped facades with instance methods, add lazy scope fields and disposable interfaces
+        if (aggregatorContext.Facade.Scoped && hasInstanceMethods)
+        {
+            members.Add(ParseMemberDeclaration("private bool _syncDisposed;")!);
+            members.Add(ParseMemberDeclaration("private bool _asyncDisposed;")!);
+            members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope> _syncScope;")!);
+            members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope> _asyncScope;")!);
+
+            // Add IDisposableScope and IAsyncDisposableScope to base list
+            classDeclaration = classDeclaration.AddBaseListTypes(
+                SimpleBaseType(ParseTypeName("global::Terminus.IDisposableScope")),
+                SimpleBaseType(ParseTypeName("global::Terminus.IAsyncDisposableScope")));
+
             members.Add(ParseMemberDeclaration(
                 $$"""
-                  public {{implementationClassName}}(global::System.IServiceProvider serviceProvider, global::Terminus.Dispatcher<{{interfaceName}}> dispatcher)
+                  public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
                   {
-                      _serviceProvider = serviceProvider;
-                      _dispatcher = dispatcher;
+                      _syncScope = new Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.ServiceScope(serviceProvider));
+                      _asyncScope = new Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope(serviceProvider));
                   }
                   """)!);
         }
-        else
+        else if (!aggregatorContext.Facade.Scoped || hasInstanceMethods)
         {
+            // Non-scoped facades: always add constructor (even for static-only)
+            // Scoped facades with instance methods: simple constructor
             members.Add(ParseMemberDeclaration(
                 $$"""
                   public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
@@ -78,6 +101,36 @@ internal static class AggregatorBuilder
         }
 
         members.AddRange(GenerateImplementationFacadeMethods(aggregatorContext));
+
+        // Add Dispose methods for scoped facades
+        if (aggregatorContext.Facade.Scoped && hasInstanceMethods)
+        {
+            members.Add(ParseMemberDeclaration(
+                """
+                public void Dispose()
+                {
+                    if (_syncDisposed || !_syncScope.IsValueCreated) return;
+                    
+                    _syncScope.Value.Dispose();
+                    _syncDisposed = true;
+                    
+                    GC.SuppressFinalize(this);
+                }
+                """)!);
+
+            members.Add(ParseMemberDeclaration(
+                """
+                public async global::System.Threading.Tasks.ValueTask DisposeAsync()
+                {
+                    if (_asyncDisposed || !_asyncScope.IsValueCreated) return;
+                    
+                    await _asyncScope.Value.DisposeAsync().ConfigureAwait(false);
+                    _asyncDisposed = true;
+                    
+                    GC.SuppressFinalize(this);
+                }
+                """)!);
+        }
 
         return classDeclaration.WithMembers(List(members));
     }
@@ -111,8 +164,12 @@ internal static class AggregatorBuilder
                 Parameter(Identifier(p.Name))
                     .WithType(ParseTypeName(p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))))));
 
+        // Use explicit interface implementation
+        var interfaceName = facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var explicitInterfaceSpecifier = ExplicitInterfaceSpecifier(ParseName(interfaceName));
+
         var method = MethodDeclaration(returnTypeSyntax, Identifier(candidate.MethodSymbol.Name))
-            .AddModifiers(Token(SyntaxKind.PublicKeyword))
+            .WithExplicitInterfaceSpecifier(explicitInterfaceSpecifier)
             .WithParameterList(parameterList);
 
         // Add async modifier when returning Task/Task<T> or when generating an async iterator
@@ -131,15 +188,40 @@ internal static class AggregatorBuilder
 
     private static IEnumerable<StatementSyntax> GenerateFacadeMethodMethodImplementationMethodBody(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo candidate)
     {
-        var serviceProviderExpression = facadeInfo.Scoped
-            ? "scope.ServiceProvider"
-            : "_serviceProvider";
+        // Handle CancellationToken.ThrowIfCancellationRequested() first for static scoped methods
+        var cancellationTokens = candidate.MethodSymbol.Parameters.Where(p =>
+            !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
+            .ToList();
+
+        if (cancellationTokens.Count == 1 && candidate.MethodSymbol.IsStatic && facadeInfo.Scoped)
+        {
+            var parameterName = cancellationTokens[0].Name;
+            yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
+        }
 
         // Build instance/service resolution expression
         var fullyQualifiedTypeName = candidate.MethodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var instanceExpression = ParseExpression(candidate.MethodSymbol.IsStatic
-            ? fullyQualifiedTypeName :
-            $"{serviceProviderExpression}.GetRequiredService<{fullyQualifiedTypeName}>()");
+        
+        // For static methods, use the fully qualified type name
+        // For instance methods in scoped facades, use the appropriate scope's ServiceProvider
+        // For instance methods in non-scoped facades, use _serviceProvider
+        ExpressionSyntax instanceExpression;
+        if (candidate.MethodSymbol.IsStatic)
+        {
+            instanceExpression = ParseExpression(fullyQualifiedTypeName);
+        }
+        else if (facadeInfo.Scoped)
+        {
+            // For scoped facades, determine which scope to use based on method return type
+            var scopeExpression = candidate.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable
+                ? "_asyncScope.Value.ServiceProvider"
+                : "_syncScope.Value.ServiceProvider";
+            instanceExpression = ParseExpression($"{scopeExpression}.GetRequiredService<{fullyQualifiedTypeName}>()");
+        }
+        else
+        {
+            instanceExpression = ParseExpression($"_serviceProvider.GetRequiredService<{fullyQualifiedTypeName}>()");
+        }
 
         // Build method invocation
         var methodAccess = MemberAccessExpression(
@@ -173,10 +255,9 @@ internal static class AggregatorBuilder
             ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.AsyncEnumerable when facadeInfo.Scoped =>
                 // For scoped async streams, proxy enumeration via the facade interface within the scope
-                // as expected by tests: scope.ServiceProvider.GetRequiredService<IFacade>().Method(...)
                 ParseStatement(
                     $$"""
-                    await foreach (var item in scope.ServiceProvider.GetRequiredService<{{facadeInfo.InterfaceSymbol.Name}}>().{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
+                    await foreach (var item in _asyncScope.Value.ServiceProvider.GetRequiredService<{{facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>().{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
                     {
                         yield return item;
                     }
@@ -184,74 +265,7 @@ internal static class AggregatorBuilder
             _ => ReturnStatement(invocationExpression)
         };
 
-        var cancellationTokens = candidate.MethodSymbol.Parameters.Where(p =>
-            !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
-            .ToList();
-
-        if (cancellationTokens.Count == 1)
-        {
-            var parameterName = cancellationTokens[0].Name;
-            yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
-        }
-
-        if (!facadeInfo.Scoped)
-        {
-            yield return innerStatement;
-            yield break;
-        }
-
-        // In scoped facades, wrap the call into a scope. For async streams, we already built
-        // an await-foreach statement as innerStatement to proxy the stream.
-        yield return candidate switch
-        {
-            { MethodSymbol.IsStatic: true } =>
-                innerStatement,
-
-            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
-                GenerateUsingStatementWithCreateAsyncScope(innerStatement),
-
-            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } =>
-                GenerateUsingStatementWithCreateScope(innerStatement),
-
-            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult } when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
-                GenerateUsingStatementWithCreateAsyncScope(innerStatement),
-
-            _ => GenerateUsingStatementWithCreateScope(innerStatement)
-        };
-    }
-    
-    private static UsingStatementSyntax GenerateUsingStatementWithCreateScope(StatementSyntax innerStatement)
-    {
-        // using (var scope = _serviceProvider.CreateScope()) { ... }
-        var createScopeAccess = MemberAccessExpression(
-            SyntaxKind.SimpleMemberAccessExpression,
-            IdentifierName("_serviceProvider"),
-            IdentifierName("CreateScope"));
-
-        return UsingStatement(Block(innerStatement))
-            .WithDeclaration(
-                VariableDeclaration(IdentifierName("var"))
-                    .WithVariables(SingletonSeparatedList(
-                        VariableDeclarator(Identifier("scope"))
-                            .WithInitializer(EqualsValueClause(
-                                InvocationExpression(createScopeAccess))))));
+        yield return innerStatement;
     }
 
-    private static UsingStatementSyntax GenerateUsingStatementWithCreateAsyncScope(StatementSyntax innerStatement)
-    {
-        // await using (var scope = _serviceProvider.CreateAsyncScope()) { ... }
-        var createScopeAccess = MemberAccessExpression(
-            SyntaxKind.SimpleMemberAccessExpression,
-            IdentifierName("_serviceProvider"),
-            IdentifierName("CreateAsyncScope"));
-
-        return UsingStatement(Block(innerStatement))
-            .WithAwaitKeyword(Token(SyntaxKind.AwaitKeyword))
-            .WithDeclaration(
-                VariableDeclaration(IdentifierName("var"))
-                    .WithVariables(SingletonSeparatedList(
-                        VariableDeclarator(Identifier("scope"))
-                            .WithInitializer(EqualsValueClause(
-                                InvocationExpression(createScopeAccess))))));
-    }
 }

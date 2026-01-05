@@ -10,10 +10,10 @@ internal static class SyntaxExtensions
     {
         var methodDeclarationSyntax = 
             MethodDeclaration(
-                    ParseTypeName(methodSymbol.ReturnType.ToDisplayString()),
+                    ParseTypeName(methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)),
                     methodSymbol.Name)
                 .WithReturnType(ParseTypeName(
-                    methodSymbol.ReturnType.ToDisplayString()));
+                    methodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)));
         
         if (methodSymbol.Parameters.Length == 0)
             return methodDeclarationSyntax;
@@ -27,7 +27,7 @@ internal static class SyntaxExtensions
     internal static ParameterListSyntax ToParameterList(this IEnumerable<IParameterSymbol> parameterSymbols)
     {
         return parameterSymbols
-            .Select(parameter => (Identifier(parameter.Name), ParseTypeName(parameter.Type.ToDisplayString())))
+            .Select(parameter => (Identifier(parameter.Name), ParseTypeName(parameter.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))))
             .ToParameterList();
     }
     
