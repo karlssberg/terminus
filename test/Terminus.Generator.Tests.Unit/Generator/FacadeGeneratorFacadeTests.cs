@@ -1,6 +1,5 @@
 using System.Text;
 using Microsoft.CodeAnalysis.Text;
-using Microsoft.Extensions.DependencyInjection;
 using Terminus.Generator.Tests.Unit.Generator.Infrastructure;
 
 namespace Terminus.Generator.Tests.Unit.Generator;
