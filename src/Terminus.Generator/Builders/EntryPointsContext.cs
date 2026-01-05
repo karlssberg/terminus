@@ -2,8 +2,8 @@ using System.Collections.Immutable;
 
 namespace Terminus.Generator.Builders;
 
-internal record AggregatorContext(AggregatorInterfaceInfo Aggregator)
+internal record AggregatorContext(FacadeInterfaceInfo Facade)
 {
-    public ImmutableArray<CandidateMethodInfo> EntryPointMethodInfos { get; set; } = [];
-    public AggregatorInterfaceInfo Aggregator { get; set;  } = Aggregator;
+    public ImmutableArray<CandidateMethodInfo> FacadeMethodMethodInfos { get; set; } = [];
+    public FacadeInterfaceInfo Facade { get; set;  } = Facade;
 }

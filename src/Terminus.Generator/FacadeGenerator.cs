@@ -7,11 +7,11 @@ using Terminus.Generator.Builders;
 namespace Terminus.Generator;
 
 [Generator]
-public class EntryPointDiscoveryGenerator : IIncrementalGenerator
+public class FacadeGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // Discover facade interfaces marked with [EntryPointFacade]
+        // Discover facade interfaces marked with [FacadeOf]
         var discoveredFacades = context.SyntaxProvider
             .CreateSyntaxProvider( 
                 predicate: static (node, _) => IsCandidateFacadeInterface(node),
@@ -24,7 +24,7 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         var discoveredMethods = context.SyntaxProvider
             .CreateSyntaxProvider(
                 predicate: static (node, _) => IsCandidateMethod(node),
-                transform: GetMethodWithEntryPointAttribute)
+                transform: GetMethodWithFacadeMethodAttribute)
             .Where(static m => m.HasValue)
             .Select((m, _) => m!.Value)
             .Collect();
@@ -37,15 +37,15 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private void Execute(
         SourceProductionContext context,
-        (ImmutableArray<AggregatorInterfaceInfo> Aggregators, ImmutableArray<CandidateMethodInfo> EntryPoints) data)
+        (ImmutableArray<FacadeInterfaceInfo> Aggregators, ImmutableArray<CandidateMethodInfo> FacadeMethods) data)
     {
-        var (aggregators, entryPoints) = data;
+        var (aggregators, facadeMethods) = data;
 
-        if (entryPoints.IsEmpty && aggregators.IsEmpty)
+        if (facadeMethods.IsEmpty && aggregators.IsEmpty)
             return;
 
         // Group entry points by their attribute type (exact match)
-        var entryPointsByAttributeTypesDictionary = entryPoints
+        var facadeMethodsByAttributeTypesDictionary = facadeMethods
             .GroupBy(
                 ep => ep.AttributeData.AttributeClass!,
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
@@ -54,13 +54,13 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
                 g => g.ToImmutableArray(),
                 (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
 
-        var validFacades = new List<AggregatorInterfaceInfo>();
+        var validFacades = new List<FacadeInterfaceInfo>();
 
         foreach (var aggregator in aggregators)
         {
-            var entryPointMethodInfos = aggregator.EntryPointAttributeTypes
-                .SelectMany(entryPointAttributeType =>
-                    entryPointsByAttributeTypesDictionary.TryGetValue(entryPointAttributeType, out var attrType)
+            var facadeMethodMethodInfos = aggregator.FacadeMethodAttributeTypes
+                .SelectMany(facadeMethodAttributeType =>
+                    facadeMethodsByAttributeTypesDictionary.TryGetValue(facadeMethodAttributeType, out var attrType)
                         ? attrType.AsEnumerable()
                         : [])
                 .ToImmutableArray();
@@ -68,16 +68,16 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             // Filter by TargetTypes if specified
             if (!aggregator.TargetTypes.IsEmpty)
             {
-                entryPointMethodInfos = 
+                facadeMethodMethodInfos = 
                 [
-                    ..entryPointMethodInfos
+                    ..facadeMethodMethodInfos
                         .Where(ep => aggregator.TargetTypes.Any(targetType =>
                             SymbolEqualityComparer.Default.Equals(ep.MethodSymbol.ContainingType, targetType)))
                 ];
             }
 
             // Validate entry points for this facade
-            var hasErrors = UsageValidator.Validate(context, entryPointMethodInfos, aggregator);
+            var hasErrors = UsageValidator.Validate(context, facadeMethodMethodInfos, aggregator);
 
             // Skip code generation if there were errors
             if (hasErrors)
@@ -90,11 +90,11 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             var aggregatorContext =
                 new AggregatorContext(aggregator)
                 {
-                    EntryPointMethodInfos = entryPointMethodInfos,
+                    FacadeMethodMethodInfos = facadeMethodMethodInfos,
                 };
 
             var source = SourceBuilder
-                .GenerateAggregatorEntryPoints(aggregatorContext)
+                .GenerateAggregatorFacadeMethods(aggregatorContext)
                 .ToFullString();
 
             context.AddSource($"{aggregator.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
@@ -107,36 +107,54 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
 
     private static bool IsCandidateMethod(SyntaxNode node) => node is MethodDeclarationSyntax;
 
-    private static AggregatorInterfaceInfo? GetFacadeAttributeInfo(
+    private static FacadeInterfaceInfo? GetFacadeAttributeInfo(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
         var asyncDisposableTypeSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("System.IAsyncDisposable");
-        var dotnetFeatures = 
+        var dotnetFeatures =
             asyncDisposableTypeSymbol is not null ? DotnetFeature.AsyncDisposable : DotnetFeature.None;
 
         if (context.SemanticModel.GetDeclaredSymbol(context.Node, ct) is not INamedTypeSymbol interfaceSymbol)
             return null;
 
-        // Find [EntryPointFacade] or derived attribute
+        var terminusFacadeOfSymbol = context.SemanticModel.Compilation.GetTypeByMetadataName("Terminus.FacadeOfAttribute");
+
+        // Find [FacadeOf] or derived attribute
         foreach (var aggregatorAttrData in interfaceSymbol.GetAttributes())
         {
+            if (aggregatorAttrData.AttributeClass == null)
+                continue;
 
-            var generationFeatures = new GenerationFeatures(aggregatorAttrData);
+            // Check if attribute is or derives from FacadeOfAttribute
+            if (!InheritsFromFacadeOfAttribute(aggregatorAttrData.AttributeClass, terminusFacadeOfSymbol))
+                continue;
 
-            var entryPointAttrTypes = aggregatorAttrData.ConstructorArguments
-                .Select(x => x.Value)
-                .OfType<INamedTypeSymbol>();
+            // Check if this is the official Terminus.FacadeOfAttribute
+            var isOfficialAttribute = terminusFacadeOfSymbol != null &&
+                SymbolEqualityComparer.Default.Equals(aggregatorAttrData.AttributeClass, terminusFacadeOfSymbol);
+
+            var generationFeatures = new GenerationFeatures(aggregatorAttrData, isOfficialAttribute);
+
+            // Get constructor arguments (first parameter is params Type[] facadeMethodAttributes)
+            // For params arrays, the values are in ConstructorArguments[0].Values
+            var facadeMethodAttrTypes = aggregatorAttrData.ConstructorArguments.Length > 0
+                ? aggregatorAttrData.ConstructorArguments[0].Values
+                    .Select(x => x.Value)
+                    .OfType<INamedTypeSymbol>()
+                    .ToImmutableArray()
+                : ImmutableArray<INamedTypeSymbol>.Empty;
 
             var targetTypes = aggregatorAttrData.ConstructorArguments
                                   .SelectMany(x => x.Values)
                                   .Select(x => x.Value)
-                                  .OfType<INamedTypeSymbol>();
+                                  .OfType<INamedTypeSymbol>()
+                                  .ToImmutableArray();
 
-            return new AggregatorInterfaceInfo(
+            return new FacadeInterfaceInfo(
                 interfaceSymbol,
-                [..entryPointAttrTypes],
-                [..targetTypes],
+                facadeMethodAttrTypes,
+                targetTypes,
                 dotnetFeatures,
                 generationFeatures.IsScoped
             );
@@ -145,7 +163,27 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static CandidateMethodInfo? GetMethodWithEntryPointAttribute(
+    private static bool InheritsFromFacadeOfAttribute(INamedTypeSymbol attributeClass, INamedTypeSymbol? facadeOfSymbol)
+    {
+        var current = attributeClass;
+        while (current != null)
+        {
+            // Check by symbol equality if we have the FacadeOfAttribute symbol
+            if (facadeOfSymbol != null && SymbolEqualityComparer.Default.Equals(current, facadeOfSymbol))
+                return true;
+
+            // Check by name (handle both with and without "Attribute" suffix)
+            var name = current.Name;
+            if (name == "FacadeOfAttribute" || name == "FacadeOf")
+                return true;
+
+            current = current.BaseType;
+        }
+
+        return false;
+    }
+
+    private static CandidateMethodInfo? GetMethodWithFacadeMethodAttribute(
         GeneratorSyntaxContext context,
         CancellationToken ct)
     {
@@ -156,16 +194,17 @@ public class EntryPointDiscoveryGenerator : IIncrementalGenerator
             return null;
 
         // Check each attribute on the method
+        // We collect all methods with any attribute, then filter by facade requirements in Execute
         foreach (var attributeData in methodSymbol.GetAttributes())
         {
             if (attributeData.AttributeClass == null)
                 continue;
 
-            var isTaskLike = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
+            var returnTypeKind = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
             return new CandidateMethodInfo(
                 methodSymbol,
                 attributeData,
-                isTaskLike
+                returnTypeKind
             );
         }
 

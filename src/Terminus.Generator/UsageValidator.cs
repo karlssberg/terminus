@@ -5,23 +5,23 @@ namespace Terminus.Generator;
 
 internal static class UsageValidator
 {
-    internal static bool Validate(SourceProductionContext context, ImmutableArray<CandidateMethodInfo> entryPointMethodInfos,
-        AggregatorInterfaceInfo facade)
+    internal static bool Validate(SourceProductionContext context, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos,
+        FacadeInterfaceInfo facade)
     {
         var hasErrors = false;
         
         // TM0003: No ref/out parameters allowed
-        foreach (var entryPoint in entryPointMethodInfos)
+        foreach (var facadeMethod in facadeMethodMethodInfos)
         {
-            var refOrOutParameters = entryPoint.MethodSymbol
+            var refOrOutParameters = facadeMethod.MethodSymbol
                 .Parameters.Where(p => p.RefKind is RefKind.Ref or RefKind.Out);
             
             foreach (var parameter in refOrOutParameters)
             {
                 var diagnostic = Diagnostic.Create(
                     Diagnostics.RefOrOutParameter,
-                    parameter.Locations.FirstOrDefault() ?? entryPoint.MethodSymbol.Locations.FirstOrDefault(),
-                    entryPoint.MethodSymbol.Name,
+                    parameter.Locations.FirstOrDefault() ?? facadeMethod.MethodSymbol.Locations.FirstOrDefault(),
+                    facadeMethod.MethodSymbol.Name,
                     parameter.Name);
                 context.ReportDiagnostic(diagnostic);
                 hasErrors = true;
@@ -29,21 +29,21 @@ internal static class UsageValidator
         }
 
         // TM0002: Generic methods not allowed
-        var genericEntryPointMethods = entryPointMethodInfos
+        var genericFacadeMethodMethods = facadeMethodMethodInfos
             .Where(ep => ep.MethodSymbol.IsGenericMethod );
         
-        foreach (var entryPoint in genericEntryPointMethods)
+        foreach (var facadeMethod in genericFacadeMethodMethods)
         {
             var diagnostic = Diagnostic.Create(
-                Diagnostics.GenericEntryPointMethod,
-                entryPoint.MethodSymbol.Locations.FirstOrDefault(),
-                entryPoint.MethodSymbol.Name);
+                Diagnostics.GenericFacadeMethodMethod,
+                facadeMethod.MethodSymbol.Locations.FirstOrDefault(),
+                facadeMethod.MethodSymbol.Name);
             context.ReportDiagnostic(diagnostic);
             hasErrors = true;
         }
 
         // TM0001: Detect duplicate signatures
-        var duplicates = entryPointMethodInfos
+        var duplicates = facadeMethodMethodInfos
             .GroupBy(ep => GetMethodSignature(ep.MethodSymbol), MethodSignatureEqualityComparer.Instance)
             .Where(g => g.Count() > 1)
             .SelectMany(g => g);
@@ -51,7 +51,7 @@ internal static class UsageValidator
         foreach (var duplicate in duplicates)
         {
             var diagnostic = Diagnostic.Create(
-                Diagnostics.DuplicateEntryPointSignature,
+                Diagnostics.DuplicateFacadeMethodSignature,
                 duplicate.MethodSymbol.Locations.FirstOrDefault(),
                 duplicate.MethodSymbol.Name);
             context.ReportDiagnostic(diagnostic);

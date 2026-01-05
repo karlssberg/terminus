@@ -3,9 +3,9 @@ using System;
 namespace Terminus;
 
 [AttributeUsage(AttributeTargets.Interface)]
-public sealed class EntryPointFacadeAttribute(params Type[] entryPointAttributes) : Attribute
+public sealed class FacadeOfAttribute(params Type[] facadeMethodAttributes) : Attribute
 {
-    public Type[] EntryPointAttributes { get; set; } = entryPointAttributes;
+    public Type[] FacadeMethodAttributes { get; set; } = facadeMethodAttributes;
     public bool Scoped { get; set; }
     public string? CommandName { get; set; }
     public string? QueryName { get; set; }

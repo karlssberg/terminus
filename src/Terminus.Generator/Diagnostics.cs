@@ -4,7 +4,7 @@ namespace Terminus.Generator;
 
 internal static class Diagnostics
 {
-    public static readonly DiagnosticDescriptor DuplicateEntryPointSignature = new(
+    public static readonly DiagnosticDescriptor DuplicateFacadeMethodSignature = new(
         id: "TM0001",
         title: "Duplicate entry point signature",
         messageFormat: "Duplicate entry point signature detected for method '{0}'",
@@ -13,7 +13,7 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         description: "Entry point methods must have unique signatures within the same attribute type.");
 
-    public static readonly DiagnosticDescriptor GenericEntryPointMethod = new(
+    public static readonly DiagnosticDescriptor GenericFacadeMethodMethod = new(
         id: "TM0002",
         title: "Generic entry point method in mediator",
         messageFormat: "Entry point method '{0}' cannot have generic type parameters when used in a mediator",

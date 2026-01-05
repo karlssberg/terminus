@@ -3,7 +3,7 @@ using Terminus.Generator.Tests.Unit.Generator.Infrastructure;
 
 namespace Terminus.Generator.Tests.Unit.Generator;
 
-public class EntryPointDiscoveryGeneratorErrorTests
+public class FacadeGeneratorErrorTests
 {
     private const string SourceFilename = "Source.cs";
 
@@ -16,26 +16,26 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
             namespace Demo
             {
-                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
                 public partial interface IFacade;
             
-                public class EntryPointAttribute : Attribute;
+                public class FacadeMethodAttribute : Attribute;
 
                 public static class A
                 {
-                    [EntryPoint]
+                    [FacadeMethod]
                     public static void Hello(string world) { }
                 }
 
                 public static class B
                 {
-                    [EntryPoint]
+                    [FacadeMethod]
                     public static void Hello(string world) { }
                 }
             }
             """;
 
-        var test = new TerminusSourceGeneratorTest<EntryPointDiscoveryGenerator>
+        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
         {
             TestState =
             {
@@ -68,18 +68,18 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
             namespace Demo
             {
-                [ScopedEntryPointMediator]
+                [ScopedFacadeMethodMediator]
                 public partial interface IFacade;
 
-                public static class TestEntryPoints
+                public static class TestFacadeMethods
                 {
-                    [EntryPoint]
+                    [FacadeMethod]
                     public static T Echo<T>(T value) => value;
                 }
             }
             """;
 
-        var test = new TerminusSourceGeneratorTest<EntryPointDiscoveryGenerator>
+        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
         {
             TestState =
             {
@@ -91,7 +91,7 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0002")
-                .WithSpan(SourceFilename, 11, 25, 11, 29) // TestEntryPoints.Echo<T>() method identifier
+                .WithSpan(SourceFilename, 11, 25, 11, 29) // TestFacadeMethods.Echo<T>() method identifier
                 .WithArguments("Echo")
         );
 
@@ -108,23 +108,23 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
             namespace Demo
             {
-                [EntryPointFacade(typeof(EntryPointAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
                 public partial interface IFacade;
             
-                public class EntryPointAttribute : Attribute;
+                public class FacadeMethodAttribute : Attribute;
 
-                public static class TestEntryPoints
+                public static class TestFacadeMethods
                 {
-                    [EntryPoint]
+                    [FacadeMethod]
                     public static void ProcessRef(ref int value) { }
 
-                    [EntryPoint]
+                    [FacadeMethod]
                     public static void ProcessOut(out int value) { value = 0; }
                 }
             }
             """;
 
-        var test = new TerminusSourceGeneratorTest<EntryPointDiscoveryGenerator>
+        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
         {
             TestState =
             {
@@ -135,13 +135,13 @@ public class EntryPointDiscoveryGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan(SourceFilename, 11, 47, 11, 52) // TestEntryPoints.ProcessRef(ref int value) parameter 'value'
+                .WithSpan(SourceFilename, 11, 47, 11, 52) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
                 .WithArguments("ProcessRef", "value")
         );
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan(SourceFilename, 14, 47, 14, 52) // TestEntryPoints.ProcessOut(out int value) parameter 'value'
+                .WithSpan(SourceFilename, 14, 47, 14, 52) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
                 .WithArguments("ProcessOut", "value")
         );
         

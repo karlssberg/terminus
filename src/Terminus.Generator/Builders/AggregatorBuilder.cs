@@ -10,7 +10,7 @@ internal static class AggregatorBuilder
 
     internal static NamespaceDeclarationSyntax GenerateAggregatorTypeDeclarations(AggregatorContext aggregatorContext)
     {
-        var interfaceNamespace = aggregatorContext.Aggregator.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
@@ -22,41 +22,72 @@ internal static class AggregatorBuilder
 
     private static InterfaceDeclarationSyntax GenerateAggregatorInterfaceExtensionDeclaration(AggregatorContext aggregatorContext)
     {
-        return InterfaceDeclaration(aggregatorContext.Aggregator.InterfaceSymbol.Name)
+        return InterfaceDeclaration(aggregatorContext.Facade.InterfaceSymbol.Name)
             .WithModifiers(TokenList(Token(
                     SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
-            .WithMembers(aggregatorContext.EntryPointMethodInfos.Select(GenerateEntryPointMethodInterfaceDefinition).ToSyntaxList())
+            .WithMembers(aggregatorContext.FacadeMethodMethodInfos.Select(GenerateFacadeMethodMethodInterfaceDefinition).ToSyntaxList())
             .NormalizeWhitespace();
     }
 
     private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithScope(AggregatorContext aggregatorContext)
     {
-        var interfaceName = aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString();
-        var implementationClassName = aggregatorContext.Aggregator.GetImplementationClassName();
-        return ClassDeclaration(implementationClassName)
+        var interfaceName = aggregatorContext.Facade.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var implementationClassName = aggregatorContext.Facade.GetImplementationClassName();
+
+        var classDeclaration = ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
-            .AddBaseListTypes(SimpleBaseType(ParseTypeName(aggregatorContext.Aggregator.InterfaceSymbol.ToDisplayString())))
-            .WithMembers(
-            [
-                ParseMemberDeclaration("private readonly IServiceProvider _serviceProvider;")!,
-                ParseMemberDeclaration(
-                    $$"""
-                      public {{implementationClassName}}(IServiceProvider serviceProvider)
-                      {
-                          _serviceProvider = serviceProvider;
-                      }
-                      """)!,
-                ..GenerateImplementationFacadeMethods(aggregatorContext)
-            ]);
+            .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
+
+        // Add [FacadeImplementation(typeof(IFacade))] attribute
+        var facadeImplAttribute = Attribute(
+            ParseName("global::Terminus.FacadeImplementation"),
+            AttributeArgumentList(SingletonSeparatedList(
+                AttributeArgument(TypeOfExpression(ParseTypeName(interfaceName))))));
+
+        classDeclaration = classDeclaration.WithAttributeLists(
+            SingletonList(AttributeList(SingletonSeparatedList(facadeImplAttribute))));
+
+        var members = new List<MemberDeclarationSyntax>
+        {
+            ParseMemberDeclaration("private readonly global::System.IServiceProvider _serviceProvider;")!
+        };
+
+        // Add Dispatcher field and constructor parameter only for scoped facades
+        if (aggregatorContext.Facade.Scoped)
+        {
+            members.Add(ParseMemberDeclaration($"private readonly global::Terminus.Dispatcher<{interfaceName}> _dispatcher;")!);
+            members.Add(ParseMemberDeclaration(
+                $$"""
+                  public {{implementationClassName}}(global::System.IServiceProvider serviceProvider, global::Terminus.Dispatcher<{{interfaceName}}> dispatcher)
+                  {
+                      _serviceProvider = serviceProvider;
+                      _dispatcher = dispatcher;
+                  }
+                  """)!);
+        }
+        else
+        {
+            members.Add(ParseMemberDeclaration(
+                $$"""
+                  public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
+                  {
+                      _serviceProvider = serviceProvider;
+                  }
+                  """)!);
+        }
+
+        members.AddRange(GenerateImplementationFacadeMethods(aggregatorContext));
+
+        return classDeclaration.WithMembers(List(members));
     }
 
     private static IEnumerable<MemberDeclarationSyntax> GenerateImplementationFacadeMethods(AggregatorContext aggregatorContext)
     {
-        return aggregatorContext.EntryPointMethodInfos.Select(entryPoint => GenerateEntryPointMethodImplementationDefinition(aggregatorContext.Aggregator, entryPoint));
+        return aggregatorContext.FacadeMethodMethodInfos.Select(facadeMethod => GenerateFacadeMethodMethodImplementationDefinition(aggregatorContext.Facade, facadeMethod));
     }
 
-    private static MemberDeclarationSyntax GenerateEntryPointMethodInterfaceDefinition(CandidateMethodInfo candidate)
+    private static MemberDeclarationSyntax GenerateFacadeMethodMethodInterfaceDefinition(CandidateMethodInfo candidate)
     {
         // Emit interface method without access modifiers regardless of source method modifiers
         return candidate.MethodSymbol
@@ -65,21 +96,21 @@ internal static class AggregatorBuilder
             .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
 
-    private static MemberDeclarationSyntax GenerateEntryPointMethodImplementationDefinition(
-        AggregatorInterfaceInfo aggregatorInfo,
+    private static MemberDeclarationSyntax GenerateFacadeMethodMethodImplementationDefinition(
+        FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo candidate)
     {
         // Build return type
         var returnTypeSyntax = candidate.MethodSymbol.ReturnsVoid
             ? PredefinedType(Token(SyntaxKind.VoidKeyword))
-            : ParseTypeName(candidate.MethodSymbol.ReturnType.ToDisplayString());
+            : ParseTypeName(candidate.MethodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
 
         // Build parameter list
         var parameterList = ParameterList(SeparatedList(
             candidate.MethodSymbol.Parameters.Select(p =>
                 Parameter(Identifier(p.Name))
-                    .WithType(ParseTypeName(p.Type.ToDisplayString())))));
-     
+                    .WithType(ParseTypeName(p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))))));
+
         var method = MethodDeclaration(returnTypeSyntax, Identifier(candidate.MethodSymbol.Name))
             .AddModifiers(Token(SyntaxKind.PublicKeyword))
             .WithParameterList(parameterList);
@@ -87,27 +118,28 @@ internal static class AggregatorBuilder
         // Add async modifier when returning Task/Task<T> or when generating an async iterator
         // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
         if (candidate.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult
-            || (candidate.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && aggregatorInfo.Scoped))
+            || (candidate.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Scoped))
         {
             method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
         }
 
         method = method.WithBody(Block(
-            GenerateEntryPointMethodImplementationMethodBody(aggregatorInfo, candidate)));
+            GenerateFacadeMethodMethodImplementationMethodBody(facadeInfo, candidate)));
 
         return method.NormalizeWhitespace();
     }
 
-    private static IEnumerable<StatementSyntax> GenerateEntryPointMethodImplementationMethodBody(AggregatorInterfaceInfo aggregatorInfo, CandidateMethodInfo candidate)
+    private static IEnumerable<StatementSyntax> GenerateFacadeMethodMethodImplementationMethodBody(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo candidate)
     {
-        var serviceProviderExpression = aggregatorInfo.Scoped
+        var serviceProviderExpression = facadeInfo.Scoped
             ? "scope.ServiceProvider"
             : "_serviceProvider";
-        
+
         // Build instance/service resolution expression
+        var fullyQualifiedTypeName = candidate.MethodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var instanceExpression = ParseExpression(candidate.MethodSymbol.IsStatic
-            ? candidate.MethodSymbol.ContainingType.ToDisplayString() : 
-            $"{serviceProviderExpression}.GetRequiredService<{candidate.MethodSymbol.ContainingType.ToDisplayString()}>()");
+            ? fullyQualifiedTypeName :
+            $"{serviceProviderExpression}.GetRequiredService<{fullyQualifiedTypeName}>()");
 
         // Build method invocation
         var methodAccess = MemberAccessExpression(
@@ -139,12 +171,12 @@ internal static class AggregatorBuilder
             ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
             ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
-            ReturnTypeKind.AsyncEnumerable when aggregatorInfo.Scoped =>
+            ReturnTypeKind.AsyncEnumerable when facadeInfo.Scoped =>
                 // For scoped async streams, proxy enumeration via the facade interface within the scope
                 // as expected by tests: scope.ServiceProvider.GetRequiredService<IFacade>().Method(...)
                 ParseStatement(
                     $$"""
-                    await foreach (var item in scope.ServiceProvider.GetRequiredService<{{aggregatorInfo.InterfaceSymbol.Name}}>().{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
+                    await foreach (var item in scope.ServiceProvider.GetRequiredService<{{facadeInfo.InterfaceSymbol.Name}}>().{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
                     {
                         yield return item;
                     }
@@ -162,7 +194,7 @@ internal static class AggregatorBuilder
             yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
         }
 
-        if (!aggregatorInfo.Scoped)
+        if (!facadeInfo.Scoped)
         {
             yield return innerStatement;
             yield break;
@@ -175,13 +207,13 @@ internal static class AggregatorBuilder
             { MethodSymbol.IsStatic: true } =>
                 innerStatement,
 
-            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
+            { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
                 GenerateUsingStatementWithCreateAsyncScope(innerStatement),
 
             { ReturnTypeKind: ReturnTypeKind.AsyncEnumerable } =>
                 GenerateUsingStatementWithCreateScope(innerStatement),
 
-            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult } when aggregatorInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
+            { ReturnTypeKind: ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult } when facadeInfo.DotnetFeatures.HasFlag(DotnetFeature.AsyncDisposable) =>
                 GenerateUsingStatementWithCreateAsyncScope(innerStatement),
 
             _ => GenerateUsingStatementWithCreateScope(innerStatement)
