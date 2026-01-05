@@ -23,13 +23,26 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
 
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
     private const string CreateAsyncScopeMethod =
-        "public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => null!;";
+        "public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;";
+
+    private const string ServiceScopeClass =
+        """
+        public struct ServiceScope : IServiceScope, IDisposable
+        {
+            private readonly IServiceProvider _serviceProvider;
+            public ServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+            public IServiceProvider ServiceProvider => _serviceProvider;
+            public void Dispose() { }
+        }
+        """;
 
     private const string AsyncServiceScopeClass =
         """
-        public class AsyncServiceScope : IAsyncDisposable
+        public struct AsyncServiceScope : IAsyncDisposable
         {
-            public IServiceProvider ServiceProvider { get; }
+            private readonly IServiceProvider _serviceProvider;
+            public AsyncServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+            public IServiceProvider ServiceProvider => _serviceProvider;
             public ValueTask DisposeAsync() => default;
         }
         """;
@@ -37,6 +50,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
     private const string AsyncEnumerableShim = "";
 #else
     private const string CreateAsyncScopeMethod = "";
+    private const string ServiceScopeClass = "";
     private const string AsyncServiceScopeClass = "";
 
     private const string AsyncEnumerableShim =
@@ -75,17 +89,19 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
       $$"""
         using System;
         using System.Threading.Tasks;
-        
+
         namespace Microsoft.Extensions.DependencyInjection
         {
             public interface IServiceCollection { }
-            
+
             public class ServiceCollection : IServiceCollection { }
-            
+
             public interface IServiceScope : IDisposable
             {
                 IServiceProvider ServiceProvider { get; }
             }
+
+            {{ServiceScopeClass}}
             {{AsyncServiceScopeClass}}
 
             public static class ServiceCollectionExtensionsShim
@@ -123,10 +139,40 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             
             public static class ServiceProviderExtensionsShim
             {
-                public static IServiceScope CreateScope(this IServiceProvider provider) => null!;
+                public static IServiceScope CreateScope(this IServiceProvider provider) => default!;
                 {{CreateAsyncScopeMethod}}
                 public static T GetRequiredService<T>(this IServiceProvider provider) => default!;
                 public static T GetRequiredKeyedService<T>(this IServiceProvider provider, object? key) => default!;
+            }
+        }
+
+        namespace System
+        {
+            public class Lazy<T>
+            {
+                private readonly Func<T> _valueFactory;
+                private T _value;
+                private bool _isValueCreated;
+
+                public Lazy(Func<T> valueFactory)
+                {
+                    _valueFactory = valueFactory;
+                }
+
+                public bool IsValueCreated => _isValueCreated;
+
+                public T Value
+                {
+                    get
+                    {
+                        if (!_isValueCreated)
+                        {
+                            _value = _valueFactory();
+                            _isValueCreated = true;
+                        }
+                        return _value;
+                    }
+                }
             }
         }
         """;

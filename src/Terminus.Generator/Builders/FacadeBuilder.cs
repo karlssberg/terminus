@@ -5,12 +5,12 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator.Builders;
 
-internal static class AggregatorBuilder
+internal static class FacadeBuilder
 {
 
     internal static NamespaceDeclarationSyntax GenerateAggregatorTypeDeclarations(AggregatorContext aggregatorContext)
     {
-        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var interfaceNamespace = aggregatorContext.Facade.InterfaceSymbol.ContainingNamespace.ToDisplayString();
         return NamespaceDeclaration(ParseName(interfaceNamespace))
             .WithMembers(
             [
@@ -36,7 +36,7 @@ internal static class AggregatorBuilder
         var implementationClassName = aggregatorContext.Facade.GetImplementationClassName();
 
         var classDeclaration = ClassDeclaration(implementationClassName)
-            .WithModifiers([Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)])
+            .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
 
         // Determine if we need IServiceProvider based on whether we have instance methods
@@ -57,10 +57,8 @@ internal static class AggregatorBuilder
 
         var members = new List<MemberDeclarationSyntax>();
 
-        // Add IServiceProvider for:
-        // - Non-scoped facades: always (even for static-only)
-        // - Scoped facades: only if there are instance methods
-        if (!aggregatorContext.Facade.Scoped || hasInstanceMethods)
+        // Add IServiceProvider field only for non-scoped facades
+        if (!aggregatorContext.Facade.Scoped)
         {
             members.Add(ParseMemberDeclaration("private readonly global::System.IServiceProvider _serviceProvider;")!);
         }
@@ -73,24 +71,23 @@ internal static class AggregatorBuilder
             members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope> _syncScope;")!);
             members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope> _asyncScope;")!);
 
-            // Add IDisposableScope and IAsyncDisposableScope to base list
+            // Add IDisposable and IAsyncDisposable to base list
             classDeclaration = classDeclaration.AddBaseListTypes(
-                SimpleBaseType(ParseTypeName("global::Terminus.IDisposableScope")),
-                SimpleBaseType(ParseTypeName("global::Terminus.IAsyncDisposableScope")));
+                SimpleBaseType(ParseTypeName("global::System.IDisposable")),
+                SimpleBaseType(ParseTypeName("global::System.IAsyncDisposable")));
 
             members.Add(ParseMemberDeclaration(
                 $$"""
                   public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
                   {
-                      _syncScope = new Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.ServiceScope(serviceProvider));
-                      _asyncScope = new Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope(serviceProvider));
+                      _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.ServiceScope(serviceProvider));
+                      _asyncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope(serviceProvider));
                   }
                   """)!);
         }
-        else if (!aggregatorContext.Facade.Scoped || hasInstanceMethods)
+        else if (!aggregatorContext.Facade.Scoped)
         {
-            // Non-scoped facades: always add constructor (even for static-only)
-            // Scoped facades with instance methods: simple constructor
+            // Non-scoped facades: always add constructor
             members.Add(ParseMemberDeclaration(
                 $$"""
                   public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
@@ -110,11 +107,11 @@ internal static class AggregatorBuilder
                 public void Dispose()
                 {
                     if (_syncDisposed || !_syncScope.IsValueCreated) return;
-                    
+
                     _syncScope.Value.Dispose();
                     _syncDisposed = true;
-                    
-                    GC.SuppressFinalize(this);
+
+                    global::System.GC.SuppressFinalize(this);
                 }
                 """)!);
 
@@ -123,11 +120,11 @@ internal static class AggregatorBuilder
                 public async global::System.Threading.Tasks.ValueTask DisposeAsync()
                 {
                     if (_asyncDisposed || !_asyncScope.IsValueCreated) return;
-                    
+
                     await _asyncScope.Value.DisposeAsync().ConfigureAwait(false);
                     _asyncDisposed = true;
-                    
-                    GC.SuppressFinalize(this);
+
+                    global::System.GC.SuppressFinalize(this);
                 }
                 """)!);
         }
