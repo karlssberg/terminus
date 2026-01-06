@@ -68,7 +68,7 @@ internal static class FacadeBuilder
         {
             members.Add(ParseMemberDeclaration("private bool _syncDisposed;")!);
             members.Add(ParseMemberDeclaration("private bool _asyncDisposed;")!);
-            members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope> _syncScope;")!);
+            members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope> _syncScope;")!);
             members.Add(ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope> _asyncScope;")!);
 
             // Add IDisposable and IAsyncDisposable to base list
@@ -80,8 +80,8 @@ internal static class FacadeBuilder
                 $$"""
                   public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
                   {
-                      _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.ServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.ServiceScope(serviceProvider));
-                      _asyncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => new global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope(serviceProvider));
+                      _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>(serviceProvider).CreateScope());
+                      _asyncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateAsyncScope(serviceProvider));
                   }
                   """)!);
         }
@@ -213,11 +213,11 @@ internal static class FacadeBuilder
             var scopeExpression = candidate.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable
                 ? "_asyncScope.Value.ServiceProvider"
                 : "_syncScope.Value.ServiceProvider";
-            instanceExpression = ParseExpression($"{scopeExpression}.GetRequiredService<{fullyQualifiedTypeName}>()");
+            instanceExpression = ParseExpression($"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{fullyQualifiedTypeName}>({scopeExpression})");
         }
         else
         {
-            instanceExpression = ParseExpression($"_serviceProvider.GetRequiredService<{fullyQualifiedTypeName}>()");
+            instanceExpression = ParseExpression($"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{fullyQualifiedTypeName}>(_serviceProvider)");
         }
 
         // Build method invocation
@@ -254,7 +254,7 @@ internal static class FacadeBuilder
                 // For scoped async streams, proxy enumeration via the facade interface within the scope
                 ParseStatement(
                     $$"""
-                    await foreach (var item in _asyncScope.Value.ServiceProvider.GetRequiredService<{{facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>().{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
+                    await foreach (var item in global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{{facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>(_asyncScope.Value.ServiceProvider).{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
                     {
                         yield return item;
                     }

@@ -12,6 +12,7 @@ public class FacadeGeneratorErrorTests
     {
         const string source =
             """
+            using System;
             using Terminus;
 
             namespace Demo
@@ -64,12 +65,15 @@ public class FacadeGeneratorErrorTests
     {
         const string source =
             """
+            using System;
             using Terminus;
 
             namespace Demo
             {
-                [ScopedFacadeMethodMediator]
+                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
                 public partial interface IFacade;
+                
+                public class FacadeMethodAttribute : Attribute;
 
                 public static class TestFacadeMethods
                 {
@@ -104,6 +108,7 @@ public class FacadeGeneratorErrorTests
     {
         const string source =
             """
+            using System;
             using Terminus;
 
             namespace Demo

@@ -44,18 +44,6 @@ public class FacadeGenerator : IIncrementalGenerator
         if (facadeMethods.IsEmpty && aggregators.IsEmpty)
             return;
 
-        // Group entry points by their attribute type (exact match)
-        var facadeMethodsByAttributeTypesDictionary = facadeMethods
-            .GroupBy(
-                ep => ep.AttributeData.AttributeClass!,
-                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default)
-            .ToDictionary(
-                g => g.Key,
-                g => g.ToImmutableArray(),
-                (IEqualityComparer<INamedTypeSymbol>)SymbolEqualityComparer.Default);
-
-        var validFacades = new List<FacadeInterfaceInfo>();
-
         foreach (var aggregator in aggregators)
         {
             // Match methods where the attribute is or inherits from the specified FacadeMethodAttributeTypes
@@ -81,9 +69,6 @@ public class FacadeGenerator : IIncrementalGenerator
             // Skip code generation if there were errors
             if (hasErrors)
                 continue;
-
-            // Track valid facades for service registration
-            validFacades.Add(aggregator);
 
             // Generate facade implementation
             var aggregatorContext =

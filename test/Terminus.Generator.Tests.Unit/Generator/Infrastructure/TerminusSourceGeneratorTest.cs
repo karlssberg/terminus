@@ -85,98 +85,6 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         """;
 #endif
 
-    private const string DiShimSource =
-      $$"""
-        using System;
-        using System.Threading.Tasks;
-
-        namespace Microsoft.Extensions.DependencyInjection
-        {
-            public interface IServiceCollection { }
-
-            public class ServiceCollection : IServiceCollection { }
-
-            public interface IServiceScope : IDisposable
-            {
-                IServiceProvider ServiceProvider { get; }
-            }
-
-            {{ServiceScopeClass}}
-            {{AsyncServiceScopeClass}}
-
-            public static class ServiceCollectionExtensionsShim
-            {
-                public static IServiceCollection AddSingleton<T>(this IServiceCollection services, T implementation)
-                    where T : class
-                    => services;
-                
-                public static IServiceCollection AddSingleton<TService, TImplementation>(this IServiceCollection services)
-                    where TService : class
-                    where TImplementation : class, TService
-                    => services;
-                
-                public static IServiceCollection AddSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
-                    where TService : class
-                    => services;
-        
-                public static IServiceCollection AddKeyedSingleton<TService>(this IServiceCollection services, object? key, Func<IServiceProvider, object?, TService> implementationFactory)
-                    where TService : class
-                    => services;
-        
-                public static IServiceCollection AddKeyedTransient<TService>(this IServiceCollection services, object? key, Func<IServiceProvider, object?, TService> implementationFactory)
-                    where TService : class
-                    => services;
-                
-                public static IServiceCollection AddTransient<TService, TImplementation>(this IServiceCollection services)
-                    where TService : class
-                    where TImplementation : class, TService
-                    => services;
-                    
-                public static IServiceCollection AddTransient<TService>(this IServiceCollection services)
-                    where TService : class
-                    => services;
-            }
-            
-            public static class ServiceProviderExtensionsShim
-            {
-                public static IServiceScope CreateScope(this IServiceProvider provider) => default!;
-                {{CreateAsyncScopeMethod}}
-                public static T GetRequiredService<T>(this IServiceProvider provider) => default!;
-                public static T GetRequiredKeyedService<T>(this IServiceProvider provider, object? key) => default!;
-            }
-        }
-
-        namespace System
-        {
-            public class Lazy<T>
-            {
-                private readonly Func<T> _valueFactory;
-                private T _value;
-                private bool _isValueCreated;
-
-                public Lazy(Func<T> valueFactory)
-                {
-                    _valueFactory = valueFactory;
-                }
-
-                public bool IsValueCreated => _isValueCreated;
-
-                public T Value
-                {
-                    get
-                    {
-                        if (!_isValueCreated)
-                        {
-                            _value = _valueFactory();
-                            _isValueCreated = true;
-                        }
-                        return _value;
-                    }
-                }
-            }
-        }
-        """;
-
     public TerminusSourceGeneratorTest()
     {
         // Align reference assemblies with the current test target framework
@@ -186,13 +94,13 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
 #else
         ReferenceAssemblies = ReferenceAssemblies.NetStandard.NetStandard20;
 #endif
-
         // Add reference to Terminus assembly so tests can use FacadeOfAttribute
         TestState.AdditionalReferences.Add(typeof(Terminus.FacadeOfAttribute).Assembly);
+        TestState.AdditionalReferences.Add(typeof(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory).Assembly);
 
         // Common test inputs
         TestState.Sources.Add(IsExternalInitSource);
-        TestState.Sources.Add(DiShimSource);
+        
 
         if (!string.IsNullOrEmpty(AsyncEnumerableShim))
         {
