@@ -17,6 +17,8 @@ public sealed class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] 
     public string? AsyncCommandName { get; set; }
 
     public string? AsyncQueryName { get; set; }
+    
+    public string? AsyncStreamName { get; set; }
 
     private static Type[] BuildFacadeMethodAttributesArray(
         Type facadeMethodAttribute,

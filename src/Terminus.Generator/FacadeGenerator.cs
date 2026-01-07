@@ -120,27 +120,14 @@ public class FacadeGenerator : IIncrementalGenerator
 
             var generationFeatures = new GenerationFeatures(aggregatorAttrData, isOfficialAttribute);
 
-            // Get constructor arguments (first parameter is params Type[] facadeMethodAttributes)
-            // Roslyn represents params arrays as: ConstructorArguments[0].Kind == TypedConstantKind.Array
-            // and the values are in ConstructorArguments[0].Values
-            var facadeMethodAttrTypes = ImmutableArray<INamedTypeSymbol>.Empty;
-            if (aggregatorAttrData.ConstructorArguments.Length > 0)
-            {
-                var firstArg = aggregatorAttrData.ConstructorArguments[0];
-                if (firstArg.Kind == TypedConstantKind.Array && !firstArg.Values.IsDefaultOrEmpty)
-                {
-                    // Array of types
-                    facadeMethodAttrTypes = firstArg.Values
-                        .Select(x => x.Value)
-                        .OfType<INamedTypeSymbol>()
-                        .ToImmutableArray();
-                }
-                else if (firstArg.Kind == TypedConstantKind.Type && firstArg.Value is INamedTypeSymbol singleType)
-                {
-                    // Single type (shouldn't happen for params, but handle it)
-                    facadeMethodAttrTypes = ImmutableArray.Create(singleType);
-                }
-            }
+            // ConstructorArguments: [0] = first type, [1...] = params Type[] or following types
+            var allConstructorArguments = aggregatorAttrData.ConstructorArguments;
+            var facadeMethodAttrTypes = allConstructorArguments
+                .Where(arg => arg.Kind == TypedConstantKind.Type || arg.Kind == TypedConstantKind.Array)
+                .SelectMany(arg => arg.Kind == TypedConstantKind.Array ? arg.Values : [arg])
+                .Select(arg => arg.Value)
+                .OfType<INamedTypeSymbol>()
+                .ToImmutableArray();
 
             // TargetTypes is not supported in the current design - always empty
             var targetTypes = ImmutableArray<INamedTypeSymbol>.Empty;
@@ -150,7 +137,12 @@ public class FacadeGenerator : IIncrementalGenerator
                 facadeMethodAttrTypes,
                 targetTypes,
                 dotnetFeatures,
-                generationFeatures.IsScoped
+                generationFeatures.IsScoped,
+                generationFeatures.CommandName,
+                generationFeatures.QueryName,
+                generationFeatures.AsyncCommandName,
+                generationFeatures.AsyncQueryName,
+                generationFeatures.AsyncStreamName
             );
         }
 

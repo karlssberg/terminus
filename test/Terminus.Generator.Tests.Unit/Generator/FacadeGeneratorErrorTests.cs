@@ -47,13 +47,13 @@ public class FacadeGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0001")
-                .WithSpan(SourceFilename, 11, 28, 11, 33) // A.Hello() method identifier
+                .WithSpan(SourceFilename, 14, 28, 14, 33) // A.Hello() method identifier
                 .WithArguments("Hello")
         );
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0001")
-                .WithSpan(SourceFilename, 17, 28, 17, 33) // B.Hello() method identifier
+                .WithSpan(SourceFilename, 20, 28, 20, 33) // B.Hello() method identifier
                 .WithArguments("Hello")
         );
 
@@ -95,7 +95,7 @@ public class FacadeGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0002")
-                .WithSpan(SourceFilename, 11, 25, 11, 29) // TestFacadeMethods.Echo<T>() method identifier
+                .WithSpan(SourceFilename, 14, 25, 14, 29) // TestFacadeMethods.Echo<T>() method identifier
                 .WithArguments("Echo")
         );
 
@@ -140,13 +140,13 @@ public class FacadeGeneratorErrorTests
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan(SourceFilename, 11, 47, 11, 52) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
+                .WithSpan(SourceFilename, 14, 47, 14, 52) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
                 .WithArguments("ProcessRef", "value")
         );
 
         test.TestState.ExpectedDiagnostics.Add(
             DiagnosticResult.CompilerError("TM0003")
-                .WithSpan(SourceFilename, 14, 47, 14, 52) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
+                .WithSpan(SourceFilename, 17, 47, 17, 52) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
                 .WithArguments("ProcessOut", "value")
         );
         

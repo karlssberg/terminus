@@ -20,14 +20,21 @@ internal static class FacadeBuilder
             .NormalizeWhitespace();
     }
 
+    private static SyntaxList<MemberDeclarationSyntax> GenerateAggregatorInterfaceExtensionMembers(AggregatorContext aggregatorContext)
+    {
+        return aggregatorContext.FacadeMethodMethodInfos
+            .AsEnumerable()
+            .Select(m => GenerateFacadeMethodMethodInterfaceDefinition(aggregatorContext.Facade, m))
+            .ToSyntaxList();
+    }
+
     private static InterfaceDeclarationSyntax GenerateAggregatorInterfaceExtensionDeclaration(AggregatorContext aggregatorContext)
     {
         return InterfaceDeclaration(aggregatorContext.Facade.InterfaceSymbol.Name)
             .WithModifiers(TokenList(
                 Token(SyntaxKind.PublicKeyword), 
                 Token(SyntaxKind.PartialKeyword)))
-            .WithMembers(aggregatorContext.FacadeMethodMethodInfos.Select(GenerateFacadeMethodMethodInterfaceDefinition).ToSyntaxList())
-            .NormalizeWhitespace();
+            .WithMembers(GenerateAggregatorInterfaceExtensionMembers(aggregatorContext));
     }
 
     private static ClassDeclarationSyntax GenerateAggregatorClassImplementationWithScope(AggregatorContext aggregatorContext)
@@ -137,12 +144,37 @@ internal static class FacadeBuilder
         return aggregatorContext.FacadeMethodMethodInfos.Select(facadeMethod => GenerateFacadeMethodMethodImplementationDefinition(aggregatorContext.Facade, facadeMethod));
     }
 
-    private static MemberDeclarationSyntax GenerateFacadeMethodMethodInterfaceDefinition(CandidateMethodInfo candidate)
+    private static string GetMethodName(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo candidate)
     {
+        return candidate.ReturnTypeKind switch
+        {
+            ReturnTypeKind.Void => facadeInfo.CommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Result => facadeInfo.QueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Task => facadeInfo.AsyncCommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.TaskWithResult => facadeInfo.AsyncQueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.AsyncEnumerable => facadeInfo.AsyncStreamName ?? candidate.MethodSymbol.Name,
+            _ => candidate.MethodSymbol.Name
+        };
+    }
+
+    private static MemberDeclarationSyntax GenerateFacadeMethodMethodInterfaceDefinition(
+        FacadeInterfaceInfo facadeInfo,
+        CandidateMethodInfo candidate)
+    {
+        // Build return type
+        var returnTypeSyntax = candidate.MethodSymbol.ReturnsVoid
+            ? PredefinedType(Token(SyntaxKind.VoidKeyword))
+            : ParseTypeName(candidate.MethodSymbol.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+
+        // Build parameter list
+        var parameterList = ParameterList(SeparatedList(
+            candidate.MethodSymbol.Parameters.Select(p =>
+                Parameter(Identifier(p.Name))
+                    .WithType(ParseTypeName(p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))))));
+
         // Emit interface method without access modifiers regardless of source method modifiers
-        return candidate.MethodSymbol
-            .ToMethodDeclaration()
-            .WithModifiers(new SyntaxTokenList())
+        return MethodDeclaration(returnTypeSyntax, Identifier(GetMethodName(facadeInfo, candidate)))
+            .WithParameterList(parameterList)
             .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
 
@@ -165,7 +197,7 @@ internal static class FacadeBuilder
         var interfaceName = facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var explicitInterfaceSpecifier = ExplicitInterfaceSpecifier(ParseName(interfaceName));
 
-        var method = MethodDeclaration(returnTypeSyntax, Identifier(candidate.MethodSymbol.Name))
+        var method = MethodDeclaration(returnTypeSyntax, Identifier(GetMethodName(facadeInfo, candidate)))
             .WithExplicitInterfaceSpecifier(explicitInterfaceSpecifier)
             .WithParameterList(parameterList);
 
@@ -180,7 +212,7 @@ internal static class FacadeBuilder
         method = method.WithBody(Block(
             GenerateFacadeMethodMethodImplementationMethodBody(facadeInfo, candidate)));
 
-        return method.NormalizeWhitespace();
+        return method;
     }
 
     private static IEnumerable<StatementSyntax> GenerateFacadeMethodMethodImplementationMethodBody(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo candidate)
@@ -190,7 +222,7 @@ internal static class FacadeBuilder
             !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
             .ToList();
 
-        if (cancellationTokens.Count == 1 && candidate.MethodSymbol.IsStatic && facadeInfo.Scoped)
+        if (cancellationTokens.Count == 1 && candidate.MethodSymbol.IsStatic)
         {
             var parameterName = cancellationTokens[0].Name;
             yield return ParseStatement($"{parameterName}.ThrowIfCancellationRequested();");
@@ -254,7 +286,7 @@ internal static class FacadeBuilder
                 // For scoped async streams, proxy enumeration via the facade interface within the scope
                 ParseStatement(
                     $$"""
-                    await foreach (var item in global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{{facadeInfo.InterfaceSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}}>(_asyncScope.Value.ServiceProvider).{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
+                    await foreach (var item in {{instanceExpression.ToFullString()}}.{{candidate.MethodSymbol.Name}}({{string.Join(", ", candidate.MethodSymbol.Parameters.Select(p => p.Name))}}))
                     {
                         yield return item;
                     }

@@ -22,67 +22,93 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         """;
 
 #if NETCOREAPP3_0_OR_GREATER || NETSTANDARD2_1_OR_GREATER
-    private const string CreateAsyncScopeMethod =
-        "public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;";
-
-    private const string ServiceScopeClass =
+    private const string DiShims =
         """
-        public struct ServiceScope : IServiceScope, IDisposable
+        namespace Microsoft.Extensions.DependencyInjection
         {
-            private readonly IServiceProvider _serviceProvider;
-            public ServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
-            public IServiceProvider ServiceProvider => _serviceProvider;
-            public void Dispose() { }
-        }
-        """;
+            using System;
+            using System.Threading.Tasks;
 
-    private const string AsyncServiceScopeClass =
-        """
-        public struct AsyncServiceScope : IAsyncDisposable
-        {
-            private readonly IServiceProvider _serviceProvider;
-            public AsyncServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
-            public IServiceProvider ServiceProvider => _serviceProvider;
-            public ValueTask DisposeAsync() => default;
+            public interface IServiceScope : IDisposable
+            {
+                IServiceProvider ServiceProvider { get; }
+            }
+
+            public interface IServiceScopeFactory
+            {
+                IServiceScope CreateScope();
+            }
+
+            public struct ServiceScope : IServiceScope, IDisposable
+            {
+                private readonly IServiceProvider _serviceProvider;
+                public ServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+                public IServiceProvider ServiceProvider => _serviceProvider;
+                public void Dispose() { }
+            }
+
+            public struct AsyncServiceScope : IAsyncDisposable
+            {
+                private readonly IServiceProvider _serviceProvider;
+                public AsyncServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+                public IServiceProvider ServiceProvider => _serviceProvider;
+                public ValueTask DisposeAsync() => default;
+            }
+
+            public static class ServiceProviderServiceExtensions
+            {
+                public static T GetRequiredService<T>(this IServiceProvider provider) => default;
+                public static IServiceScope CreateScope(this IServiceProvider provider) => default;
+                public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;
+            }
         }
         """;
 
     private const string AsyncEnumerableShim = "";
 #else
-    private const string CreateAsyncScopeMethod = "";
-    private const string ServiceScopeClass = "";
-    private const string AsyncServiceScopeClass = "";
-
-    private const string AsyncEnumerableShim =
+    private const string DiShims =
         """
-        namespace System.Threading.Tasks
+        namespace Microsoft.Extensions.DependencyInjection
         {
-            public struct ValueTask
+            using System;
+            using System.Threading.Tasks;
+
+            public interface IServiceScope : IDisposable
             {
-                public bool IsCompleted => true;
-                public void GetAwaiter() { }
+                IServiceProvider ServiceProvider { get; }
             }
 
-            public struct ValueTask<T>
+            public interface IServiceScopeFactory
             {
-                private readonly T _value;
-                public ValueTask(T value) { _value = value; }
-                public bool IsCompleted => true;
-                public T Result => _value;
-                public System.Runtime.CompilerServices.ValueTaskAwaiter<T> GetAwaiter() => default;
+                IServiceScope CreateScope();
             }
-        }
 
-        namespace System.Runtime.CompilerServices
-        {
-            public struct ValueTaskAwaiter<T>
+            public struct ServiceScope : IServiceScope, IDisposable
             {
-                public bool IsCompleted => true;
-                public T GetResult() => default!;
-                public void OnCompleted(System.Action continuation) { }
+                private readonly IServiceProvider _serviceProvider;
+                public ServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+                public IServiceProvider ServiceProvider => _serviceProvider;
+                public void Dispose() { }
+            }
+
+            public struct AsyncServiceScope : IAsyncDisposable
+            {
+                private readonly IServiceProvider _serviceProvider;
+                public AsyncServiceScope(IServiceProvider serviceProvider) { _serviceProvider = serviceProvider; }
+                public IServiceProvider ServiceProvider => _serviceProvider;
+                public ValueTask DisposeAsync() => default;
+            }
+
+            public static class ServiceProviderServiceExtensions
+            {
+                public static T GetRequiredService<T>(this IServiceProvider provider) => default;
+                public static IServiceScope CreateScope(this IServiceProvider provider) => default;
+                public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;
             }
         }
         """;
+
+    private const string AsyncEnumerableShim = "";
 #endif
 
     public TerminusSourceGeneratorTest()
@@ -92,19 +118,23 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         ReferenceAssemblies = ReferenceAssemblies.Net.Net80
             .AddPackages([new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "8.0.0")]);
 #else
-        ReferenceAssemblies = ReferenceAssemblies.NetStandard.NetStandard20;
+        ReferenceAssemblies = ReferenceAssemblies.NetStandard.NetStandard20
+            .AddPackages([new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "1.1.1")]);
 #endif
         // Add reference to Terminus assembly so tests can use FacadeOfAttribute
         TestState.AdditionalReferences.Add(typeof(Terminus.FacadeOfAttribute).Assembly);
-        TestState.AdditionalReferences.Add(typeof(global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory).Assembly);
 
         // Common test inputs
-        TestState.Sources.Add(IsExternalInitSource);
+        TestState.Sources.Add(("IsExternalInit.cs", IsExternalInitSource));
         
+        if (!string.IsNullOrEmpty(DiShims))
+        {
+            TestState.Sources.Add(("DiShims.cs", DiShims));
+        }
 
         if (!string.IsNullOrEmpty(AsyncEnumerableShim))
         {
-            TestState.Sources.Add(AsyncEnumerableShim);
+            TestState.Sources.Add(("AsyncEnumerableShim.cs", AsyncEnumerableShim));
         }
     }
 }

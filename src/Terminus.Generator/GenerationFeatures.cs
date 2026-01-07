@@ -5,14 +5,24 @@ namespace Terminus.Generator;
 internal class GenerationFeatures(AttributeData aggregatorAttrData, bool isOfficialTerminusAttribute)
 {
 
-    public bool IsScoped => ResolveIsScoped();
+    public bool IsScoped => ResolveNamedArgument<bool>("Scoped");
+    public string? CommandName => ResolveNamedArgument<string?>("CommandName");
+    public string? QueryName => ResolveNamedArgument<string?>("QueryName");
+    public string? AsyncCommandName => ResolveNamedArgument<string?>("AsyncCommandName");
+    public string? AsyncQueryName => ResolveNamedArgument<string?>("AsyncQueryName");
+    
+    public string? AsyncStreamName => ResolveNamedArgument<string?>("AsyncStreamName");
 
-    private bool ResolveIsScoped()
+    private T? ResolveNamedArgument<T>(string name)
     {
-        // Check if Scoped named argument exists
-        var scopedArg = aggregatorAttrData.NamedArguments
-            .FirstOrDefault(arg => arg.Key == "Scoped");
+        var arg = aggregatorAttrData.NamedArguments
+            .FirstOrDefault(arg => arg.Key == name);
 
-        return scopedArg.Value.Value is true;
+        if (arg.Value.IsNull)
+        {
+            return default;
+        }
+
+        return (T?)arg.Value.Value;
     }
 }
