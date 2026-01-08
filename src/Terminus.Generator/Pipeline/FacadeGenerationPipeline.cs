@@ -8,12 +8,12 @@ namespace Terminus.Generator.Pipeline;
 /// <summary>
 /// Orchestrates the facade generation pipeline: matching → validation → generation.
 /// </summary>
-internal sealed class FacadeGenerationPipeline
+internal static class FacadeGenerationPipeline
 {
     /// <summary>
     /// Executes the complete generation pipeline for all discovered facades.
     /// </summary>
-    public void Execute(
+    public static void Execute(
         SourceProductionContext context,
         (ImmutableArray<FacadeInterfaceInfo> Facades, ImmutableArray<CandidateMethodInfo> CandidateMethods) data)
     {
@@ -28,7 +28,7 @@ internal sealed class FacadeGenerationPipeline
         }
     }
 
-    private void ProcessFacade(
+    private static void ProcessFacade(
         SourceProductionContext context,
         FacadeInterfaceInfo facade,
         ImmutableArray<CandidateMethodInfo> candidateMethods)

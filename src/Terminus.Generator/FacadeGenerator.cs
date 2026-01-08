@@ -11,8 +11,6 @@ namespace Terminus.Generator;
 [Generator]
 public class FacadeGenerator : IIncrementalGenerator
 {
-    private readonly FacadeGenerationPipeline _pipeline = new();
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Discover facade interfaces marked with [FacadeOf]
@@ -36,6 +34,6 @@ public class FacadeGenerator : IIncrementalGenerator
         // Combine both providers and execute generation pipeline
         var combined = discoveredFacades.Combine(discoveredMethods);
 
-        context.RegisterSourceOutput(combined, (ctx, data) => _pipeline.Execute(ctx, data));
+        context.RegisterSourceOutput(combined, FacadeGenerationPipeline.Execute);
     }
 }
