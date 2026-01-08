@@ -77,8 +77,9 @@ public class FacadeGenerator : IIncrementalGenerator
                     FacadeMethodMethodInfos = facadeMethodMethodInfos,
                 };
 
-            var source = SourceBuilder
-                .GenerateAggregatorFacadeMethods(aggregatorContext)
+            var orchestrator = new FacadeBuilderOrchestrator();
+            var source = orchestrator
+                .Generate(aggregatorContext)
                 .ToFullString();
 
             context.AddSource($"{aggregator.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
