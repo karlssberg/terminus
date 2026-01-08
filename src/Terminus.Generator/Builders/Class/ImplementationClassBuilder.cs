@@ -11,12 +11,12 @@ namespace Terminus.Generator.Builders.Class;
 /// <summary>
 /// Orchestrates the building of the complete facade implementation class.
 /// </summary>
-internal sealed class ImplementationClassBuilder
+internal static class ImplementationClassBuilder
 {
     /// <summary>
     /// Builds the complete implementation class declaration.
     /// </summary>
-    public ClassDeclarationSyntax Build(
+    public static ClassDeclarationSyntax Build(
         FacadeInterfaceInfo facadeInfo,
         ImmutableArray<CandidateMethodInfo> methods)
     {

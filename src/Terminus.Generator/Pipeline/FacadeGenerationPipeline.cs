@@ -10,8 +10,6 @@ namespace Terminus.Generator.Pipeline;
 /// </summary>
 internal sealed class FacadeGenerationPipeline
 {
-    private readonly FacadeBuilderOrchestrator _builderOrchestrator = new();
-
     /// <summary>
     /// Executes the complete generation pipeline for all discovered facades.
     /// </summary>
@@ -48,7 +46,7 @@ internal sealed class FacadeGenerationPipeline
         // Step 3: Generate the facade implementation
         var generationContext = FacadeGenerationContext.Create(facade, matchedMethods);
         
-        var source = _builderOrchestrator
+        var source = FacadeBuilderOrchestrator
             .Generate(generationContext)
             .ToFullString();
 

@@ -9,14 +9,9 @@ namespace Terminus.Generator.Builders.Method;
 /// <summary>
 /// Builds method body statements for facade method implementations.
 /// </summary>
-internal sealed class MethodBodyBuilder
+internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolution)
 {
-    private readonly InvocationBuilder _invocationBuilder;
-
-    public MethodBodyBuilder(IServiceResolutionStrategy serviceResolution)
-    {
-        _invocationBuilder = new InvocationBuilder(serviceResolution);
-    }
+    private readonly InvocationBuilder _invocationBuilder = new(serviceResolution);
 
     /// <summary>
     /// Builds the complete method body statements.

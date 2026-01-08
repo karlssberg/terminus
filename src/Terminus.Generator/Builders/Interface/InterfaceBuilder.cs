@@ -11,12 +11,12 @@ namespace Terminus.Generator.Builders.Interface;
 /// <summary>
 /// Builds the partial interface declaration with facade method signatures.
 /// </summary>
-internal sealed class InterfaceBuilder
+internal static class InterfaceBuilder
 {
     /// <summary>
     /// Builds the partial interface declaration with all method signatures.
     /// </summary>
-    public InterfaceDeclarationSyntax Build(
+    public static InterfaceDeclarationSyntax Build(
         FacadeInterfaceInfo facadeInfo,
         ImmutableArray<CandidateMethodInfo> methods)
     {
@@ -41,7 +41,7 @@ internal sealed class InterfaceBuilder
         var signatureBuilder = new MethodSignatureBuilder();
 
         return methods
-            .Select(method => signatureBuilder.BuildInterfaceMethod(facadeInfo, method))
+            .Select(method => MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, method))
             .ToSyntaxList<MemberDeclarationSyntax>();
     }
 }

@@ -9,15 +9,8 @@ namespace Terminus.Generator.Builders.Method;
 /// <summary>
 /// Builds method invocation expressions with appropriate awaiting and ConfigureAwait.
 /// </summary>
-internal sealed class InvocationBuilder
+internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolution)
 {
-    private readonly IServiceResolutionStrategy _serviceResolution;
-
-    public InvocationBuilder(IServiceResolutionStrategy serviceResolution)
-    {
-        _serviceResolution = serviceResolution;
-    }
-
     /// <summary>
     /// Builds the complete method invocation expression.
     /// </summary>
@@ -26,7 +19,7 @@ internal sealed class InvocationBuilder
         CandidateMethodInfo methodInfo)
     {
         // Get service/type expression
-        var instanceExpression = _serviceResolution.GetServiceExpression(facadeInfo, methodInfo);
+        var instanceExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo);
 
         // Build method access
         var methodAccess = MemberAccessExpression(

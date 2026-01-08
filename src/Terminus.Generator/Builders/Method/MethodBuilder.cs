@@ -7,16 +7,9 @@ namespace Terminus.Generator.Builders.Method;
 /// <summary>
 /// Orchestrates the building of complete method declarations (signature + body).
 /// </summary>
-internal sealed class MethodBuilder
+internal sealed class MethodBuilder(IServiceResolutionStrategy serviceResolution)
 {
-    private readonly MethodSignatureBuilder _signatureBuilder;
-    private readonly MethodBodyBuilder _bodyBuilder;
-
-    public MethodBuilder(IServiceResolutionStrategy serviceResolution)
-    {
-        _signatureBuilder = new MethodSignatureBuilder();
-        _bodyBuilder = new MethodBodyBuilder(serviceResolution);
-    }
+    private readonly MethodBodyBuilder _bodyBuilder = new(serviceResolution);
 
     /// <summary>
     /// Builds an interface method declaration (signature only).
@@ -25,7 +18,7 @@ internal sealed class MethodBuilder
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo)
     {
-        return _signatureBuilder.BuildInterfaceMethod(facadeInfo, methodInfo);
+        return MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, methodInfo);
     }
 
     /// <summary>
@@ -35,7 +28,7 @@ internal sealed class MethodBuilder
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo)
     {
-        var methodStub = _signatureBuilder.BuildImplementationMethodStub(facadeInfo, methodInfo);
+        var methodStub = MethodSignatureBuilder.BuildImplementationMethodStub(facadeInfo, methodInfo);
         var body = _bodyBuilder.BuildMethodBody(facadeInfo, methodInfo);
 
         return methodStub.WithBody(Block(body));

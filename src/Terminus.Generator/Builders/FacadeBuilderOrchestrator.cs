@@ -8,16 +8,14 @@ namespace Terminus.Generator.Builders;
 /// Top-level orchestrator for generating complete facade source files.
 /// Replaces the old SourceBuilder.
 /// </summary>
-internal sealed class FacadeBuilderOrchestrator
+internal static class FacadeBuilderOrchestrator
 {
-    private readonly NamespaceBuilder _namespaceBuilder = new();
-
     /// <summary>
     /// Generates the complete compilation unit for a facade.
     /// </summary>
-    public CompilationUnitSyntax Generate(FacadeGenerationContext context)
+    public static CompilationUnitSyntax Generate(FacadeGenerationContext context)
     {
-        var namespaceDeclaration = _namespaceBuilder.Build(
+        var namespaceDeclaration = NamespaceBuilder.Build(
             context.Facade,
             context.FacadeMethodMethodInfos);
 

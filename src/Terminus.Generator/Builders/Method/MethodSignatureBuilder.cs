@@ -14,7 +14,7 @@ internal sealed class MethodSignatureBuilder
     /// <summary>
     /// Builds a method declaration with signature only (no body).
     /// </summary>
-    public MethodDeclarationSyntax BuildInterfaceMethod(
+    public static MethodDeclarationSyntax BuildInterfaceMethod(
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo)
     {
@@ -30,7 +30,7 @@ internal sealed class MethodSignatureBuilder
     /// <summary>
     /// Builds a method declaration stub for implementation (signature + explicit interface + modifiers).
     /// </summary>
-    public MethodDeclarationSyntax BuildImplementationMethodStub(
+    public static MethodDeclarationSyntax BuildImplementationMethodStub(
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo)
     {
