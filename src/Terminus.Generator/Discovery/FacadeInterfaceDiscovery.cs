@@ -45,12 +45,8 @@ internal sealed class FacadeInterfaceDiscovery
             // Check if attribute is or derives from FacadeOfAttribute
             if (!InheritsFromFacadeOfAttribute(aggregatorAttrData.AttributeClass, terminusFacadeOfSymbol))
                 continue;
-
-            // Check if this is the official Terminus.FacadeOfAttribute
-            var isOfficialAttribute = terminusFacadeOfSymbol != null &&
-                SymbolEqualityComparer.Default.Equals(aggregatorAttrData.AttributeClass, terminusFacadeOfSymbol);
-
-            var generationFeatures = new GenerationFeatures(aggregatorAttrData, isOfficialAttribute);
+            
+            var generationFeatures = new GenerationFeatures(aggregatorAttrData);
 
             // ConstructorArguments: [0] = first type, [1...] = params Type[] or following types
             var allConstructorArguments = aggregatorAttrData.ConstructorArguments;
