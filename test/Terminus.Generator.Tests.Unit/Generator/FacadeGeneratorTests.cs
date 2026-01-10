@@ -39,9 +39,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// </summary>
                     void Hello(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
@@ -105,9 +111,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                    /// </summary>
                     void Hello(string world);
                 }
 
@@ -195,12 +207,27 @@ public class FacadeGeneratorTests
               #nullable enable
               namespace Demo
               {
+                  /// <summary>
+                  /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                  /// </summary>
                   [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   public partial interface IFacade
                   {
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                      /// </summary>
                       global::System.Threading.Tasks.Task HelloAsync();
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                      /// </summary>
                       global::System.Threading.Tasks.Task<string> HelloAsync(string world);
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                      /// </summary>
                       void Hello();
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                      /// </summary>
                       string Hello(string world);
                   }
 
@@ -325,12 +352,27 @@ public class FacadeGeneratorTests
               #nullable enable
               namespace Demo
               {
+                  /// <summary>
+                  /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                  /// </summary>
                   [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   public partial interface IFacade
                   {
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                      /// </summary>
                       void Hello();
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                      /// </summary>
                       string Hello(string world);
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                      /// </summary>
                       global::System.Threading.Tasks.Task HelloAsync();
+                      /// <summary>
+                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                      /// </summary>
                       global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                   }
 
@@ -433,12 +475,27 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                    /// </summary>
                     void Hello();
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                    /// </summary>
                     string Hello(string world);
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                    /// </summary>
                     global::System.Threading.Tasks.Task HelloAsync();
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                    /// </summary>
                     global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                 }
 
@@ -554,9 +611,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Stream"/>
+                    /// </summary>
                     global::System.Collections.Generic.IAsyncEnumerable<int> Stream();
                 }
 
@@ -645,9 +708,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// </summary>
                     void Publish(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
@@ -721,9 +790,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
+                    /// </summary>
                     global::System.Threading.Tasks.Task PublishAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
@@ -796,9 +871,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// </summary>
                     string Query(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
@@ -871,9 +952,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
+                    /// </summary>
                     global::System.Threading.Tasks.Task<string> QueryAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
@@ -953,9 +1040,15 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
+                    /// <summary>
+                    /// Delegates to <see cref="Demo.TestFacadeMethods.MyStream"/>
+                    /// </summary>
                     global::System.Collections.Generic.IAsyncEnumerable<int> StreamAsync();
                 }
 

@@ -35,12 +35,13 @@ internal sealed class FacadeMethodDiscovery
             return null;
 
         var returnTypeKind = context.SemanticModel.Compilation.ResolveReturnTypeKind(methodSymbol);
+        var documentationXml = methodSymbol.GetDocumentationCommentXml(cancellationToken: ct);
 
         // Return one CandidateMethodInfo per attribute on the method
         return [
             ..attributes
                 .Where(attr => attr.AttributeClass != null)
-                .Select(attr => new CandidateMethodInfo(methodSymbol, attr, returnTypeKind))
+                .Select(attr => new CandidateMethodInfo(methodSymbol, attr, returnTypeKind, documentationXml))
         ];
     }
 }

@@ -79,40 +79,29 @@ public static class ServiceCollectionExtensions
         }
 
         /// <summary>
-        /// Registers a specific facade type from the calling assembly.
-        /// Disposable facades (implementing <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>)
-        /// are registered as Scoped by default, while non-disposable facades are registered as Transient.
-        /// </summary>
-        /// <typeparam name="TInterface">The facade interface type to register.</typeparam>
-        /// <returns>The service collection for chaining.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddTerminusFacade&lt;IMyFacade&gt;();
-        /// </code>
-        /// </example>
-        public IServiceCollection AddTerminusFacade<TInterface>()
-            where TInterface : class
-        {
-            var callingAssembly = Assembly.GetCallingAssembly();
-            return AddTerminusFacadeCore(services, typeof(TInterface), null, callingAssembly);
-        }
-
-        /// <summary>
         /// Registers a specific facade type from the specified assemblies.
         /// Disposable facades (implementing <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>)
         /// are registered as Scoped by default, while non-disposable facades are registered as Transient.
         /// </summary>
         /// <typeparam name="TInterface">The facade interface type to register.</typeparam>
-        /// <param name="assemblies">The assemblies to scan.</param>
+        /// <param name="assemblies">The assemblies to scan. If empty, scans the calling assembly.</param>
         /// <returns>The service collection for chaining.</returns>
         /// <example>
         /// <code>
+        /// // Register from calling assembly
+        /// services.AddTerminusFacade&lt;IMyFacade&gt;();
+        ///
+        /// // Register from specific assembly
         /// services.AddTerminusFacade&lt;IMyFacade&gt;(typeof(IMyFacade).Assembly);
         /// </code>
         /// </example>
         public IServiceCollection AddTerminusFacade<TInterface>(params Assembly[] assemblies)
             where TInterface : class
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, typeof(TInterface), null, assemblies);
         }
 
@@ -134,27 +123,9 @@ public static class ServiceCollectionExtensions
         {
             if (assemblies.Length == 0)
             {
-                assemblies = new[] { Assembly.GetCallingAssembly() };
+                assemblies = [Assembly.GetCallingAssembly()];
             }
             return AddTerminusFacadeCore(services, typeof(TInterface), lifetime, assemblies);
-        }
-
-        /// <summary>
-        /// Registers a specific facade type from the calling assembly.
-        /// Disposable facades (implementing <see cref="IDisposable"/> or <see cref="IAsyncDisposable"/>)
-        /// are registered as Scoped by default, while non-disposable facades are registered as Transient.
-        /// </summary>
-        /// <param name="interfaceType">The facade interface type to register.</param>
-        /// <returns>The service collection for chaining.</returns>
-        /// <example>
-        /// <code>
-        /// services.AddTerminusFacade(typeof(IMyFacade));
-        /// </code>
-        /// </example>
-        public IServiceCollection AddTerminusFacade(Type interfaceType)
-        {
-            var callingAssembly = Assembly.GetCallingAssembly();
-            return AddTerminusFacadeCore(services, interfaceType, null, callingAssembly);
         }
 
         /// <summary>
@@ -163,16 +134,25 @@ public static class ServiceCollectionExtensions
         /// are registered as Scoped by default, while non-disposable facades are registered as Transient.
         /// </summary>
         /// <param name="interfaceType">The facade interface type to register.</param>
-        /// <param name="assemblies">The assemblies to scan.</param>
+        /// <param name="assemblies">The assemblies to scan. If empty, scans the calling assembly.</param>
         /// <returns>The service collection for chaining.</returns>
         /// <example>
         /// <code>
+        /// // Register from calling assembly
+        /// services.AddTerminusFacade(typeof(IMyFacade));
+        ///
+        /// // Register from specific assembly
         /// services.AddTerminusFacade(typeof(IMyFacade), typeof(IMyFacade).Assembly);
         /// </code>
         /// </example>
-        public IServiceCollection AddTerminusFacade(Type interfaceType,
+        public IServiceCollection AddTerminusFacade(
+            Type interfaceType,
             params Assembly[] assemblies)
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, interfaceType, null, assemblies);
         }
 
@@ -188,14 +168,11 @@ public static class ServiceCollectionExtensions
         /// services.AddTerminusFacade(typeof(IMyFacade), ServiceLifetime.Singleton);
         /// </code>
         /// </example>
-        public IServiceCollection AddTerminusFacade(Type interfaceType,
+        public IServiceCollection AddTerminusFacade(
+            Type interfaceType,
             ServiceLifetime lifetime,
             params Assembly[] assemblies)
         {
-            if (assemblies.Length == 0)
-            {
-                assemblies = new[] { Assembly.GetCallingAssembly() };
-            }
             return AddTerminusFacadeCore(services, interfaceType, lifetime, assemblies);
         }
     }
@@ -236,7 +213,7 @@ public static class ServiceCollectionExtensions
     {
         if (assemblies.Length == 0)
         {
-            assemblies = new[] { Assembly.GetCallingAssembly() };
+            assemblies = [Assembly.GetCallingAssembly()];
         }
 
         foreach (var assembly in assemblies)

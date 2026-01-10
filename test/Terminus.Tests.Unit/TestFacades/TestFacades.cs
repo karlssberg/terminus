@@ -1,54 +1,61 @@
+using System;
+using System.Threading.Tasks;
+using Terminus;
+
 namespace Terminus.Tests.Unit.TestFacades;
 
-// Test facade without disposal
-public interface ITestFacade;
+// Custom attribute for test facade methods
+public class TestFacadeMethodAttribute : Attribute;
 
-[FacadeImplementation(typeof(ITestFacade))]
-public sealed class ITestFacade_Generated : ITestFacade
-{
-    public ITestFacade_Generated(IServiceProvider serviceProvider)
-    {
-    }
-}
+// Test facade without disposal - should be Transient
+[FacadeOf(typeof(TestFacadeMethodAttribute))]
+public partial interface ITestFacade;
 
-// Test facade with IDisposable (should be scoped)
-public interface IScopedFacade;
+// Test facade with IDisposable - should be Scoped
+[FacadeOf(typeof(TestFacadeMethodAttribute), Scoped = true)]
+public partial interface IScopedFacade;
 
-[FacadeImplementation(typeof(IScopedFacade))]
-public sealed class IScopedFacade_Generated : IScopedFacade, IDisposable
-{
-    public IScopedFacade_Generated(IServiceProvider serviceProvider)
-    {
-    }
-
-    public void Dispose()
-    {
-    }
-}
-
-// Test facade with IAsyncDisposable (should also be scoped)
-public interface IAsyncScopedFacade;
-
-[FacadeImplementation(typeof(IAsyncScopedFacade))]
-public sealed class IAsyncScopedFacade_Generated : IAsyncScopedFacade, IAsyncDisposable
-{
-    public IAsyncScopedFacade_Generated(IServiceProvider serviceProvider)
-    {
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return ValueTask.CompletedTask;
-    }
-}
+// Test facade with IAsyncDisposable - should also be Scoped
+[FacadeOf(typeof(TestFacadeMethodAttribute), Scoped = true)]
+public partial interface IAsyncScopedFacade;
 
 // Another test facade for multi-facade tests
-public interface IAnotherFacade;
+[FacadeOf(typeof(TestFacadeMethodAttribute))]
+public partial interface IAnotherFacade;
 
-[FacadeImplementation(typeof(IAnotherFacade))]
-public sealed class IAnotherFacade_Generated : IAnotherFacade
+// Implementation classes with facade methods
+public class TestFacadeImplementations
 {
-    public IAnotherFacade_Generated(IServiceProvider serviceProvider)
+    [TestFacadeMethod]
+    public void TestMethod()
     {
+        // Test implementation
+    }
+}
+
+public class ScopedFacadeImplementations
+{
+    [TestFacadeMethod]
+    public void ScopedMethod()
+    {
+        // Scoped test implementation
+    }
+}
+
+public class AsyncScopedFacadeImplementations
+{
+    [TestFacadeMethod]
+    public async Task AsyncScopedMethod()
+    {
+        await Task.CompletedTask;
+    }
+}
+
+public class AnotherFacadeImplementations
+{
+    [TestFacadeMethod]
+    public void AnotherMethod()
+    {
+        // Another facade implementation
     }
 }

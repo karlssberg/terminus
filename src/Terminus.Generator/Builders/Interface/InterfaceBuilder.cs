@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Attributes;
+using Terminus.Generator.Builders.Documentation;
 using Terminus.Generator.Builders.Method;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -22,9 +23,18 @@ internal static class InterfaceBuilder
         ImmutableArray<CandidateMethodInfo> methods)
     {
         var interfaceName = facadeInfo.InterfaceSymbol.Name;
+        var documentation = DocumentationBuilder.BuildInterfaceDocumentation(methods);
+
+        var attributeList = GeneratedCodeAttributeBuilder.Build();
+        
+        // Add documentation as leading trivia to the attribute list
+        if (documentation.Any())
+        {
+            attributeList = attributeList.WithLeadingTrivia(documentation);
+        }
 
         var interfaceDeclaration = InterfaceDeclaration(interfaceName)
-            .WithAttributeLists(SingletonList(GeneratedCodeAttributeBuilder.Build()))
+            .WithAttributeLists(SingletonList(attributeList))
             .WithModifiers(TokenList(
                 Token(SyntaxKind.PublicKeyword),
                 Token(SyntaxKind.PartialKeyword)));

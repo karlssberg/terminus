@@ -1,6 +1,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Terminus.Generator.Builders.Documentation;
 using Terminus.Generator.Builders.Naming;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -21,8 +22,10 @@ internal sealed class MethodSignatureBuilder
         var returnTypeSyntax = BuildReturnType(methodInfo);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
+        var documentation = DocumentationBuilder.BuildMethodDocumentation(facadeInfo, methodInfo);
 
         return MethodDeclaration(returnTypeSyntax, Identifier(methodName))
+            .WithLeadingTrivia(documentation)
             .WithParameterList(parameterList)
             .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
