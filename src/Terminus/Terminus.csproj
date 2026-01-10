@@ -4,7 +4,25 @@
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
         <TargetFrameworks>net8.0;netstandard2.0;net10.0</TargetFrameworks>
+        <Version>1.0.0</Version>
+        <Authors>Terminus Contributors</Authors>
+        <Description>A high-performance C# source generator that effortlessly aggregates methods from multiple services into a single, cohesive facade.</Description>
+        <PackageProjectUrl>https://github.com/yourusername/terminus</PackageProjectUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageTags>source-generator;facade;mediator;di;dependency-injection;stitching</PackageTags>
+        <RepositoryUrl>https://github.com/yourusername/terminus</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Terminus.Generator\Terminus.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\Terminus.Generator\bin\$(Configuration)\netstandard2.0\Terminus.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />

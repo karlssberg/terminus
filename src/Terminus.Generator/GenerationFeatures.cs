@@ -2,7 +2,7 @@ using Microsoft.CodeAnalysis;
 
 namespace Terminus.Generator;
 
-internal class GenerationFeatures(AttributeData aggregatorAttrData, bool isOfficialTerminusAttribute)
+internal class GenerationFeatures(AttributeData aggregatorAttrData)
 {
 
     public bool IsScoped => ResolveNamedArgument<bool>("Scoped");
