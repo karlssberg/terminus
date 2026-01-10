@@ -63,3 +63,4 @@ nunit-*.xml
 
 # AI
 .claude/
+.junie/
