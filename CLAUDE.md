@@ -773,7 +773,8 @@ public static ReturnTypeKind ResolveReturnTypeKind(this Compilation compilation,
 
 ### Code Style
 
-- Use C# 12 features where appropriate (file-scoped namespaces, raw strings, collection expressions)
+- **Favor C# 14+ features** where possible, so long as they are compatible with the baseline framework supported, or are otherwise polyfilled
+- Use modern C# features appropriately (file-scoped namespaces, raw strings, collection expressions, primary constructors, etc.)
 - Use `readonly` for fields that don't change
 - Prefer expression-bodied members for simple methods
 - Use `var` for obvious types
