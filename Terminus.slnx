@@ -1,5 +1,7 @@
 <Solution>
-  <Folder Name="/Examples/" />
+  <Folder Name="/Examples/">
+    <Project Path="examples\Terminus.Example.Basic\Terminus.Example.Basic.csproj" />
+  </Folder>
   <Folder Name="/test/">
     <Project Path="test\Terminus.Generator.Tests.Unit\Terminus.Generator.Tests.Unit.csproj" />
     <Project Path="test\Terminus.Tests.Unit\Terminus.Tests.Unit.csproj" />

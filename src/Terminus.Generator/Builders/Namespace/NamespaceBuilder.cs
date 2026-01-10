@@ -13,19 +13,27 @@ namespace Terminus.Generator.Builders.Namespace;
 internal static class NamespaceBuilder
 {
     /// <summary>
-    /// Builds the complete namespace with interface and implementation.
+    /// Builds the members (interface and implementation) within their namespace, if applicable.
     /// </summary>
-    public static NamespaceDeclarationSyntax Build(
+    public static MemberDeclarationSyntax[] Build(
         FacadeInterfaceInfo facadeInfo,
         ImmutableArray<CandidateMethodInfo> methods)
     {
-        var interfaceNamespace = facadeInfo.InterfaceSymbol.ContainingNamespace.ToDisplayString();
+        var interfaceNamespace = facadeInfo.InterfaceSymbol.ContainingNamespace;
 
         var interfaceDeclaration = InterfaceBuilder.Build(facadeInfo, methods);
         var classDeclaration = ImplementationClassBuilder.Build(facadeInfo, methods);
 
-        return NamespaceDeclaration(ParseName(interfaceNamespace))
-            .WithMembers([interfaceDeclaration, classDeclaration])
-            .NormalizeWhitespace();
+        if (interfaceNamespace.IsGlobalNamespace)
+        {
+            return [interfaceDeclaration, classDeclaration];
+        }
+
+        return
+        [
+            NamespaceDeclaration(ParseName(interfaceNamespace.ToDisplayString()))
+                .WithMembers([interfaceDeclaration, classDeclaration])
+                .NormalizeWhitespace()
+        ];
     }
 }
