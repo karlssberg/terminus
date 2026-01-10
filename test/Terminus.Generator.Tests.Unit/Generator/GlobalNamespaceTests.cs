@@ -1,10 +1,6 @@
-using System.Text;
-using Microsoft.CodeAnalysis.Text;
-using Terminus.Generator.Tests.Unit.Generator.Infrastructure;
-
 namespace Terminus.Generator.Tests.Unit.Generator;
 
-public class GlobalNamespaceTests
+public class GlobalNamespaceTests : SourceGeneratorTestBase<FacadeGenerator>
 {
     [Fact]
     public async Task Given_interface_in_global_namespace_Should_not_generate_namespace_block()
@@ -58,19 +54,8 @@ public class GlobalNamespaceTests
             }
             """;
 
-        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
-        {
-            TestState =
-            {
-                Sources = { source }
-            }
-        };
-
-        test.TestState.GeneratedSources.Add((
-            typeof(FacadeGenerator),
-            "IGlobalFacade_Generated.g.cs",
-            SourceText.From(expectedMainSource, Encoding.UTF8)));
-
-        await test.RunAsync();
+        await VerifyAsync(
+            source,
+            ("IGlobalFacade_Generated.g.cs", expectedMainSource));
     }
 }
