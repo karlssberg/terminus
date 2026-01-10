@@ -1,5 +1,3 @@
-using System.Threading;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;

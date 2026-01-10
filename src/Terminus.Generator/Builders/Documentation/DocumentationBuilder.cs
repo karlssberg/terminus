@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Terminus.Generator.Builders.Documentation;
@@ -42,13 +39,13 @@ internal static class DocumentationBuilder
         {
             Comment("/// <summary>"),
             CarriageReturnLineFeed,
-            Comment("/// Facade interface delegating to:")
+            Comment("/// Facade interface delegating to:<br/>")
         };
 
         foreach (var type in containingTypes)
         {
             triviaList.Add(CarriageReturnLineFeed);
-            triviaList.Add(Comment($"/// <para><see cref=\"{type}\"/></para>"));
+            triviaList.Add(Comment($"/// <see cref=\"{type}\"/><br/>"));
         }
 
         triviaList.Add(CarriageReturnLineFeed);
@@ -89,7 +86,9 @@ internal static class DocumentationBuilder
         return TriviaList(
             Comment("/// <summary>"),
             CarriageReturnLineFeed,
-            Comment($"/// Delegates to <see cref=\"{crefMethodSignature}\"/>"),
+            Comment($"/// Delegates to:<br/>"),
+            CarriageReturnLineFeed,
+            Comment($"/// <see cref=\"{crefMethodSignature}\"/>"),
             CarriageReturnLineFeed,
             Comment("/// </summary>"),
             CarriageReturnLineFeed);
