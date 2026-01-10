@@ -45,7 +45,7 @@ internal static class UsageValidator
         // TM0001: Detect duplicate signatures
         var duplicates = facadeMethodMethodInfos
             .GroupBy(ep => GetMethodSignature(ep.MethodSymbol), MethodSignatureEqualityComparer.Instance)
-            .Where(g => g.Count() > 1)
+            .Where(g => g.Count() > 1 && g.Select(x => x.MethodSymbol).Distinct(SymbolEqualityComparer.Default).Count() > 1)
             .SelectMany(g => g);
 
         foreach (var duplicate in duplicates)

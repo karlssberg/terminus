@@ -46,7 +46,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
                     /// </summary>
                     void Hello(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
@@ -118,7 +119,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello(string)"/>
                     /// </summary>
                     void Hello(string world);
                 }
@@ -214,19 +216,23 @@ public class FacadeGeneratorTests
                   public partial interface IFacade
                   {
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.HelloAsync"/>
                       /// </summary>
                       global::System.Threading.Tasks.Task HelloAsync();
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
                       /// </summary>
                       global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.Hello"/>
                       /// </summary>
                       void Hello();
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.Hello(string)"/>
                       /// </summary>
                       string Hello(string world);
                   }
@@ -359,19 +365,23 @@ public class FacadeGeneratorTests
                   public partial interface IFacade
                   {
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.Hello"/>
                       /// </summary>
                       void Hello();
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.Hello(string)"/>
                       /// </summary>
                       string Hello(string world);
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.HelloAsync"/>
                       /// </summary>
                       global::System.Threading.Tasks.Task HelloAsync();
                       /// <summary>
-                      /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                      /// Delegates to:<br/>
+                      /// <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
                       /// </summary>
                       global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                   }
@@ -482,19 +492,23 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello"/>
                     /// </summary>
                     void Hello();
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello(string)"/>
                     /// </summary>
                     string Hello(string world);
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.HelloAsync"/>
                     /// </summary>
                     global::System.Threading.Tasks.Task HelloAsync();
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.HelloAsync(string)"/>
                     /// </summary>
                     global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                 }
@@ -618,7 +632,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Stream"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Stream"/>
                     /// </summary>
                     global::System.Collections.Generic.IAsyncEnumerable<int> Stream();
                 }
@@ -715,7 +730,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
                     /// </summary>
                     void Publish(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
@@ -797,7 +813,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
                     /// </summary>
                     global::System.Threading.Tasks.Task PublishAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
@@ -878,7 +895,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Hello(string, System.Threading.CancellationToken)"/>
                     /// </summary>
                     string Query(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
@@ -959,7 +977,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.HelloAsync(string, System.Threading.CancellationToken)"/>
                     /// </summary>
                     global::System.Threading.Tasks.Task<string> QueryAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
@@ -1047,7 +1066,8 @@ public class FacadeGeneratorTests
                 public partial interface IFacade
                 {
                     /// <summary>
-                    /// Delegates to <see cref="Demo.TestFacadeMethods.MyStream"/>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.MyStream"/>
                     /// </summary>
                     global::System.Collections.Generic.IAsyncEnumerable<int> StreamAsync();
                 }
@@ -1103,4 +1123,214 @@ public class FacadeGeneratorTests
         await test.RunAsync();
     }
 #endif
+
+    [Fact]
+    public async Task Given_attribute_on_class_Should_include_all_public_methods()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+            using System.Threading.Tasks;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute))]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                [FacadeMethod]
+                public class TestHandlers
+                {
+                    public void SyncMethod(string input)
+                    {
+                        Console.WriteLine(input);
+                    }
+
+                    public string QueryMethod(int id)
+                    {
+                        return $"Result {id}";
+                    }
+
+                    public async Task AsyncMethod()
+                    {
+                        await Task.CompletedTask;
+                    }
+
+                    private void PrivateMethod()
+                    {
+                        // Should be excluded
+                    }
+                }
+            }
+            """;
+
+        const string expectedMainSource =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestHandlers"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IFacade
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestHandlers.SyncMethod(string)"/>
+                    /// </summary>
+                    void SyncMethod(string input);
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestHandlers.QueryMethod(int)"/>
+                    /// </summary>
+                    string QueryMethod(int id);
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestHandlers.AsyncMethod"/>
+                    /// </summary>
+                    global::System.Threading.Tasks.Task AsyncMethod();
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                public sealed class IFacade_Generated : global::Demo.IFacade
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    public IFacade_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    void global::Demo.IFacade.SyncMethod(string input)
+                    {
+                        global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestHandlers>(_serviceProvider).SyncMethod(input);
+                    }
+
+                    string global::Demo.IFacade.QueryMethod(int id)
+                    {
+                        return global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestHandlers>(_serviceProvider).QueryMethod(id);
+                    }
+
+                    async global::System.Threading.Tasks.Task global::Demo.IFacade.AsyncMethod()
+                    {
+                        await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestHandlers>(_serviceProvider).AsyncMethod().ConfigureAwait(false);
+                    }
+                }
+            }
+            """;
+
+        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
+        {
+            TestState =
+            {
+                Sources = { source }
+            }
+        };
+
+        test.TestState.GeneratedSources.Add((
+            typeof(FacadeGenerator),
+            "Demo_IFacade_Generated.g.cs",
+            SourceText.From(expectedMainSource, Encoding.UTF8)));
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task Given_mixed_class_and_method_attributes_Should_include_all_without_duplicates()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute))]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                [FacadeMethod]
+                public class TestHandlers
+                {
+                    [FacadeMethod]
+                    public void MethodWithBoth()
+                    {
+                        Console.WriteLine("Has both class and method attribute");
+                    }
+
+                    public void MethodFromClass()
+                    {
+                        Console.WriteLine("Only from class attribute");
+                    }
+                }
+            }
+            """;
+
+        const string expectedMainSource =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.TestHandlers"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IFacade
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestHandlers.MethodWithBoth"/>
+                    /// </summary>
+                    void MethodWithBoth();
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestHandlers.MethodFromClass"/>
+                    /// </summary>
+                    void MethodFromClass();
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                public sealed class IFacade_Generated : global::Demo.IFacade
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    public IFacade_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    void global::Demo.IFacade.MethodWithBoth()
+                    {
+                        global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestHandlers>(_serviceProvider).MethodWithBoth();
+                    }
+
+                    void global::Demo.IFacade.MethodFromClass()
+                    {
+                        global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestHandlers>(_serviceProvider).MethodFromClass();
+                    }
+                }
+            }
+            """;
+
+        var test = new TerminusSourceGeneratorTest<FacadeGenerator>
+        {
+            TestState =
+            {
+                Sources = { source }
+            }
+        };
+
+        test.TestState.GeneratedSources.Add((
+            typeof(FacadeGenerator),
+            "Demo_IFacade_Generated.g.cs",
+            SourceText.From(expectedMainSource, Encoding.UTF8)));
+
+        await test.RunAsync();
+    }
 }

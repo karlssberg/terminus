@@ -27,12 +27,26 @@ public class FacadeGenerator : IIncrementalGenerator
             .CreateSyntaxProvider(
                 predicate: static (node, _) => FacadeMethodDiscovery.IsCandidateMethod(node),
                 transform: static (ctx, ct) => FacadeMethodDiscovery.DiscoverMethods(ctx, ct))
-            .Where(static m => m.HasValue && !m.Value.IsEmpty)
+            .Where(static m => m is { IsEmpty: false })
             .SelectMany((m, _) => m!.Value)
             .Collect();
 
-        // Combine both providers and execute generation pipeline
-        var combined = discoveredFacades.Combine(discoveredMethods);
+        // Discover types (classes/structs/records) that have attributes - include all their public methods
+        var discoveredTypeMethods = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => FacadeTypeDiscovery.IsCandidateType(node),
+                transform: static (ctx, ct) => FacadeTypeDiscovery.DiscoverTypeMethods(ctx, ct))
+            .Where(static m => m is { IsEmpty: false })
+            .SelectMany((m, _) => m!.Value)
+            .Collect();
+
+        // Combine method-level and type-level discoveries
+        var allCandidateMethods = discoveredMethods
+            .Combine(discoveredTypeMethods)
+            .Select(static (data, _) => data.Left.AddRange(data.Right));
+
+        // Combine facades with all candidate methods and execute generation pipeline
+        var combined = discoveredFacades.Combine(allCandidateMethods);
 
         context.RegisterSourceOutput(combined, FacadeGenerationPipeline.Execute);
     }

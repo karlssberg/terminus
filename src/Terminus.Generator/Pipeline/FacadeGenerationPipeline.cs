@@ -34,7 +34,10 @@ internal static class FacadeGenerationPipeline
         ImmutableArray<CandidateMethodInfo> candidateMethods)
     {
         // Step 1: Match methods to this facade
-        var matchedMethods = FacadeMethodMatcher.MatchMethodsToFacade(facade, candidateMethods);
+        var matchedMethods = FacadeMethodMatcher.MatchMethodsToFacade(facade, candidateMethods)
+            .GroupBy(m => m.MethodSymbol, SymbolEqualityComparer.Default)
+            .Select(group => group.First())
+            .ToImmutableArray();
 
         // Step 2: Validate the matched methods
         var hasErrors = UsageValidator.Validate(context, matchedMethods, facade);

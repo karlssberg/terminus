@@ -192,7 +192,7 @@ public partial interface IHandlers;
 
 ### Custom Facade Method Attributes
 
-Create domain-specific attributes for your methods:
+Create domain-specific attributes for your methods. Attributes can be applied to individual methods or to the entire class to include all public methods:
 
 ```csharp
 // Simple attribute
@@ -205,7 +205,7 @@ public class HttpHandlerAttribute : Attribute
     public HttpHandlerAttribute(string route) => Route = route;
 }
 
-// Usage
+// Method-level usage: Explicit per-method
 public class MyHandlers
 {
     [Handler]
@@ -214,7 +214,39 @@ public class MyHandlers
     [HttpHandler("/users/{id}")]
     public User GetUser(string id) { }
 }
+
+// Class-level usage: All public methods included automatically
+[Handler]
+public class MyHandlers
+{
+    public void ProcessCommand(string command) { }  // Included
+    public void ExecuteAction(int id) { }           // Included
+    public string QueryData() { }                   // Included
+
+    private void InternalHelper() { }               // Excluded (not public)
+}
+
+// Mixed usage: Both class and method attributes work together
+[Handler]
+public class MyHandlers
+{
+    [Handler]  // Explicit method attribute (redundant but allowed)
+    public void Method1() { }
+
+    public void Method2() { }  // Also included via class attribute
+
+    [HttpHandler("/special")]  // Different attribute on specific method
+    public void Method3() { }  // Included via class attribute
+}
 ```
+
+**Class-level attribute behavior:**
+- Applies to all public instance and static methods
+- Excludes private, protected, and internal methods
+- Excludes special methods (constructors, property accessors, operators, finalizers, etc.)
+- Excludes generic methods
+- Can be combined with method-level attributes (no duplicates in facade)
+- Supports classes, structs, and records
 
 ### Generated Code Structure
 
