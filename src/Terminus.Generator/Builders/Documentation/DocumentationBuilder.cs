@@ -73,7 +73,9 @@ internal static class DocumentationBuilder
                 return TriviaList(
                     Comment("/// <summary>"),
                     CarriageReturnLineFeed,
-                    Comment($"/// Delegates to <see cref=\"{crefMethodSignature}\"/>"),
+                    Comment($"/// Delegates to:<br/>"),
+                    CarriageReturnLineFeed,
+                    Comment($"/// <see cref=\"{crefMethodSignature}\"/>"),
                     CarriageReturnLineFeed,
                     Comment($"/// <para>{originalDoc}</para>"),
                     CarriageReturnLineFeed,

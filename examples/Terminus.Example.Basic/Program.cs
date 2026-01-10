@@ -1,61 +1,62 @@
 using Microsoft.Extensions.DependencyInjection;
 using Terminus;
 
+// Terminus aggregates methods from multiple unrelated types into a single, cohesive facade.
+// This allows you to decouple your client code from the underlying service structure.
+
 var services = new ServiceCollection();
 
-// Register the underlying services
+// 1. Register the underlying services as usual
 services.AddTransient<GreetingService>();
-services.AddTransient<TimeService>();
-services.AddTransient<CalculationService>();
+services.AddTransient<WeatherService>();
+services.AddTransient<NewsService>();
 
-// Register the generated facade using Terminus extensions
+// 2. Register the generated facade using Terminus extensions
 services.AddTerminusFacades();
 
 var serviceProvider = services.BuildServiceProvider();
 
-// Resolve the facade
+// 3. Resolve and use the facade
 var facade = serviceProvider.GetRequiredService<IAppFacade>();
 
-// Use aggregated methods from multiple types
-facade.SayHello("User");
+facade.SayHello("Developer");
+Console.WriteLine(facade.GetWeather());
+Console.WriteLine(facade.GetLatestNews());
 
-Console.WriteLine(facade.GetCurrentTime());
+// --- Definitions ---
 
-Console.WriteLine($"2 + 3 = {facade.Add(2, 3)}");
-Console.WriteLine($"4 * 5 = {facade.Multiply(4, 5)}");
-
-// --- Types ---
-
-// This attribute will be used to mark methods that should be included in the facade.
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+// Define an attribute to mark methods for inclusion in the facade.
+[AttributeUsage(AttributeTargets.Method)]
 public class FacadeMethodAttribute : Attribute;
 
-// The [FacadeOf] attribute tells Terminus to generate a facade implementation for this interface.
-// It will aggregate all methods marked with [FacadeMethod] (the type passed to the attribute).
+// Mark the interface with [FacadeOf] to trigger source generation.
+// Terminus will find all methods marked with [FacadeMethod] and implement them here.
 [FacadeOf(typeof(FacadeMethodAttribute))]
 public partial interface IAppFacade;
 
 public class GreetingService
 {
+    /// <summary>
+    /// Sends a friendly greeting.
+    /// </summary>
     [FacadeMethod]
-    public void SayHello(string name)
-    {
-        Console.WriteLine($"Hello, {name} from GreetingService!");
-    }
+    public void SayHello(string name) => Console.WriteLine($"Hello, {name}!");
 }
 
-public class TimeService
+public class WeatherService
 {
+    /// <summary>
+    /// Gets the current weather conditions.
+    /// </summary>
     [FacadeMethod]
-    public string GetCurrentTime()
-    {
-        return $"The current time is {DateTime.Now.ToShortTimeString()}";
-    }
+    public string GetWeather() => "The weather is sunny and 22°C.";
 }
 
-[FacadeMethod] // Applying to class includes all public methods
-public class CalculationService
+public class NewsService
 {
-    public int Add(int a, int b) => a + b;
-    public int Multiply(int a, int b) => a * b;
+    /// <summary>
+    /// Retrieves the latest news headline.
+    /// </summary>
+    [FacadeMethod]
+    public string GetLatestNews() => "Terminus simplifies facade generation!";
 }
