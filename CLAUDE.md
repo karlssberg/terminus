@@ -25,115 +25,77 @@ dotnet test
 dotnet test -v detailed
 
 # Run a specific test
-dotnet test --filter "FullyQualifiedName~EntryPointDiscoveryGeneratorTests"
+dotnet test --filter "FullyQualifiedName~FacadeGeneratorTests"
 
 # Run tests for a specific project
 dotnet test test/Terminus.Generator.Tests.Unit/Terminus.Generator.Tests.Unit.csproj
-```
-
-### Running Examples
-```bash
-# Run the HelloWorld example
-dotnet run --project examples/Terminus.Generator.Examples.HelloWord/Terminus.Generator.Examples.HelloWord.csproj
-
-# Run the Web example
-dotnet run --project examples/Terminus.Generator.Examples.Web/Terminus.Generator.Examples.Web.csproj
 ```
 
 ### Debugging Generated Code
 To view the actual generated source code:
 1. Add `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` to the `.csproj` file
 2. Build the project
-3. Check `obj/Debug/netX.0/generated/` or look in `examples/*/Generated/` folders
+3. Check `obj/Debug/netX.0/generated/` folder for generated files
 
 ## Project Overview
 
-**Terminus** is a C# source generator framework that implements a compile-time mediator pattern for method discovery and invocation. It provides a type-safe, reflection-free way to discover and invoke methods marked with custom attributes at runtime.
+**Terminus** is a C# source generator framework that generates **facade implementations** at compile-time. It discovers methods marked with custom attributes and generates strongly-typed facade interfaces that delegate to those methods.
 
-**Primary Use Case: Framework & Library Authors**
+**Primary Use Case: Type-Safe Abstraction Layer**
 
-Terminus is primarily designed for **library authors** building:
-- **Event-Driven Architecture (EDA) protocols** - Message handlers, event processors, command dispatchers
-- **IO endpoint frameworks** - HTTP endpoints, gRPC services, message queue consumers, WebSocket handlers
-- **Custom routing systems** - Any system that needs to route external inputs to methods based on attributes
-
-Library authors can create custom attributes (e.g., `[HttpPost("/users")]`, `[MessageHandler("OrderCreated")]`, `[EventListener("user.created")]`) and leverage Terminus to automatically discover and route to handler methods at compile-time.
+Terminus enables developers to create clean, type-safe facades over implementation methods by:
+- Marking an interface with `[FacadeOf(typeof(YourCustomAttribute))]`
+- Marking implementation methods with your custom attribute
+- Generating a facade implementation that delegates calls to those methods
 
 ### Key Features
 
-- **Compile-time code generation**: Uses Roslyn source generators to discover and generate mediator code
-- **Type-safe mediation**: Generates strongly-typed mediator interfaces for method invocation
-- **Flexible parameter binding**: Extensible parameter resolution system with custom binding strategies
-- **Attribute-based discovery**: Methods marked with `[EntryPoint]` (or derived attributes) are automatically discovered
-- **Custom attribute support**: Create domain-specific attributes inheriting from `EntryPointAttribute` for your protocol/framework
-- **Runtime routing**: `IEntryPointRouter` enables dynamic routing based on external data (HTTP routes, message types, etc.)
+- **Compile-time code generation**: Uses Roslyn source generators to discover and generate facade code
+- **Type-safe facades**: Generates strongly-typed facade interfaces with explicit implementation
+- **Flexible service resolution**: Supports static methods, scoped instances, and non-scoped instances
+- **Custom attribute support**: Works with any custom attribute type you define
+- **Scope management**: Automatic scope creation and disposal for scoped facades
+- **Async support**: Full support for async methods, including `Task`, `Task<T>`, and `IAsyncEnumerable<T>`
+- **Custom method naming**: Configure different method names based on return types (Command, Query, etc.)
 - **Dependency injection integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
-- **Multi-framework support**: Targets .NET 7.0+, with specific support for net472 in tests
 
 ### Core Value Proposition
 
-Traditional mediator patterns rely on runtime reflection or manual registration. Terminus moves this work to compile-time, generating:
-1. Mediator interfaces with strongly-typed method signatures
-2. Service registration code that wires up entry points
-3. Invocation logic with parameter resolution and scope management
+Traditional facade patterns require manual implementation of delegate methods. Terminus moves this work to compile-time, generating:
+1. Partial interface definition with all discovered method signatures
+2. Sealed implementation class with explicit interface implementation
+3. Service resolution logic based on method characteristics (static vs instance)
+4. Scope management for scoped facades with proper disposal
 
-This eliminates runtime overhead, provides compile-time safety, and enables rich tooling support.
-
-**For library authors**: Terminus provides the infrastructure to build attribute-based routing frameworks without implementing reflection-based discovery or manual registration systems. Your users mark methods with your custom attributes, and Terminus handles the discovery, registration, and invocation plumbing.
+This eliminates boilerplate, provides compile-time safety, and enables rich tooling support.
 
 ## Solution Structure
 
-The solution contains 6 projects organized as follows:
+The solution contains 3 projects:
 
 ### Core Projects
 
-**Terminus.Attributes** (`src/Terminus.Attributes/`)
-- Targets: `netstandard2.0` (maximum compatibility)
-- Contains attribute definitions used by both generator and runtime
+**Terminus** (`src/Terminus/`)
+- Targets: `net8.0;netstandard2.0;net10.0`
+- Contains attribute definitions used by both generator and consumers
 - Key files:
-  - `EntryPointAttribute.cs` - Base attribute for marking entry point methods
-  - `EntryPointAutoGenerateAttribute.cs` - Marks interfaces to generate mediator implementations
-  - `ParameterBinderAttribute.cs` - Base for custom parameter binding attributes
-- **Important**: Referenced by both the generator and consumer projects
+  - `FacadeOfAttribute.cs` - Marks interfaces to generate facade implementations
+  - `FacadeImplementationAttribute.cs` - Applied to generated implementation classes
+- **Important**: Referenced by consumer projects at runtime
 
 **Terminus.Generator** (`src/Terminus.Generator/`)
 - Targets: `netstandard2.0` (Roslyn requirement)
 - The Roslyn source generator that runs at compile-time
 - Key files:
-  - `EntryPointDiscoveryGenerator.cs` - Main generator implementing `IIncrementalGenerator`
-  - `EntrypointRegistrationSourceBuilder.cs` - Generates source code using Roslyn APIs
-  - `EntryPointMethodInfo.cs` & `MediatorInterfaceInfo.cs` - Models for discovered items
+  - `FacadeGenerator.cs` - Main generator implementing `IIncrementalGenerator`
+  - `Discovery/` - Discovery logic for facades and methods
+  - `Matching/` - Logic to match methods to facades
+  - `Pipeline/FacadeGenerationPipeline.cs` - Orchestrates the generation process
+  - `Builders/` - Modular builders for generating code using Roslyn
+  - `UsageValidator.cs` - Validates discovered methods for errors
+  - `Diagnostics.cs` - Diagnostic definitions
 - **Important**: Runs in the compiler process, not in the consuming application
 - Uses `<IsRoslynComponent>true</IsRoslynComponent>` to indicate it's an analyzer
-
-**Terminus** (`src/Terminus/`)
-- Targets: `netstandard2.0` (runtime library)
-- Runtime components used by generated code and consuming applications
-- Key components:
-  - `EntryPointDescriptor.cs` - Runtime descriptor wrapping entry point methods
-  - `ParameterBindingStrategyResolver.cs` - Resolves parameters using strategy chain
-  - `Dispatcher.cs` & `ScopedDispatcher.cs` - Runtime invocation infrastructure
-  - `IEntryPointRouter.cs` & `DefaultEntryPointRouter.cs` - Entry point selection logic
-  - `Strategies/` - Built-in parameter binding strategies
-- **Important**: This is what gets deployed with your application
-
-### Example Projects
-
-**Terminus.Generator.Examples.HelloWord** (`examples/Terminus.Generator.Examples.HelloWord/`)
-- Simple console application demonstrating the **Mediator Pattern**
-- Shows both synchronous and async entry points
-- Uses `[EntryPointMediator]` to generate strongly-typed mediator interface
-- **Use case**: Application developers using Terminus directly
-
-**Terminus.Generator.Examples.Web** (`examples/Terminus.Generator.Examples.Web/`)
-- ASP.NET Core web application demonstrating the **Dispatcher Pattern for Library Authors**
-- Shows custom attribute types (`MyHttpPostAttribute` with route information)
-- Demonstrates `IAsyncDispatcher` with custom `IEntryPointRouter` implementation
-- **Use case**: Library authors building HTTP/REST frameworks with attribute-based routing
-- **Key files**:
-  - `CustomRouter.cs` - Example of `IEntryPointRouter<T>` for path-based routing
-  - `RouteEntry.cs` & `RouteMatch.cs` - Route matching infrastructure
-  - `Program.cs` - Shows how a framework would integrate Terminus
 
 ### Test Projects
 
@@ -147,506 +109,446 @@ The solution contains 6 projects organized as follows:
 ### Project Dependency Graph
 
 ```
-Terminus.Attributes (no dependencies)
+Terminus (attributes + runtime)
        ↑
        ├─── Terminus.Generator → produces code for → Consumer Projects
        │
-       └─── Terminus (runtime)
-                ↑
-                └─── Consumer Projects (examples, tests)
+       └─── Consumer Projects (tests, examples)
 ```
 
 **Key architectural points:**
-- `Terminus.Attributes` is referenced by everyone (generator, runtime, consumers)
+- `Terminus` contains attributes and is referenced by consumers at runtime
 - `Terminus.Generator` analyzes consumer code at compile-time
-- Generated code depends on `Terminus` (runtime) for execution
-- Consumers only deploy `Terminus.Attributes` and `Terminus` - the generator runs only at build time
+- Generated code depends on `Terminus` for attributes
+- Consumers only deploy `Terminus` - the generator runs only at build time
 
 ## Key Concepts
 
-### Entry Points
+### Facade Pattern
 
-Methods marked with `[EntryPoint]` are discovered at compile time:
+Terminus implements the facade pattern through code generation. You define an interface, mark it with `[FacadeOf]`, and Terminus generates the implementation.
 
 ```csharp
-public class MyHandlers
+// 1. Define your custom attribute
+public class FacadeMethodAttribute : Attribute { }
+
+// 2. Mark interface with [FacadeOf]
+[FacadeOf(typeof(FacadeMethodAttribute))]
+public partial interface IMyFacade;
+
+// 3. Mark methods with your custom attribute
+public class MyService
 {
-    [EntryPoint]
-    public void Handle(string message)
+    [FacadeMethod]
+    public void DoSomething(string input)
     {
-        Console.WriteLine(message);
+        Console.WriteLine(input);
     }
+}
+
+// 4. Use the generated facade
+var facade = new IMyFacade_Generated(serviceProvider);
+facade.DoSomething("hello"); // Delegates to MyService.DoSomething
+```
+
+### FacadeOf Attribute
+
+The `[FacadeOf]` attribute marks interfaces for facade generation:
+
+```csharp
+[AttributeUsage(AttributeTargets.Interface)]
+public sealed class FacadeOfAttribute : Attribute
+{
+    // Constructor: specify one or more attribute types
+    public FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeMethodAttributes);
+
+    // Whether to create scoped instances (default: false)
+    public bool Scoped { get; set; }
+
+    // Custom method names based on return types
+    public string? CommandName { get; set; }        // void methods
+    public string? QueryName { get; set; }          // Result methods
+    public string? AsyncCommandName { get; set; }   // Task methods
+    public string? AsyncQueryName { get; set; }     // Task<T> methods
+    public string? AsyncStreamName { get; set; }    // IAsyncEnumerable<T> methods
 }
 ```
 
-The generator discovers these methods and creates registration code.
-
-### Entry Point Mediators
-
-Interfaces marked with `[EntryPointMediator]` get generated implementations:
-
+**Example with custom naming:**
 ```csharp
-[EntryPointMediator]
-public partial interface IMediator;
+[FacadeOf(typeof(HandlerAttribute),
+    CommandName = "Execute",
+    QueryName = "Query",
+    AsyncCommandName = "ExecuteAsync",
+    AsyncQueryName = "QueryAsync")]
+public partial interface IHandlers;
 ```
 
-The generator creates:
-1. A partial interface definition with all discovered entry point method signatures
-2. A concrete mediator class that implements the interface
-3. Service registration extensions
+### Custom Facade Method Attributes
+
+Create domain-specific attributes for your methods:
+
+```csharp
+// Simple attribute
+public class HandlerAttribute : Attribute { }
+
+// Attribute with metadata
+public class HttpHandlerAttribute : Attribute
+{
+    public string Route { get; }
+    public HttpHandlerAttribute(string route) => Route = route;
+}
+
+// Usage
+public class MyHandlers
+{
+    [Handler]
+    public void ProcessCommand(string command) { }
+
+    [HttpHandler("/users/{id}")]
+    public User GetUser(string id) { }
+}
+```
 
 ### Generated Code Structure
 
-For each discovered entry point, the generator produces:
+For each facade interface, the generator produces:
 
-**1. Mediator Interface Methods**
+**1. Partial Interface Definition**
 ```csharp
-public partial interface IMediator
+public partial interface IMyFacade
 {
-    void Handle(string message);
+    void DoSomething(string input);
+    Task<Result> GetDataAsync(int id);
 }
 ```
 
-**2. Mediator Implementation**
+**2. Sealed Implementation Class**
 ```csharp
-internal sealed class IMediator_Generated : IMediator
+[FacadeImplementation(typeof(global::MyNamespace.IMyFacade))]
+public sealed class IMyFacade_Generated : global::MyNamespace.IMyFacade
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ParameterBindingStrategyResolver _resolver;
+    private readonly global::System.IServiceProvider _serviceProvider;
 
-    public void Handle(string message)
+    public IMyFacade_Generated(global::System.IServiceProvider serviceProvider)
     {
-        using (var scope = _serviceProvider.CreateScope())
-        {
-            // Resolve service and invoke method
-            scope.ServiceProvider.GetRequiredService<MyHandlers>()
-                .Handle(message);
-        }
-    }
-}
-```
-
-**3. Service Registration**
-```csharp
-public static IServiceCollection AddEntryPoints(this IServiceCollection services)
-{
-    // Registers EntryPointDescriptor<T> for each discovered method
-    // Registers mediator implementations
-}
-```
-
-### Parameter Binding
-
-Parameters are resolved using a strategy chain. Built-in strategies:
-
-1. **ParameterNameBindingStrategy**: Resolves from context data by parameter name
-2. **CancellationTokenBindingStrategy**: Provides CancellationToken from context
-3. **DependencyInjectionBindingStrategy**: Resolves from IServiceProvider (fallback)
-
-Custom strategies can be added:
-
-```csharp
-builder.Services.AddEntryPoints(resolver =>
-{
-    resolver.AddStrategy(new MyCustomBindingStrategy());
-    resolver.RegisterParameterBinder<MyAttribute>(new MyBinder());
-});
-```
-
-### Custom Entry Point Attributes
-
-**Essential for Library Authors**: Create domain-specific attributes for your framework by inheriting from `EntryPointAttribute`.
-**Alternative to Mediatr library**: Create strongly typed mediators, so that missing handlers are resolved at design/compile time. 
-
-**Simple Custom Attribute:**
-```csharp
-// Your library defines this attribute
-public class CommandAttribute : EntryPointAttribute { }
-
-// Optionally create a mediator interface for it
-[EntryPointMediator(typeof(CommandAttribute))]
-public partial interface ICommandMediator;
-
-// Your users mark their methods
-public class MyCommands
-{
-    [Command]
-    public void Execute() { }
-}
-```
-
-**Attribute with Metadata (Recommended for Routing):**
-```csharp
-// HTTP endpoint attribute with route information
-[AttributeUsage(AttributeTargets.Method)]
-public class HttpGetAttribute : EntryPointAttribute
-{
-    public string Route { get; }
-
-    public HttpGetAttribute(string route)
-    {
-        Route = route;
-    }
-}
-
-// Message handler attribute with message type
-[AttributeUsage(AttributeTargets.Method)]
-public class MessageHandlerAttribute : EntryPointAttribute
-{
-    public string MessageType { get; }
-
-    public MessageHandlerAttribute(string messageType)
-    {
-        MessageType = messageType;
-    }
-}
-
-// Event listener with event name
-[AttributeUsage(AttributeTargets.Method)]
-public class EventListenerAttribute : EntryPointAttribute
-{
-    public string EventName { get; }
-    public int Priority { get; set; } = 0;
-
-    public EventListenerAttribute(string eventName)
-    {
-        EventName = eventName;
-    }
-}
-```
-
-**Usage by your library users:**
-```csharp
-public class Handlers
-{
-    [HttpGet("/users/{id}")]
-    public User GetUser(string id) { /* ... */ }
-
-    [MessageHandler("OrderCreated")]
-    public void OnOrderCreated(OrderCreatedMessage msg) { /* ... */ }
-
-    [EventListener("user.registered", Priority = 10)]
-    public async Task OnUserRegistered(UserRegisteredEvent evt) { /* ... */ }
-}
-```
-
-**Key points for library authors:**
-- The generator discovers methods with derived attributes and groups them by exact attribute type
-- Each attribute type gets its own `AddEntryPointsFor_{AttributeType}()` extension method
-- Use attribute properties (like `Route`, `MessageType`, `EventName`) in your `IEntryPointRouter` implementation to perform routing
-- Users of your library don't need to know about Terminus - they just apply your attributes
-
-### Type Resolution
-
-- **Static methods**: Invoked directly on the type
-- **Instance methods**: Type is resolved from DI container per invocation
-- **Scoped invocation**: Each mediator method call creates a new DI scope
-
-### Invocation Patterns
-
-Terminus supports two patterns for invoking entry points:
-
-**1. Mediator Pattern (Compile-time Type Safety)**
-
-Best for: Application developers using Terminus directly in their applications.
-
-```csharp
-// Define a mediator interface with [EntryPointMediator]
-[EntryPointMediator]
-public partial interface IMediator;
-
-// Use strongly-typed methods
-var mediator = serviceProvider.GetRequiredService<IMediator>();
-mediator.Handle("hello"); // Compile-time checked
-var result = await mediator.Query("foo", "bar", cancellationToken);
-```
-
-**2. Dispatcher Pattern (Runtime Routing) - PRIMARY PATTERN FOR LIBRARY AUTHORS**
-
-Best for: Library/framework authors building EDA protocols, IO endpoints, or custom routing systems.
-
-```csharp
-// Use IDispatcher or IAsyncDispatcher for dynamic invocation
-var dispatcher = serviceProvider.GetRequiredService<IAsyncDispatcher<YourCustomAttribute>>();
-
-// Build context with external data (HTTP request, message envelope, etc.)
-var context = new ParameterBindingContext(serviceProvider, dataDictionary);
-
-// Fire-and-forget (void methods)
-await dispatcher.PublishAsync(context, cancellationToken);
-
-// Request-response (methods with return values)
-var result = await dispatcher.RequestAsync<string>(context, cancellationToken);
-```
-
-**The dispatcher pattern is essential for library authors** building:
-- **HTTP/REST frameworks**: Route HTTP requests to methods marked with `[HttpGet("/path")]`
-- **Message queue consumers**: Dispatch messages to handlers based on `[MessageHandler("MessageType")]`
-- **Event-driven systems**: Route events to listeners marked with `[EventListener("event.name")]`
-- **gRPC/RPC frameworks**: Map RPC calls to service methods
-- **WebSocket handlers**: Route WebSocket messages to appropriate handlers
-- **Custom protocols**: Any system where external inputs determine which method to invoke
-
-**Key advantage**: Your library users write simple attributed methods, and your framework handles routing without them needing to know about Terminus internals.
-
-### Entry Point Routing
-
-**Critical for Library Authors**: The `IEntryPointRouter<TAttribute>` system is how you implement custom routing logic for your framework.
-
-```csharp
-public interface IEntryPointRouter<TAttribute> where TAttribute : EntryPointAttribute
-{
-    EntryPointDescriptor<TAttribute> GetEntryPoint(ParameterBindingContext context);
-}
-```
-
-**Routing Strategies:**
-
-- **DefaultEntryPointRouter**: Selects entry points based on `MethodInfo` matching
-- **Custom routers**: Implement `IEntryPointRouter<TAttribute>` to add custom routing logic
-
-**Example: HTTP Routing**
-```csharp
-public class HttpRouter : IEntryPointRouter<MyHttpPostAttribute>
-{
-    private readonly Dictionary<string, EntryPointDescriptor<MyHttpPostAttribute>> _routes;
-
-    public HttpRouter(IEnumerable<EntryPointDescriptor<MyHttpPostAttribute>> descriptors)
-    {
-        // Build route table from attribute properties
-        _routes = descriptors
-            .SelectMany(d => d.Attributes.Select(attr => (attr.Path, Descriptor: d)))
-            .ToDictionary(x => x.Path, x => x.Descriptor);
-    }
-
-    public EntryPointDescriptor<MyHttpPostAttribute> GetEntryPoint(ParameterBindingContext context)
-    {
-        var path = context.GetData<string>("path");
-        return _routes[path]; // Match incoming HTTP path to handler
-    }
-}
-```
-
-**Example: Message Type Routing**
-```csharp
-public class MessageRouter : IEntryPointRouter<MessageHandlerAttribute>
-{
-    public EntryPointDescriptor<MessageHandlerAttribute> GetEntryPoint(ParameterBindingContext context)
-    {
-        var messageType = context.GetData<string>("messageType");
-        // Find handler where attribute.MessageType matches incoming message
-        return _descriptors.First(d =>
-            d.Attributes.Any(attr => attr.MessageType == messageType));
-    }
-}
-```
-
-See `examples/Terminus.Generator.Examples.Web/CustomRouter.cs` for a complete HTTP routing implementation.
-
-## Guide for Library Authors
-
-This section provides a comprehensive guide for library authors building EDA protocols, IO endpoint frameworks, or custom routing systems using Terminus.
-
-### Building a Custom Framework with Terminus
-
-**Step 1: Define Your Custom Attribute**
-
-Create an attribute that inherits from `EntryPointAttribute` with properties relevant to your routing logic:
-
-```csharp
-// In your library: MyFramework.Core
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-public class MessageHandlerAttribute : EntryPointAttribute
-{
-    public string MessageType { get; }
-    public int Priority { get; set; } = 0;
-
-    public MessageHandlerAttribute(string messageType)
-    {
-        MessageType = messageType;
-    }
-}
-```
-
-**Step 2: Implement Custom Router**
-
-Create a router that uses your attribute's properties to select the correct handler:
-
-```csharp
-public class MessageTypeRouter : IEntryPointRouter<MessageHandlerAttribute>
-{
-    private readonly ILookup<string, EntryPointDescriptor<MessageHandlerAttribute>> _handlersByMessageType;
-
-    public MessageTypeRouter(IEnumerable<EntryPointDescriptor<MessageHandlerAttribute>> descriptors)
-    {
-        _handlersByMessageType = descriptors
-            .SelectMany(d => d.Attributes.Select(attr => (MessageType: attr.MessageType, Descriptor: d)))
-            .ToLookup(x => x.MessageType, x => x.Descriptor);
-    }
-
-    public EntryPointDescriptor<MessageHandlerAttribute> GetEntryPoint(ParameterBindingContext context)
-    {
-        var messageType = context.GetData<string>("messageType")
-            ?? throw new InvalidOperationException("Message type not found in context");
-
-        var handlers = _handlersByMessageType[messageType].ToList();
-
-        if (!handlers.Any())
-            throw new InvalidOperationException($"No handler found for message type: {messageType}");
-
-        // Sort by priority if multiple handlers
-        return handlers
-            .OrderByDescending(h => h.Attributes.Max(a => a.Priority))
-            .First();
-    }
-}
-```
-
-**Step 3: Create Framework Integration**
-
-Build the public API for your framework:
-
-```csharp
-// In your library: MyFramework.Core
-public static class ServiceCollectionExtensions
-{
-    public static IServiceCollection AddMyFramework(
-        this IServiceCollection services,
-        Action<MyFrameworkOptions>? configure = null)
-    {
-        var options = new MyFrameworkOptions();
-        configure?.Invoke(options);
-
-        // Register Terminus entry points
-        services.AddEntryPoints<MessageHandlerAttribute>(resolver =>
-        {
-            // Configure parameter binding for your framework
-            resolver.AddStrategy(new MessageBodyBindingStrategy());
-            resolver.AddStrategy(new MessageMetadataBindingStrategy());
-        });
-
-        // Register your custom router
-        services.AddSingleton<IEntryPointRouter<MessageHandlerAttribute>, MessageTypeRouter>();
-
-        return services;
-    }
-}
-```
-
-**Step 4: Implement Framework Runtime**
-
-Create the runtime component that receives external inputs and dispatches to handlers:
-
-```csharp
-public class MessageProcessor : IHostedService
-{
-    private readonly IAsyncDispatcher<MessageHandlerAttribute> _dispatcher;
-    private readonly IServiceProvider _serviceProvider;
-
-    public MessageProcessor(
-        IAsyncDispatcher<MessageHandlerAttribute> dispatcher,
-        IServiceProvider serviceProvider)
-    {
-        _dispatcher = dispatcher;
         _serviceProvider = serviceProvider;
     }
 
-    public async Task ProcessMessage(IncomingMessage message, CancellationToken ct)
+    void global::MyNamespace.IMyFacade.DoSomething(string input)
     {
-        // Build context from incoming message
-        var contextData = new Dictionary<string, object?>
-        {
-            ["messageType"] = message.Type,
-            ["messageBody"] = message.Body,
-            ["metadata"] = message.Metadata
-        };
-
-        var context = new ParameterBindingContext(_serviceProvider, contextData);
-
-        // Dispatch to appropriate handler
-        await _dispatcher.PublishAsync(context, ct);
+        // Service resolution and invocation
+        global::Microsoft.Extensions.DependencyInjection
+            .ServiceProviderServiceExtensions
+            .GetRequiredService<MyService>(_serviceProvider)
+            .DoSomething(input);
     }
 
-    // IHostedService implementation...
+    async global::System.Threading.Tasks.Task<Result> global::MyNamespace.IMyFacade.GetDataAsync(int id)
+    {
+        return await global::Microsoft.Extensions.DependencyInjection
+            .ServiceProviderServiceExtensions
+            .GetRequiredService<MyService>(_serviceProvider)
+            .GetDataAsync(id)
+            .ConfigureAwait(false);
+    }
 }
 ```
 
-**Step 5: Optional - Custom Parameter Binding**
+### Service Resolution Strategies
 
-Create custom parameter binding strategies for domain-specific parameters:
+Terminus uses three strategies to resolve service instances:
+
+**1. Static Service Resolution**
+- Used for: Static methods
+- Behavior: Direct invocation on the type (no service resolution)
+- Example:
+```csharp
+public static class Utilities
+{
+    [Handler]
+    public static void Log(string message) { }
+}
+// Generated: global::MyNamespace.Utilities.Log(message);
+```
+
+**2. Non-Scoped Service Resolution**
+- Used for: Instance methods on non-scoped facades (`Scoped = false` or default)
+- Behavior: Resolves service from root `IServiceProvider` per invocation
+- Example:
+```csharp
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface IHandlers;
+
+public class MyService
+{
+    [Handler]
+    public void DoWork() { }
+}
+// Generated: _serviceProvider.GetRequiredService<MyService>().DoWork();
+```
+
+**3. Scoped Service Resolution**
+- Used for: Instance methods on scoped facades (`Scoped = true`)
+- Behavior: Creates scope lazily, reuses for facade lifetime, disposes on disposal
+- Example:
+```csharp
+[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+public partial interface IHandlers;
+
+public class MyService
+{
+    [Handler]
+    public void DoWork() { }
+
+    [Handler]
+    public async Task DoWorkAsync() { }
+}
+// Generated:
+// - Sync methods: _syncScope.Value.ServiceProvider.GetRequiredService<MyService>()
+// - Async methods: _asyncScope.Value.ServiceProvider.GetRequiredService<MyService>()
+```
+
+**Scoped facades implement `IDisposable` and `IAsyncDisposable`:**
+```csharp
+public sealed class IHandlers_Generated : IHandlers, IDisposable, IAsyncDisposable
+{
+    private bool _syncDisposed;
+    private bool _asyncDisposed;
+    private readonly Lazy<IServiceScope> _syncScope;
+    private readonly Lazy<AsyncServiceScope> _asyncScope;
+
+    public void Dispose()
+    {
+        if (_syncDisposed || !_syncScope.IsValueCreated) return;
+        _syncScope.Value.Dispose();
+        _syncDisposed = true;
+        GC.SuppressFinalize(this);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_asyncDisposed || !_asyncScope.IsValueCreated) return;
+        await _asyncScope.Value.DisposeAsync().ConfigureAwait(false);
+        _asyncDisposed = true;
+        GC.SuppressFinalize(this);
+    }
+}
+```
+
+### Return Type Detection
+
+Terminus automatically detects return types and generates appropriate code:
+
+| Return Type | ReturnTypeKind | Generated Code | Async Modifier |
+|-------------|---------------|----------------|----------------|
+| `void` | `Void` | `instance.Method();` | No |
+| `T` | `Result` | `return instance.Method();` | No |
+| `Task` | `Task` | `await instance.Method().ConfigureAwait(false);` | Yes |
+| `Task<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
+| `ValueTask` | `Task` | `await instance.Method().ConfigureAwait(false);` | Yes |
+| `ValueTask<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
+| `IAsyncEnumerable<T>` | `AsyncEnumerable` | `await foreach (var item in ...) yield return item;` | Yes |
+
+### Method Naming Strategy
+
+By default, facade methods use the same name as the implementation method. You can customize names based on return types:
 
 ```csharp
-public class MessageBodyBindingStrategy : IParameterBindingStrategy
-{
-    public bool CanBind(ParameterBindingContext context)
-    {
-        // Bind parameters that expect the message body
-        return context.ParameterName == "message" ||
-               context.ParameterName == "body" ||
-               context.ParameterType.Name.EndsWith("Message");
-    }
+[FacadeOf(typeof(HandlerAttribute),
+    CommandName = "Execute",      // For void methods
+    QueryName = "Query",          // For result methods
+    AsyncCommandName = "ExecuteAsync",  // For Task methods
+    AsyncQueryName = "QueryAsync",      // For Task<T> methods
+    AsyncStreamName = "Stream")]        // For IAsyncEnumerable<T> methods
+public partial interface IHandlers;
 
-    public object? Bind(ParameterBindingContext context)
-    {
-        var body = context.GetData<object>("messageBody");
-        // Deserialize or convert to target parameter type
-        return ConvertToType(body, context.ParameterType);
-    }
+public class MyHandlers
+{
+    [Handler]
+    public void DoWork() { }  // Generated method: Execute()
+
+    [Handler]
+    public string GetData() { }  // Generated method: Query()
+
+    [Handler]
+    public Task ProcessAsync() { }  // Generated method: ExecuteAsync()
+
+    [Handler]
+    public Task<int> GetCountAsync() { }  // Generated method: QueryAsync()
+
+    [Handler]
+    public IAsyncEnumerable<Item> GetItemsAsync() { }  // Generated method: Stream()
 }
 ```
 
-### What Your Users See
+### CancellationToken Handling
 
-With your framework built on Terminus, users have a clean, attribute-based API:
+For static methods with a single `CancellationToken` parameter, Terminus automatically generates a cancellation check:
 
 ```csharp
-// User application code
-public class OrderHandlers
+public static class MyHandlers
 {
-    private readonly IOrderRepository _repository;
+    [Handler]
+    public static void Process(string data, CancellationToken ct) { }
+}
 
-    public OrderHandlers(IOrderRepository repository)
-    {
-        _repository = repository;
-    }
+// Generated:
+void IFacade.Process(string data, CancellationToken ct)
+{
+    ct.ThrowIfCancellationRequested();
+    global::MyNamespace.MyHandlers.Process(data, ct);
+}
+```
 
-    [MessageHandler("OrderCreated", Priority = 10)]
-    public async Task HandleOrderCreated(OrderCreatedMessage message, CancellationToken ct)
-    {
-        var order = await _repository.CreateOrder(message.OrderData, ct);
-        // ... handler logic
-    }
+### Async Enumerable Support
 
-    [MessageHandler("OrderCancelled")]
-    public void HandleOrderCancelled(OrderCancelledMessage message)
+For `IAsyncEnumerable<T>` return types on scoped facades, Terminus generates a proxy iterator:
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+public partial interface IHandlers;
+
+public class MyService
+{
+    [Handler]
+    public async IAsyncEnumerable<Item> GetItemsAsync()
     {
-        // ... handler logic
+        // Implementation
     }
 }
 
-// Program.cs
-var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddMyFramework(); // Your framework
-await builder.Build().RunAsync();
+// Generated:
+async IAsyncEnumerable<Item> IHandlers.GetItemsAsync()
+{
+    await foreach (var item in _asyncScope.Value.ServiceProvider
+        .GetRequiredService<MyService>()
+        .GetItemsAsync())
+    {
+        yield return item;
+    }
+}
 ```
 
-**Users never need to know about:**
-- Terminus infrastructure
-- `IDispatcher` or `EntryPointDescriptor`
-- Service registration details
-- Routing logic
+## Architecture Deep Dive
 
-They just apply your attributes and write handler methods!
+### Generator Pipeline
 
-### Benefits for Library Authors
+The generator follows a four-stage pipeline:
 
-1. **No reflection overhead**: All discovery happens at compile-time
-2. **Type-safe**: Generated code is strongly-typed
-3. **Minimal boilerplate**: Terminus handles registration and invocation plumbing
-4. **Flexible routing**: Implement custom routing logic via `IEntryPointRouter`
-5. **Extensible parameter binding**: Support domain-specific parameter types
-6. **DI integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
-7. **User-friendly**: Consumers use simple attributes without knowing about internals
+**1. Discovery Phase** (`Discovery/`)
+   - `FacadeInterfaceDiscovery.IsCandidateFacadeInterface()`: Fast syntax check for partial interfaces with attributes
+   - `FacadeInterfaceDiscovery.DiscoverFacadeInterface()`: Semantic analysis to find `[FacadeOf]` attributes
+   - `FacadeMethodDiscovery.IsCandidateMethod()`: Fast syntax check for methods
+   - `FacadeMethodDiscovery.DiscoverMethods()`: Semantic analysis to create `CandidateMethodInfo` for each attribute on each method
+
+**2. Matching Phase** (`Matching/`)
+   - `FacadeMethodMatcher.MatchMethodsToFacade()`: Filters methods where attribute inherits from facade's specified attribute types
+   - Supports attribute inheritance (derived attributes match)
+
+**3. Validation Phase**
+   - `UsageValidator.Validate()`: Checks for errors:
+     - **TM0001**: Duplicate method signatures (same name and parameter types)
+     - **TM0002**: Generic methods (not supported)
+     - **TM0003**: Ref/out parameters (not supported)
+   - Reports diagnostics via `SourceProductionContext`
+   - Skips code generation if errors found
+
+**4. Generation Phase** (`Builders/`)
+   - `FacadeGenerationContext`: Immutable context containing facade info and matched methods
+   - `FacadeBuilderOrchestrator`: Top-level builder coordinating generation
+   - `NamespaceBuilder`: Builds namespace with interface and implementation
+   - `InterfaceBuilder`: Builds partial interface with method signatures
+   - `ImplementationClassBuilder`: Orchestrates building of implementation class
+   - `MethodBuilder`: Builds individual method implementations
+
+### Builder System
+
+The builder system is modular and composable:
+
+```
+FacadeBuilderOrchestrator
+└─ NamespaceBuilder
+   ├─ InterfaceBuilder
+   │  └─ MethodSignatureBuilder (interface methods)
+   └─ ImplementationClassBuilder
+      ├─ FieldBuilder (fields)
+      ├─ ConstructorBuilder (constructor)
+      ├─ MethodBuilder (methods)
+      │  ├─ MethodSignatureBuilder (implementation method stubs)
+      │  └─ MethodBodyBuilder
+      │     └─ InvocationBuilder
+      │        └─ ServiceResolutionStrategyFactory
+      │           ├─ StaticServiceResolution
+      │           ├─ ScopedServiceResolution
+      │           └─ NonScopedServiceResolution
+      └─ DisposalBuilder (Dispose/DisposeAsync for scoped)
+```
+
+**Key Builders:**
+
+- **NamespaceBuilder**: Top-level, creates namespace with interface and class
+- **InterfaceBuilder**: Generates partial interface definition
+- **ImplementationClassBuilder**: Generates sealed implementation class with:
+  - `[FacadeImplementation]` attribute (for non-scoped or scoped with instance methods)
+  - Base interfaces (`IDisposable`, `IAsyncDisposable` for scoped)
+  - Fields (via `FieldBuilder`)
+  - Constructor (via `ConstructorBuilder`)
+  - Methods (via `MethodBuilder`)
+  - Disposal methods (via `DisposalBuilder` for scoped)
+- **MethodSignatureBuilder**: Builds method signatures (return type, name, parameters)
+- **MethodBodyBuilder**: Builds method body statements
+- **InvocationBuilder**: Builds method invocation expressions with `ConfigureAwait(false)`
+- **FieldBuilder**: Generates field declarations (different for scoped vs non-scoped)
+- **ConstructorBuilder**: Generates constructors (different for scoped vs non-scoped)
+- **DisposalBuilder**: Generates `Dispose()` and `DisposeAsync()` for scoped facades
+
+### Code Generation Approach
+
+Terminus uses a **hybrid approach** combining raw string interpolation with Roslyn `SyntaxFactory`:
+
+**Raw String Templates** (for readability):
+```csharp
+var constructor = ParseMemberDeclaration(
+    $$"""
+      public {{implementationClassName}}(IServiceProvider serviceProvider)
+      {
+          _serviceProvider = serviceProvider;
+      }
+      """)!;
+```
+
+**SyntaxFactory** (for dynamic composition):
+```csharp
+var classDeclaration = ClassDeclaration(implementationClassName)
+    .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
+    .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
+```
+
+**Composition Root**:
+```csharp
+public static CompilationUnitSyntax Generate(FacadeGenerationContext context)
+{
+    var namespaceDeclaration = NamespaceBuilder.Build(/*...*/);
+    var namespaceCode = namespaceDeclaration.ToFullString().TrimStart();
+
+    var rawCompilationUnit =
+      $$"""
+        // <auto-generated/> Generated by Terminus FacadeGenerator
+        #nullable enable
+        {{namespaceCode}}
+        """;
+
+    return ParseCompilationUnit(rawCompilationUnit);
+}
+```
+
+**Guidelines:**
+- Use raw strings for static/templated code chunks (easier to read)
+- Use `SyntaxFactory` for dynamic composition (type-safe)
+- Use `SyntaxFactory` parsers (`ParseMemberDeclaration`, `ParseTypeName`, etc.) for static chunks
+- Always call `.NormalizeWhitespace()` on final syntax nodes
+- Keep composition root as a template for readability
 
 ## Development Guidelines
 
@@ -655,74 +557,61 @@ They just apply your attributes and write handler methods!
 **Key Generator Pattern:**
 ```csharp
 [Generator]
-public class EndpointDiscoveryGenerator : IIncrementalGenerator
+public class FacadeGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var discoveredMethods = context.SyntaxProvider
+        // Two-phase discovery: fast syntax filter, then semantic analysis
+        var discoveredFacades = context.SyntaxProvider
             .CreateSyntaxProvider(
-                predicate: IsCandidateMethod,  // Fast syntax check
-                transform: GetMethodWithDerivedAttribute)  // Semantic analysis
+                predicate: static (node, _) => FacadeInterfaceDiscovery.IsCandidateFacadeInterface(node),
+                transform: static (ctx, ct) => FacadeInterfaceDiscovery.DiscoverFacadeInterface(ctx, ct))
+            .Where(static m => m.HasValue)
+            .Select((m, _) => m!.Value)
             .Collect();
 
-        context.RegisterSourceOutput(discoveredMethods, Execute);
+        var discoveredMethods = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => FacadeMethodDiscovery.IsCandidateMethod(node),
+                transform: static (ctx, ct) => FacadeMethodDiscovery.DiscoverMethods(ctx, ct))
+            .Where(static m => m.HasValue && !m.Value.IsEmpty)
+            .SelectMany((m, _) => m!.Value)
+            .Collect();
+
+        var combined = discoveredFacades.Combine(discoveredMethods);
+        context.RegisterSourceOutput(combined, FacadeGenerationPipeline.Execute);
     }
 }
 ```
 
 **Two-phase discovery:**
-1. **Syntax predicate**: Fast filter (methods with attributes)
-2. **Semantic transform**: Check if attribute derives from `EntryPointAttribute`
+1. **Syntax predicate**: Fast filter (e.g., partial interfaces with attributes, methods)
+2. **Semantic transform**: Semantic analysis to check if attribute matches target type
 
-### Code Generation Patterns
+### Diagnostics
 
-Located in `EntrypointRegistrationSourceBuilder.cs`:
-
-1. **Raw string interpolation** for large code blocks
-2. **Roslyn SyntaxFactory** for complex expressions
-3. **NormalizeWhitespace()** for consistent formatting
-
-Example:
-```csharp
-var rawCode = $$"""
-    namespace Terminus.Generated
-    {
-        {{CreateMediatorTypeDefinitions(entryPoints)}}
-    }
-    """;
-
-return ParseCompilationUnit(rawCode).NormalizeWhitespace();
-```
-
-### Framework-Specific Code
-
-Use conditional compilation for framework differences:
+Define diagnostics in `Diagnostics.cs`:
 
 ```csharp
-#if NET7_0_OR_GREATER
-    public required string ParameterName { get; init; }
-#else
-    public string ParameterName { get; }
-#endif
+public static readonly DiagnosticDescriptor DuplicateFacadeMethodSignature = new(
+    id: "TM0001",
+    title: "Duplicate entry point signature",
+    messageFormat: "Duplicate entry point signature detected for method '{0}'",
+    category: "Terminus.Generator",
+    DiagnosticSeverity.Error,
+    isEnabledByDefault: true,
+    description: "Entry point methods must have unique signatures within the same attribute type.");
 ```
 
-Common symbols:
-- `NET7_0_OR_GREATER` - C# 11 features (required members, generic attributes)
-- `NET8_0_OR_GREATER` - C# 12 features (SetsRequiredMembers)
-- Test projects support `net472` for backward compatibility testing
+Report diagnostics in validation:
 
-### Naming Conventions
-
-- **Generated mediator classes**: `{InterfaceName}_Generated` (e.g., `IMediator_Generated`)
-- **Generated files**:
-  - Per attribute type: `{AttributeTypeName}_Generated.g.cs` (e.g., `Terminus_Attributes_EntryPointAttribute_Generated.g.cs`)
-  - Service registration: `__EntryPointServiceRegistration_Generated.g.cs`
-- **Namespace**:
-  - Mediator implementations: Same namespace as the mediator interface
-  - Service extensions: `Terminus.Generated`
-- **Extension methods**:
-  - `ServiceCollectionExtensions.AddEntryPoints<TAttribute>()` - Generic method that routes to specific implementations
-  - `ServiceCollectionExtensions.AddEntryPointsFor_{AttributeTypeName}()` - Generated for each attribute type
+```csharp
+var diagnostic = Diagnostic.Create(
+    Diagnostics.DuplicateFacadeMethodSignature,
+    method.Locations.FirstOrDefault(),
+    method.Name);
+context.ReportDiagnostic(diagnostic);
+```
 
 ### Testing Strategy
 
@@ -731,7 +620,7 @@ Common symbols:
 All generator tests inherit from `TerminusSourceGeneratorTest<T>`:
 
 ```csharp
-var test = new TerminusSourceGeneratorTest<EndpointDiscoveryGenerator>
+var test = new TerminusSourceGeneratorTest<FacadeGenerator>
 {
     TestState =
     {
@@ -740,218 +629,21 @@ var test = new TerminusSourceGeneratorTest<EndpointDiscoveryGenerator>
 };
 
 test.TestState.GeneratedSources.Add(
-    (typeof(EndpointDiscoveryGenerator), "EntryPoints.g.cs",
+    (typeof(FacadeGenerator), "Demo_IFacade_Generated.g.cs",
      SourceText.From(expectedOutput, Encoding.UTF8)));
 
 await test.RunAsync();
 ```
 
-**Test harness provides:**
-- `IsExternalInit` shim for record types on older frameworks
-- Minimal DI shims to avoid heavy package references
-- Reference to `Terminus.Attributes` assembly
-
-**Testing approach:**
-1. Write input source with `[EntryPoint]` methods
-2. Write expected generated output
-3. Use Roslyn testing infrastructure to verify match
-4. Test both positive cases and edge cases
-
-### Common Patterns
-
-**1. Attribute inheritance checking:**
-```csharp
-private static bool InheritsFromBaseAttribute(INamedTypeSymbol attributeClass)
-{
-    var current = attributeClass;
-    while (current != null)
-    {
-        if (current.ToDisplayString() == BaseAttributeFullName)
-            return true;
-        current = current.BaseType;
-    }
-    return false;
-}
-```
-
-**2. Grouping by attribute type:**
-```csharp
-entryPoints
-    .GroupBy(e => e.AttributeData.AttributeClass!, SymbolEqualityComparer.Default)
-    .Select(group => GenerateForAttributeType(group))
-```
-
-**3. Service registration with if/else chain:**
-Generates runtime type checks to register the correct entry points based on the generic `TAttribute` parameter.
-
-**4. Parameter resolution:**
-```csharp
-resolver.ResolveParameter<TParameter>("paramName", context)
-```
-This is injected into generated code and resolved at runtime.
-
-### Extension Points
-
-**1. Custom parameter binding strategies:**
-```csharp
-public class MyStrategy : IParameterBindingStrategy
-{
-    public bool CanBind(ParameterBindingContext context) => /* check */;
-    public object? Bind(ParameterBindingContext context) => /* resolve */;
-}
-
-services.AddEntryPoints(r => r.AddStrategy(new MyStrategy()));
-```
-
-**2. Custom parameter binders via attributes:**
-```csharp
-public class FromQueryAttribute : ParameterBinderAttribute
-{
-    public override Type BinderType => typeof(QueryStringBinder);
-}
-
-public class QueryStringBinder : IParameterBinder
-{
-    public object? BindParameter(ParameterBindingContext context)
-    {
-        return context.GetData<HttpContext>("httpContext")
-            ?.Request.Query[context.ParameterName];
-    }
-}
-
-services.AddEntryPoints(r =>
-    r.RegisterParameterBinder<FromQueryAttribute>(new QueryStringBinder()));
-```
-
-**3. Custom entry point attributes:**
-Create attributes inheriting from `EntryPointAttribute` for domain-specific semantics.
-
-## Architecture Deep Dive
-
-### Generator Pipeline
-
-1. **Syntax filtering** (`IsCandidateMethod`):
-   - Checks for `MethodDeclarationSyntax` with attributes
-   - Fast, no semantic analysis
-
-2. **Semantic transform** (`GetMethodWithDerivedAttribute`):
-   - Gets `IMethodSymbol` from semantic model
-   - Walks attribute inheritance chain
-   - Creates `EntryPointMethodInfo` if matches
-
-3. **Collection**:
-   - Groups all discovered methods
-   - Passed to `Execute` for code generation
-
-4. **Code generation** (`Execute`):
-   - Calls `EntrypointRegistrationSourceBuilder.Generate()` for each attribute type
-   - Produces one file per attribute type: `{AttributeType}_Generated.g.cs`
-   - Produces one shared service registration file: `__EntryPointServiceRegistration_Generated.g.cs`
-
-### Parameter Resolution Flow
-
-1. Method invocation requested via mediator
-2. For each parameter, call `resolver.ResolveParameter<T>(name, context)`
-3. Resolver checks for custom binder attribute
-4. If not, iterates through strategy chain
-5. First strategy where `CanBind` returns true is used
-6. Falls back to DI resolution if no strategy matches
-
-### Scope Management
-
-Each mediator method invocation:
-1. Creates a new DI scope via `_serviceProvider.CreateScope()`
-2. Resolves service instance within scope
-3. Invokes method with resolved parameters
-4. Disposes scope automatically
-
-This ensures proper lifetime management for scoped services.
-
-### Type-Safe Mediator Pattern
-
-Traditional mediator patterns use:
-```csharp
-await mediator.Send(new MyCommand()); // Stringly-typed or marker interfaces
-```
-
-Terminus generates:
-```csharp
-mediator.Handle(message); // Compile-time type checking
-```
-
-Benefits:
-- Compile-time safety
-- Refactoring support
-- IntelliSense/tooling
-- No reflection at runtime
-
-## Common Development Scenarios
-
-### Adding a new binding strategy
-
-1. Implement `IParameterBindingStrategy`
-2. Add to `DefaultParameterBindingStrategies.Create()` or register via API
-3. Update tests to cover new strategy
-4. Strategies are evaluated in order - earlier strategies have priority
-
-### Modifying generated code
-
-1. Update `EntrypointRegistrationSourceBuilder.cs`
-2. Update expected outputs in `EndpointDiscoveryGeneratorTests.cs`
-3. Run tests to verify generation correctness
-4. Consider backward compatibility
-
-### Supporting a new attribute pattern
-
-1. Create new attribute in `Terminus.Attributes`
-2. Generator automatically discovers derived attributes
-3. Optionally enhance `EntryPointAutoGenerateAttribute` to specify which attribute type to mediate
-4. Add tests covering the new pattern
-
-### Debugging generator issues
-
-1. Set `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` in consumer project
-2. Check `obj/generated/` folder for actual generated code
-3. Add breakpoint in generator code (requires special setup)
-4. Use `Debugger.Launch()` in generator for JIT debugging
-
-## Project Conventions
-
-### File Organization
-
-- Attributes in `Terminus.Attributes` project (referenced by both generator and runtime)
-- Generator logic in `Terminus.Generator` project
-- Runtime components in `Terminus` project
-- Each strategy/binder in its own file
-- Test file names match implementation: `XGenerator.cs` → `XGeneratorTests.cs`
-
-### Code Style
-
-- Use C# 12 features where appropriate (file-scoped namespaces, raw strings, collection expressions)
-- Use `readonly` for fields that don't change
-- Prefer expression-bodied members for simple methods
-- Use `var` for obvious types
-- Use explicit types for clarity in complex scenarios
-
-### Error Handling
-
-- Generator should not throw exceptions (use diagnostics instead)
-- Runtime binding failures throw descriptive exceptions
-- Include parameter name and type in error messages
-- Validate configuration at registration time when possible
-
-## Testing Guidelines
-
-### Generator Tests
-
 **What to test:**
 - Single method with parameters
-- Multiple methods
+- Multiple methods with different signatures
 - Static vs instance methods
 - Methods with no parameters
-- Methods with return values
-- Custom attribute types
-- Multiple attribute types in same compilation
+- Methods with various return types (void, T, Task, Task<T>, IAsyncEnumerable<T>)
+- Scoped vs non-scoped facades
+- Custom naming (CommandName, QueryName, etc.)
+- Error cases (duplicate signatures, generic methods, ref/out parameters)
 
 **Test structure:**
 ```csharp
@@ -961,7 +653,7 @@ public async Task Given_X_Should_generate_Y()
     const string source = """...""";
     const string expected = """...""";
 
-    var test = new TerminusSourceGeneratorTest<EndpointDiscoveryGenerator>
+    var test = new TerminusSourceGeneratorTest<FacadeGenerator>
     {
         TestState = { Sources = { source } }
     };
@@ -971,123 +663,290 @@ public async Task Given_X_Should_generate_Y()
 }
 ```
 
-### Runtime Tests
+### Common Patterns
 
-Currently minimal. Consider adding:
-- Parameter binding strategy tests
-- Resolver configuration tests
-- Integration tests with actual DI container
-- End-to-end mediator invocation tests
+**1. Attribute inheritance checking:**
+```csharp
+private static bool InheritsFromAttribute(
+    INamedTypeSymbol attributeClass,
+    INamedTypeSymbol targetAttributeType)
+{
+    var current = attributeClass;
+    while (current != null)
+    {
+        if (SymbolEqualityComparer.Default.Equals(current, targetAttributeType))
+            return true;
+        current = current.BaseType;
+    }
+    return false;
+}
+```
 
-## Known Patterns and Idioms
-
-### Incremental Generator Pattern
-
-Terminus uses `IIncrementalGenerator` (not older `ISourceGenerator`):
-- Better performance with caching
-- Handles partial changes efficiently
-- Required for modern Roslyn generators
-
-### Symbol Equality
-
+**2. Symbol equality:**
 Always use `SymbolEqualityComparer.Default` when comparing symbols:
 ```csharp
-.GroupBy(e => e.AttributeData.AttributeClass!, SymbolEqualityComparer.Default)
+if (SymbolEqualityComparer.Default.Equals(typeSymbol1, typeSymbol2))
 ```
 
-### Type Name Serialization
-
-Use `ToDisplayString()` to get fully-qualified type names:
+**3. Type name serialization:**
+Use `ToDisplayString()` with `SymbolDisplayFormat.FullyQualifiedFormat`:
 ```csharp
-var typeName = methodSymbol.ContainingType.ToDisplayString();
-// e.g., "MyNamespace.MyClass"
+var typeName = methodSymbol.ContainingType
+    .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+// Result: "global::MyNamespace.MyClass"
 ```
 
-### Attribute Argument Access
+**4. Return type detection:**
+```csharp
+public static ReturnTypeKind ResolveReturnTypeKind(this Compilation compilation, IMethodSymbol method)
+{
+    if (method.ReturnsVoid) return ReturnTypeKind.Void;
+
+    var returnType = method.ReturnType;
+    var taskType = compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+
+    if (SymbolEqualityComparer.Default.Equals(returnType, taskType))
+        return ReturnTypeKind.Task;
+
+    // ... more checks
+}
+```
+
+### Naming Conventions
+
+- **Generated implementation classes**: `{InterfaceName}_Generated` (e.g., `IFacade_Generated`)
+- **Generated files**: `{Namespace}_{InterfaceName}_Generated.g.cs` (e.g., `Demo_IFacade_Generated.g.cs`)
+- **Namespace**: Same namespace as the facade interface
+- **File naming helper**: `symbol.ToIdentifierString()` (replaces `.` with `_`)
+
+### Code Style
+
+- Use C# 12 features where appropriate (file-scoped namespaces, raw strings, collection expressions)
+- Use `readonly` for fields that don't change
+- Prefer expression-bodied members for simple methods
+- Use `var` for obvious types
+- Use explicit types for clarity in complex scenarios
+- Use `static` on builder classes when possible
+- Use primary constructors for simple classes
+
+### Error Handling
+
+- Generator should not throw exceptions (use diagnostics instead)
+- Validate input early in the pipeline
+- Skip code generation if validation errors exist
+- Include helpful information in diagnostic messages (method name, parameter name, etc.)
+
+## Usage Examples
+
+### Basic Facade
 
 ```csharp
-var typeArg = attributeData.ConstructorArguments
-    .Select(arg => arg.Value)
-    .OfType<Type>()
-    .FirstOrDefault();
+// 1. Define attribute
+public class HandlerAttribute : Attribute { }
+
+// 2. Define facade interface
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface IHandlers;
+
+// 3. Define implementation
+public class MyHandlers
+{
+    [Handler]
+    public void Process(string data)
+    {
+        Console.WriteLine($"Processing: {data}");
+    }
+}
+
+// 4. Use facade
+var facade = new IHandlers_Generated(serviceProvider);
+facade.Process("hello");
 ```
 
-## Future Considerations
+### Scoped Facade with Async Methods
 
-### Potential Enhancements
+```csharp
+[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+public partial interface IHandlers;
 
-1. **Method overload support**: Currently assumes unique method names within the same attribute type
-2. **Diagnostics**: Report errors/warnings during generation (missing services, ambiguous methods)
-3. **Source link support**: Map generated code back to original methods
-4. **Batch invocation**: Invoke multiple entry points in a transaction
-5. **Interceptors**: Pre/post processing hooks for entry point invocation
-6. **Async scope support**: Use `CreateAsyncScope()` for async entry points (infrastructure exists but not yet used)
+public class MyHandlers
+{
+    private readonly IDatabase _db;
 
-### Performance Optimizations
+    public MyHandlers(IDatabase db) => _db = db;
 
-- Cache `MethodInfo` lookups
-- Avoid scope creation for static methods
-- Support singleton-lifetime mediators
-- Consider async method support
+    [Handler]
+    public async Task<User> GetUserAsync(int id)
+    {
+        return await _db.Users.FindAsync(id);
+    }
 
-### API Surface
+    [Handler]
+    public async IAsyncEnumerable<User> GetAllUsersAsync()
+    {
+        await foreach (var user in _db.Users.AsAsyncEnumerable())
+            yield return user;
+    }
+}
 
-Current API is minimal. Consider:
-- Builder pattern for more complex configuration
-- Fluent API for strategy registration
-- More granular control over code generation
-- Support for custom mediator implementations
+// Usage
+await using var facade = new IHandlers_Generated(serviceProvider);
+var user = await facade.GetUserAsync(123);
+await foreach (var u in facade.GetAllUsersAsync())
+{
+    Console.WriteLine(u.Name);
+}
+// Scope is automatically disposed here
+```
 
----
+### Custom Method Naming
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute),
+    CommandName = "Execute",
+    QueryName = "Query",
+    AsyncCommandName = "ExecuteAsync",
+    AsyncQueryName = "QueryAsync")]
+public partial interface IHandlers;
+
+public class MyHandlers
+{
+    [Handler]
+    public void DoWork() { }  // Facade method: Execute()
+
+    [Handler]
+    public string GetData() { }  // Facade method: Query()
+
+    [Handler]
+    public Task ProcessAsync() { }  // Facade method: ExecuteAsync()
+
+    [Handler]
+    public Task<int> ComputeAsync() { }  // Facade method: QueryAsync()
+}
+```
+
+### Multiple Attribute Types
+
+```csharp
+public class CommandAttribute : Attribute { }
+public class QueryAttribute : Attribute { }
+
+[FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute))]
+public partial interface IHandlers;
+
+public class MyHandlers
+{
+    [Command]
+    public void Execute(string cmd) { }
+
+    [Query]
+    public string Get(int id) { }
+}
+
+// Both methods appear in IHandlers facade
+```
+
+### Static and Instance Methods
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface IHandlers;
+
+public class InstanceHandlers
+{
+    [Handler]
+    public void InstanceMethod() { }  // Resolved from DI
+}
+
+public static class StaticHandlers
+{
+    [Handler]
+    public static void StaticMethod() { }  // Called directly
+}
+```
 
 ## Quick Reference
 
 ### Key Files to Understand
 
 **For Generator Development:**
-1. `EntryPointDiscoveryGenerator.cs` - Entry point for source generation
-2. `EntrypointRegistrationSourceBuilder.cs` - Code generation logic
-3. `EntryPointDescriptor.cs` - Runtime method descriptor
-4. `TerminusSourceGeneratorTest.cs` - Test infrastructure
+1. `FacadeGenerator.cs` - Entry point for source generation
+2. `Pipeline/FacadeGenerationPipeline.cs` - Orchestrates discovery → matching → validation → generation
+3. `Builders/FacadeBuilderOrchestrator.cs` - Top-level builder
+4. `Discovery/FacadeInterfaceDiscovery.cs` - Discovers `[FacadeOf]` interfaces
+5. `Discovery/FacadeMethodDiscovery.cs` - Discovers methods with attributes
+6. `Matching/FacadeMethodMatcher.cs` - Matches methods to facades
+7. `UsageValidator.cs` - Validates matched methods
+8. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
 
-**For Library Authors:**
-1. `examples/Terminus.Generator.Examples.Web/` - Complete example of library author pattern
-2. `IEntryPointRouter.cs` - Interface for custom routing logic
-3. `ParameterBindingStrategyResolver.cs` - Parameter resolution system
-4. `IParameterBindingStrategy.cs` - Interface for custom parameter binding
+**For Understanding Generated Code:**
+1. `Builders/Interface/InterfaceBuilder.cs` - Generates partial interface
+2. `Builders/Class/ImplementationClassBuilder.cs` - Generates implementation class
+3. `Builders/Method/MethodBuilder.cs` - Generates method implementations
+4. `Builders/Method/MethodBodyBuilder.cs` - Generates method bodies
+5. `Builders/Method/InvocationBuilder.cs` - Generates method invocations
 
 ### Common Tasks
 
-**For Terminus Contributors:**
-
-**Add a new strategy:**
-→ Create class implementing `IParameterBindingStrategy` in `Strategies/`
+**Add a new service resolution strategy:**
+→ Create class implementing `IServiceResolutionStrategy` in `Builders/Strategies/`
+→ Add to `ServiceResolutionStrategyFactory.Strategies` array
 
 **Modify generated code:**
-→ Edit `EntrypointRegistrationSourceBuilder.cs`
+→ Edit appropriate builder in `Builders/` folder
+→ Update expected strings in `FacadeGeneratorTests.cs`
+
+**Add new diagnostic:**
+→ Define in `Diagnostics.cs`
+→ Report in `UsageValidator.cs` or relevant location
 
 **Test generator changes:**
-→ Update expected strings in `EndpointDiscoveryGeneratorTests.cs`
+→ Add test case to `FacadeGeneratorTests.cs`
+→ Provide input source and expected generated output
 
 **Debug generation:**
-→ Set `EmitCompilerGeneratedFiles=true` and check `obj/generated/`
+→ Set `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` in consumer `.csproj`
+→ Check `obj/Debug/netX.0/generated/` folder
 
-**For Library Authors Using Terminus:**
+**Support new return type:**
+→ Add case to `ReturnTypeKind` enum
+→ Update `CompilationExtensions.ResolveReturnTypeKind()`
+→ Update `MethodBodyBuilder.BuildMethodBody()` to handle new case
+→ Update `MethodSignatureBuilder.BuildImplementationMethodStub()` if async modifier needed
 
-**Create custom attribute:**
-→ Inherit from `EntryPointAttribute`, add properties for routing metadata
+## Future Considerations
 
-**Implement routing:**
-→ Implement `IEntryPointRouter<YourAttribute>` to select handlers based on external data
+### Potential Enhancements
 
-**Add custom parameter binding:**
-→ Implement `IParameterBindingStrategy` and register in your `AddEntryPoints` call
+1. **Generic method support**: Currently not supported (TM0002 error)
+2. **Ref/out parameter support**: Currently not supported (TM0003 error)
+3. **Source link support**: Map generated code back to original methods
+4. **Configuration API**: Builder pattern for complex facade configuration
+5. **Multiple facade implementations**: Generate different implementations for same interface
+6. **Method overload disambiguation**: Handle methods with same name but different parameter types
+7. **Attribute-based parameter binding**: Custom parameter resolution strategies
 
-**See complete example:**
-→ Study `examples/Terminus.Generator.Examples.Web/` for end-to-end implementation
-- use context7
-- DO NOT use StringBuilder to compose code snippets when generating source using Roslyn
-- When using Roslyn, DO use SyntaxFactory for composition of highly dynamic code snippets
-- When using Roslyn, DO use the SyntaxFactory parsers to create strongly type chunks of static or easily templated source snippets
-- DO (when using Roslyn) try and define the composition root as as a templated string (for readability).  If templating beocmes excessive then use a SyntaxFactory
-- When writing multiline strings in C#, use the raw string literal syntax (""").  Please keep the open and closing """ (and variants) vertically aligned by starting on a new line (particularly when doing assignments)
+### Performance Optimizations
+
+- Cache method info lookups
+- Optimize scope creation for mixed sync/async scenarios
+- Consider pooling for frequently created scopes
+- Benchmark generated code vs manual implementations
+
+---
+
+## Important Instruction Reminders
+
+- **DO** use `SyntaxFactory` parsers (`ParseMemberDeclaration`, `ParseTypeName`, etc.) to create strongly typed chunks of static or easily templated source snippets
+- **DO** try to define the composition root as a templated string (for readability)
+- **DO** use `SyntaxFactory` for composition of highly dynamic code snippets
+- **DO NOT** use `StringBuilder` to compose code snippets when generating source using Roslyn
+- When writing multiline strings in C#, use the raw string literal syntax (`"""`)
+- Keep the opening and closing `"""` vertically aligned by starting on a new line
+
+### Additional Guidelines
+
+- Do what has been asked; nothing more, nothing less
+- **NEVER** create files unless they're absolutely necessary for achieving your goal
+- **ALWAYS** prefer editing an existing file to creating a new one
+- **NEVER** proactively create documentation files (`*.md`) or README files unless explicitly requested
