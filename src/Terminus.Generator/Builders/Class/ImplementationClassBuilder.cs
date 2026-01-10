@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Terminus.Generator.Builders.Attributes;
 using Terminus.Generator.Builders.Method;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -89,17 +90,24 @@ internal static class ImplementationClassBuilder
         bool isScoped,
         bool hasInstanceMethods)
     {
+        var attributeLists = new List<AttributeListSyntax>();
+
+        // Always add [GeneratedCode] attribute
+        attributeLists.Add(GeneratedCodeAttributeBuilder.Build());
+
         // For non-scoped facades, always add [FacadeImplementation] attribute
         // For scoped facades, only add if there are instance methods (static-only facades don't need it)
-        if (isScoped && !hasInstanceMethods) return classDeclaration;
-        
-        var facadeImplAttribute = Attribute(
-            ParseName("global::Terminus.FacadeImplementation"),
-            AttributeArgumentList(SingletonSeparatedList(
-                AttributeArgument(TypeOfExpression(ParseTypeName(interfaceName))))));
+        if (!isScoped || hasInstanceMethods)
+        {
+            var facadeImplAttribute = Attribute(
+                ParseName("global::Terminus.FacadeImplementation"),
+                AttributeArgumentList(SingletonSeparatedList(
+                    AttributeArgument(TypeOfExpression(ParseTypeName(interfaceName))))));
 
-        classDeclaration = classDeclaration.WithAttributeLists(
-            SingletonList(AttributeList(SingletonSeparatedList(facadeImplAttribute))));
+            attributeLists.Add(AttributeList(SingletonSeparatedList(facadeImplAttribute)));
+        }
+
+        classDeclaration = classDeclaration.WithAttributeLists(List(attributeLists));
 
         return classDeclaration;
     }

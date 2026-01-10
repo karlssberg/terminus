@@ -24,11 +24,17 @@ dotnet test
 # Run tests with detailed output
 dotnet test -v detailed
 
-# Run a specific test
-dotnet test --filter "FullyQualifiedName~FacadeGeneratorTests"
+# Run a specific test class
+dotnet test --filter "FullyQualifiedName~ClassName"
+
+# Run a specific test method
+dotnet test --filter "FullyQualifiedName~ClassName.MethodName"
 
 # Run tests for a specific project
-dotnet test test/Terminus.Generator.Tests.Unit/Terminus.Generator.Tests.Unit.csproj
+dotnet test <path-to-test-project.csproj>
+
+# Run tests without rebuilding (faster iteration)
+dotnet test --no-build
 ```
 
 ### Debugging Generated Code
@@ -615,6 +621,31 @@ context.ReportDiagnostic(diagnostic);
 
 ### Testing Strategy
 
+**IMPORTANT: This project follows Test-Driven Development (TDD)**
+
+When adding new features to the generator:
+
+1. **Write Failing Tests First**
+   - Update ALL affected test expectations in the relevant test files with the new expected output
+   - Include the new feature in the expected generated code
+   - Do NOT implement the feature yet
+
+2. **Run Tests to Confirm Failure**
+   - Run `dotnet test` to verify tests fail with clear diff showing what's missing
+   - The diff output shows exactly what needs to be implemented
+
+3. **Implement the Minimum Code**
+   - Implement ONLY what's needed to make the tests pass
+   - Follow the existing builder pattern and code organization
+
+4. **Run Tests to Verify Success**
+   - Run `dotnet test` to verify all tests pass
+   - Build the solution to ensure no warnings or errors
+
+5. **Refactor if Needed**
+   - Clean up code while keeping tests green
+   - Follow existing patterns and conventions
+
 **Test Infrastructure:**
 
 All generator tests inherit from `TerminusSourceGeneratorTest<T>`:
@@ -662,6 +693,27 @@ public async Task Given_X_Should_generate_Y()
     await test.RunAsync();
 }
 ```
+
+**TDD Example: Adding [GeneratedCode] Attribute**
+
+This feature was implemented using TDD:
+
+1. **Updated all test expectations** to include `[GeneratedCode("Terminus.Generator", "1.0.0")]` on both interface and implementation class
+2. **Ran tests** - they failed with clear diffs showing missing attributes (lines prefixed with `-`)
+3. **Created helper classes**:
+   - `GeneratorVersion.cs` - Extracts version from assembly
+   - `GeneratedCodeAttributeBuilder.cs` - Builds the attribute syntax
+4. **Updated builders**:
+   - `InterfaceBuilder.cs` - Added attribute to interface
+   - `ImplementationClassBuilder.cs` - Added attribute to implementation class
+5. **Ran tests** - all passed (14 tests on .NET 8.0/10.0, 12 on .NET Framework 4.7.2)
+
+**Benefits of TDD Approach:**
+- Ensures test coverage for new features from the start
+- Provides clear specification of expected behavior in test code
+- Catches regressions immediately
+- Makes refactoring safer (tests act as safety net)
+- Forces thinking about design before implementation
 
 ### Common Patterns
 

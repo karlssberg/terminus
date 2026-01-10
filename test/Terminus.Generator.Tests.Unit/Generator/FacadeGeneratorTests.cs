@@ -39,11 +39,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     void Hello(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
                     void global::Demo.IFacade.Hello(string world, global::System.Threading.CancellationToken cancellationToken)
@@ -103,11 +105,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     void Hello(string world);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
@@ -191,6 +195,7 @@ public class FacadeGeneratorTests
               #nullable enable
               namespace Demo
               {
+                  [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   public partial interface IFacade
                   {
                       global::System.Threading.Tasks.Task HelloAsync();
@@ -199,6 +204,7 @@ public class FacadeGeneratorTests
                       string Hello(string world);
                   }
 
+                  [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                   public sealed class IFacade_Generated : global::Demo.IFacade, global::System.IDisposable, global::System.IAsyncDisposable
                   {
@@ -319,6 +325,7 @@ public class FacadeGeneratorTests
               #nullable enable
               namespace Demo
               {
+                  [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   public partial interface IFacade
                   {
                       void Hello();
@@ -327,6 +334,7 @@ public class FacadeGeneratorTests
                       global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                   }
 
+                  [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                   [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                   public sealed class IFacade_Generated : global::Demo.IFacade
                   {
@@ -425,6 +433,7 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     void Hello();
@@ -433,6 +442,7 @@ public class FacadeGeneratorTests
                     global::System.Threading.Tasks.Task<string> HelloAsync(string world);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade, global::System.IDisposable, global::System.IAsyncDisposable
                 {
@@ -544,11 +554,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     global::System.Collections.Generic.IAsyncEnumerable<int> Stream();
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade, global::System.IDisposable, global::System.IAsyncDisposable
                 {
@@ -633,11 +645,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     void Publish(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
@@ -707,11 +721,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     global::System.Threading.Tasks.Task PublishAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
@@ -780,11 +796,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     string Query(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
@@ -853,11 +871,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     global::System.Threading.Tasks.Task<string> QueryAsync(string world, global::System.Threading.CancellationToken cancellationToken);
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
@@ -933,11 +953,13 @@ public class FacadeGeneratorTests
             #nullable enable
             namespace Demo
             {
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     global::System.Collections.Generic.IAsyncEnumerable<int> StreamAsync();
                 }
 
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade, global::System.IDisposable, global::System.IAsyncDisposable
                 {

@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Terminus.Generator.Builders.Attributes;
 using Terminus.Generator.Builders.Method;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -23,6 +24,7 @@ internal static class InterfaceBuilder
         var interfaceName = facadeInfo.InterfaceSymbol.Name;
 
         var interfaceDeclaration = InterfaceDeclaration(interfaceName)
+            .WithAttributeLists(SingletonList(GeneratedCodeAttributeBuilder.Build()))
             .WithModifiers(TokenList(
                 Token(SyntaxKind.PublicKeyword),
                 Token(SyntaxKind.PartialKeyword)));
