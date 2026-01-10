@@ -810,9 +810,63 @@ public class MyHandlers
     }
 }
 
-// 4. Use facade
-var facade = new IHandlers_Generated(serviceProvider);
+// 4. Register facades with DI container
+services.AddTerminusFacades();
+
+// 5. Use facade
+var facade = serviceProvider.GetRequiredService<IHandlers>();
 facade.Process("hello");
+```
+
+### Dependency Injection Registration
+
+Terminus provides automatic registration of generated facades with `IServiceCollection` via the `AddTerminusFacades()` extension method:
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+
+// Register all facades from calling assembly
+// - Disposable facades (IDisposable/IAsyncDisposable) → Scoped
+// - Non-disposable facades → Transient
+services.AddTerminusFacades();
+
+// Register facades from specific assemblies
+services.AddTerminusFacades(typeof(IMyFacade).Assembly, typeof(IOtherFacade).Assembly);
+
+// Register with explicit lifetime (overrides defaults)
+services.AddTerminusFacades(ServiceLifetime.Singleton);
+services.AddTerminusFacades(ServiceLifetime.Scoped, typeof(IMyFacade).Assembly);
+```
+
+**How it works:**
+- Extension method is in `Microsoft.Extensions.DependencyInjection` namespace (automatically available)
+- Scans assemblies for types decorated with `[FacadeImplementation]`
+- Registers each implementation with its corresponding interface
+- Automatically determines lifetime based on disposal patterns:
+  - **Scoped**: Facades implementing `IDisposable` or `IAsyncDisposable`
+  - **Transient**: All other facades (safe default for stateless facades)
+- Allows explicit lifetime override for advanced scenarios
+
+**Example:**
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Register handler services
+builder.Services.AddScoped<MyHandlers>();
+
+// Auto-register all facades - extension method is automatically available
+builder.Services.AddTerminusFacades();
+
+var app = builder.Build();
+
+// Use facades in endpoints via dependency injection
+app.MapGet("/process", (IHandlers handlers, string data) =>
+{
+    handlers.Process(data);
+    return Results.Ok();
+});
 ```
 
 ### Scoped Facade with Async Methods
