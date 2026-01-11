@@ -26,7 +26,7 @@ internal class DuplicateSignatureValidator : IMethodValidator
     }
 
     /// <inheritdoc />
-    public void Validate(SourceProductionContext context, ref bool hasErrors)
+    public bool Validate(SourceProductionContext context)
     {
         var diagnostics = _signatures
             .Select(entry => entry.Value)
@@ -45,10 +45,7 @@ internal class DuplicateSignatureValidator : IMethodValidator
             _hasErrors = true;
         }
 
-        if (_hasErrors)
-        {
-            hasErrors = true;
-        }
+        return _hasErrors;
     }
 
     private static MethodSignature GetMethodSignature(IMethodSymbol method)

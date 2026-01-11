@@ -15,9 +15,9 @@ internal interface IMethodValidator
     void Add(CandidateMethodInfo methodInfo);
 
     /// <summary>
-    /// Finalizes the validation process, reporting any accumulated errors via the provided context.
+    /// Validate the accumulated methods, reporting any errors via the provided context.
     /// </summary>
     /// <param name="context">The source production context used to report diagnostics.</param>
-    /// <param name="hasErrors">A reference to a boolean flag that is set to true if any errors were detected.</param>
-    void Validate(SourceProductionContext context, ref bool hasErrors);
+    /// <returns>True if any errors were detected; otherwise, false.</returns>
+    bool Validate(SourceProductionContext context);
 }

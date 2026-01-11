@@ -18,9 +18,6 @@ internal static class UsageValidator
             validator.Add(facadeMethod);
         }
 
-        var hasErrors = false;
-        validator.Validate(context, ref hasErrors);
-
-        return hasErrors;
+        return validator.Validate(context);
     }
 }

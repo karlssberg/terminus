@@ -17,18 +17,17 @@ internal class RefOrOutParameterValidator : IMethodValidator
     }
 
     /// <inheritdoc />
-    public void Validate(SourceProductionContext context, ref bool hasErrors)
+    public bool Validate(SourceProductionContext context)
     {
-        var diagnostics = _methods
-            .Select(methodInfo => methodInfo.MethodSymbol)
-            .SelectMany(
-                methodSymbol =>  methodSymbol.Parameters.Where(IsRefOrOut),
-                (methodSymbol, parameter) => 
-                    Diagnostic.Create(
-                        RefOrOutParameter,
-                        ResolveLocation(parameter, methodSymbol), 
-                        methodSymbol.Name, 
-                        parameter.Name));
+        var hasErrors = false;
+        var methodSymbols = _methods
+            .Select(methodInfo => methodInfo.MethodSymbol);
+        
+        var diagnostics = 
+            from methodSymbol in methodSymbols
+            from parameter in methodSymbol.Parameters
+            where IsRefOrOut(parameter) 
+            select CreateNoRefOrOutParameterDiagnostic(methodSymbol, parameter);
                 
         foreach (var diagnostic in diagnostics)
         {
@@ -36,17 +35,20 @@ internal class RefOrOutParameterValidator : IMethodValidator
             hasErrors = true;
         }
 
-        return;
-
-        bool IsRefOrOut(IParameterSymbol p)
-        {
-            return p.RefKind is RefKind.Ref or RefKind.Out;
-        }
-
-        Location? ResolveLocation(IParameterSymbol parameter, IMethodSymbol methodSymbol)
-        {
-            return parameter.Locations.FirstOrDefault()
-                   ?? methodSymbol.Locations.FirstOrDefault();
-        }
+        return hasErrors;
     }
+
+    private Diagnostic CreateNoRefOrOutParameterDiagnostic(IMethodSymbol methodSymbol, IParameterSymbol parameter)
+    {
+        var location = parameter.Locations.FirstOrDefault()
+                       ?? methodSymbol.Locations.FirstOrDefault();
+        
+        return Diagnostic.Create(
+            RefOrOutParameter,
+            location, 
+            methodSymbol.Name, 
+            parameter.Name);
+    }
+
+    private static bool IsRefOrOut(IParameterSymbol p) => p.RefKind is RefKind.Ref or RefKind.Out;
 }

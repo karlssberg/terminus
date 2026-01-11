@@ -19,11 +19,17 @@ internal sealed class CompositeMethodValidator(params IMethodValidator[] validat
     }
 
     /// <inheritdoc />
-    public void Validate(SourceProductionContext context, ref bool hasErrors)
+    public bool Validate(SourceProductionContext context)
     {
+        var hasErrors = false;
         foreach (var validator in validators)
         {
-            validator.Validate(context, ref hasErrors);
+            if (validator.Validate(context))
+            {
+                hasErrors = true;
+            }
         }
+
+        return hasErrors;
     }
 }
