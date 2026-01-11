@@ -11,7 +11,7 @@ internal class RefOrOutParameterValidator : IMethodValidator
     private readonly List<CandidateMethodInfo> _methods = [];
 
     /// <inheritdoc />
-    public void Add(CandidateMethodInfo methodInfo)
+    public void Add(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
         _methods.Add(methodInfo);
     }

@@ -12,7 +12,8 @@ internal interface IMethodValidator
     /// This may involve collecting state for cross-method validation.
     /// </summary>
     /// <param name="methodInfo">The metadata for the candidate method being validated.</param>
-    void Add(CandidateMethodInfo methodInfo);
+    /// <param name="facadeInfo">The facade interface metadata.</param>
+    void Add(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo);
 
     /// <summary>
     /// Validate the accumulated methods, reporting any errors via the provided context.

@@ -85,4 +85,46 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             ],
             sourceFilename: SourceFilename);
     }
+
+    [Fact]
+    public async Task Given_duplicate_entry_point_signatures_due_to_name_override_Should_fail_TM0001()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true, CommandName="Execute")]
+                public partial interface IFacade;
+            
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class A
+                {
+                    [FacadeMethod]
+                    public static void Hello(string world) { }
+                }
+
+                public static class B
+                {
+                    [FacadeMethod]
+                    public static void Goodbye(string world) { }
+                }
+            }
+            """;
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0001")
+                    .WithSpan(SourceFilename, 14, 28, 14, 33) // A.Hello() method identifier
+                    .WithArguments("Hello"),
+                DiagnosticResult.CompilerError("TM0001")
+                    .WithSpan(SourceFilename, 20, 28, 20, 35) // B.Goodbye() method identifier
+                    .WithArguments("Goodbye"),
+            ],
+            sourceFilename: SourceFilename);
+    }
 }

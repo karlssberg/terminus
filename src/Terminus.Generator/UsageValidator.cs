@@ -6,7 +6,7 @@ namespace Terminus.Generator;
 
 internal static class UsageValidator
 {
-    internal static bool Validate(SourceProductionContext context, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
+    internal static bool Validate(SourceProductionContext context, FacadeInterfaceInfo facadeInfo, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
     {
         var validator = new CompositeMethodValidator(
             new RefOrOutParameterValidator(),
@@ -15,7 +15,7 @@ internal static class UsageValidator
 
         foreach (var facadeMethod in facadeMethodMethodInfos)
         {
-            validator.Add(facadeMethod);
+            validator.Add(facadeMethod, facadeInfo);
         }
 
         return validator.Validate(context);

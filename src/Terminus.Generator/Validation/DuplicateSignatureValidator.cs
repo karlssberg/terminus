@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
+using Terminus.Generator.Builders.Naming;
 
 namespace Terminus.Generator.Validation;
 
@@ -12,9 +13,9 @@ internal class DuplicateSignatureValidator : IMethodValidator
     private bool _hasErrors;
 
     /// <inheritdoc />
-    public void Add(CandidateMethodInfo methodInfo)
+    public void Add(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
-        var signature = GetMethodSignature(methodInfo.MethodSymbol);
+        var signature = GetMethodSignature(methodInfo, facadeInfo);
         if (_signatures.TryGetValue(signature, out var symbols))
         {   
             symbols.Add(methodInfo.MethodSymbol);
@@ -48,11 +49,12 @@ internal class DuplicateSignatureValidator : IMethodValidator
         return _hasErrors;
     }
 
-    private static MethodSignature GetMethodSignature(IMethodSymbol method)
+    private static MethodSignature GetMethodSignature(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
+        var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         return new MethodSignature(
-            method.Name,
-            [..method.Parameters.Select(p => p.Type)]);
+            methodName,
+            [..methodInfo.MethodSymbol.Parameters.Select(p => p.Type)]);
     }
 
     private readonly struct MethodSignature(string name, ImmutableArray<ITypeSymbol> parameterTypes)
