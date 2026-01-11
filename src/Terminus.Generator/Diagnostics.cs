@@ -15,10 +15,19 @@ internal static class Diagnostics
 
     public static readonly DiagnosticDescriptor RefOrOutParameter = new(
         id: "TM0002",
-        title: "Ref or out parameter in entry point",
-        messageFormat: "Entry point method '{0}' cannot have ref or out parameters (Parameter '{1}' is invalid)",
+        title: "Unsupported parameter modifier in entry point",
+        messageFormat: "Entry point method '{0}' cannot have ref, out or in parameters (Parameter '{1}' is invalid)",
         category: "Terminus.Generator",
         DiagnosticSeverity.Error,
         isEnabledByDefault: true,
-        description: "Entry point methods cannot have ref or out parameters as they cannot be properly resolved by the parameter binding system.");
+        description: "Entry point methods cannot have ref, out or in parameters as they cannot be properly resolved by the parameter binding system.");
+
+    public static readonly DiagnosticDescriptor ConflictingGeneratedMemberName = new(
+        id: "TM0003",
+        title: "Method or parameter name conflicts with generated members",
+        messageFormat: "Member or parameter '{0}' in method '{1}' conflicts with a name used in the generated facade implementation",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "Generated facade implementations use internal field names like _serviceProvider, _syncScope, etc. These names must not be used for entry point methods or their parameters.");
 }

@@ -1,4 +1,5 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Terminus.Generator;
 
@@ -25,4 +26,9 @@ internal static class SymbolExtensions
     
     private static string ToCamelCase(this string value) =>
         string.Concat(value.Substring(0, 1).ToLower(), value.Substring(1));
+
+    internal static string EscapeIdentifier(this string identifier) => 
+        SyntaxFacts.IsReservedKeyword(SyntaxFacts.GetKeywordKind(identifier)) 
+            ? "@" + identifier 
+            : identifier;
 }

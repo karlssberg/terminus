@@ -488,8 +488,9 @@ The generator follows a four-stage pipeline:
    - `UsageValidator.Validate()`: Static utility that orchestrates validation using a `CompositeMethodValidator` which wraps specialized validators implementing `IMethodValidator`.
    - Validation is performed in a single pass over discovered methods.
    - Validators include:
-     - `RefOrOutParameterValidator`: Checks for unsupported `ref` or `out` parameters (**TM0002**).
-     - `DuplicateSignatureValidator`: Detects duplicate method signatures within the same facade (**TM0001**).
+     - `RefOrOutParameterValidator`: Checks for unsupported `ref`, `out`, or `in` parameters (**TM0002**).
+     - `DuplicateSignatureValidator`: Detects duplicate method signatures within the same facade, accounting for name, parameters, and generic constraints (**TM0001**).
+     - `ConflictingNameValidator`: Prevents name collisions with internal implementation fields like `_serviceProvider` (**TM0003**).
    - Reports diagnostics via `SourceProductionContext`
    - Skips code generation if errors found
 
@@ -1061,12 +1062,13 @@ public static class StaticHandlers
 
 ### Potential Enhancements
 
-1. **Ref/out parameter support**: Currently not supported (TM0003 error)
+1. **Ref/out/in parameter support**: Currently not supported (TM0002 error)
 2. **Source link support**: Map generated code back to original methods
 4. **Configuration API**: Builder pattern for complex facade configuration
 5. **Multiple facade implementations**: Generate different implementations for same interface
 6. **Method overload disambiguation**: Handle methods with same name but different parameter types
 7. **Attribute-based parameter binding**: Custom parameter resolution strategies
+8. **Escaping for reserved keywords**: Added basic escaping for parameter and type parameter names.
 
 ### Performance Optimizations
 

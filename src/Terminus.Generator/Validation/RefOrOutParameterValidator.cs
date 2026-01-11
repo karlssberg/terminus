@@ -50,5 +50,5 @@ internal class RefOrOutParameterValidator : IMethodValidator
             parameter.Name);
     }
 
-    private static bool IsRefOrOut(IParameterSymbol p) => p.RefKind is RefKind.Ref or RefKind.Out;
+    private static bool IsRefOrOut(IParameterSymbol p) => p.RefKind is RefKind.Ref or RefKind.Out or RefKind.In;
 }

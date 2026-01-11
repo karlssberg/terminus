@@ -52,15 +52,30 @@ internal class DuplicateSignatureValidator : IMethodValidator
     private static MethodSignature GetMethodSignature(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
+        var methodSymbol = methodInfo.MethodSymbol;
+
+        // Include return type for overloading, though C# generally doesn't allow it, 
+        // the facade might map different return types to the same name.
+        // But more importantly, include generic constraints.
+        
+        var constraints = methodSymbol.TypeParameters
+            .Select(tp => tp.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+            .ToImmutableArray();
+
         return new MethodSignature(
             methodName,
-            [..methodInfo.MethodSymbol.Parameters.Select(p => p.Type)]);
+            [..methodSymbol.Parameters.Select(p => p.Type)],
+            constraints);
     }
 
-    private readonly struct MethodSignature(string name, ImmutableArray<ITypeSymbol> parameterTypes)
+    private readonly struct MethodSignature(
+        string name, 
+        ImmutableArray<ITypeSymbol> parameterTypes,
+        ImmutableArray<string> genericConstraints)
     {
         public string Name { get; } = name;
         public ImmutableArray<ITypeSymbol> ParameterTypes { get; } = parameterTypes;
+        public ImmutableArray<string> GenericConstraints { get; } = genericConstraints;
     }
 
     private class MethodSignatureEqualityComparer : IEqualityComparer<MethodSignature>
@@ -74,11 +89,23 @@ internal class DuplicateSignatureValidator : IMethodValidator
 
             if (x.ParameterTypes.Length != y.ParameterTypes.Length)
                 return false;
+            
+            if (x.GenericConstraints.Length != y.GenericConstraints.Length)
+                return false;
 
-            return !x.ParameterTypes
-                .Where((t, i) => 
-                    !SymbolEqualityComparer.Default.Equals(t, y.ParameterTypes[i]))
-                .Any();
+            for (var i = 0; i < x.ParameterTypes.Length; i++)
+            {
+                if (!SymbolEqualityComparer.Default.Equals(x.ParameterTypes[i], y.ParameterTypes[i]))
+                    return false;
+            }
+
+            for (var i = 0; i < x.GenericConstraints.Length; i++)
+            {
+                if (x.GenericConstraints[i] != y.GenericConstraints[i])
+                    return false;
+            }
+
+            return true;
         }
 
         public int GetHashCode(MethodSignature obj)
@@ -92,6 +119,13 @@ internal class DuplicateSignatureValidator : IMethodValidator
                 {
                     hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(paramType);
                 }
+                
+                hash = hash * 31 + obj.GenericConstraints.Length;
+                foreach (var constraint in obj.GenericConstraints)
+                {
+                    hash = hash * 31 + (constraint?.GetHashCode() ?? 0);
+                }
+                
                 return hash;
             }
         }

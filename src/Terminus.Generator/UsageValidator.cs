@@ -10,7 +10,8 @@ internal static class UsageValidator
     {
         var validator = new CompositeMethodValidator(
             new RefOrOutParameterValidator(),
-            new DuplicateSignatureValidator()
+            new DuplicateSignatureValidator(),
+            new ConflictingNameValidator()
         );
 
         foreach (var facadeMethod in facadeMethodMethodInfos)

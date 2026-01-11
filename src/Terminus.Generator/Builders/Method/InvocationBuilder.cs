@@ -28,7 +28,7 @@ internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolu
         {
             var typeArguments = TypeArgumentList(SeparatedList(
                 methodInfo.MethodSymbol.TypeParameters.Select(tp =>
-                    ParseTypeName(tp.Name))));
+                    ParseTypeName(tp.Name.EscapeIdentifier()))));
             
             methodAccess = MemberAccessExpression(
                 SyntaxKind.SimpleMemberAccessExpression,
@@ -46,7 +46,8 @@ internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolu
 
         // Build argument list
         var argumentList = ArgumentList(SeparatedList(
-            methodInfo.MethodSymbol.Parameters.Select(p => Argument(IdentifierName(p.Name)))));
+            methodInfo.MethodSymbol.Parameters.Select(p => 
+                Argument(IdentifierName(p.Name.EscapeIdentifier())))));
 
         var invocationExpression = InvocationExpression(methodAccess, argumentList);
 

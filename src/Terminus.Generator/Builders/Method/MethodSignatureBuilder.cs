@@ -91,9 +91,31 @@ internal sealed class MethodSignatureBuilder
     {
         return ParameterList(SeparatedList(
             methodInfo.MethodSymbol.Parameters.Select(p =>
-                Parameter(Identifier(p.Name))
+            {
+                var parameter = Parameter(Identifier(p.Name.EscapeIdentifier()))
                     .WithType(ParseTypeName(p.Type
-                        .ToDisplayString(FullyQualifiedFormat))))));
+                        .ToDisplayString(FullyQualifiedFormat)));
+
+                if (p.RefKind == RefKind.In)
+                {
+                    parameter = parameter.AddModifiers(Token(SyntaxKind.InKeyword));
+                }
+
+                if (p.HasExplicitDefaultValue)
+                {
+                    var defaultValue = p.ExplicitDefaultValue switch
+                    {
+                        string s => LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(s)),
+                        bool b => LiteralExpression(b ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
+                        null => LiteralExpression(SyntaxKind.NullLiteralExpression),
+                        _ => ParseExpression(p.ExplicitDefaultValue.ToString())
+                    };
+
+                    parameter = parameter.WithDefault(EqualsValueClause(defaultValue));
+                }
+
+                return parameter;
+            })));
     }
 
     private static TypeParameterListSyntax? BuildTypeParameterList(CandidateMethodInfo methodInfo)
@@ -103,7 +125,7 @@ internal sealed class MethodSignatureBuilder
 
         return TypeParameterList(SeparatedList(
             methodInfo.MethodSymbol.TypeParameters.Select(tp =>
-                TypeParameter(Identifier(tp.Name)))));
+                TypeParameter(Identifier(tp.Name.EscapeIdentifier())))));
     }
 
     private static SyntaxList<TypeParameterConstraintClauseSyntax> BuildTypeParameterConstraintList(CandidateMethodInfo methodInfo)
@@ -138,7 +160,7 @@ internal sealed class MethodSignatureBuilder
         if (constraints.Count == 0)
             return null;
 
-        return TypeParameterConstraintClause(IdentifierName(tp.Name))
+        return TypeParameterConstraintClause(IdentifierName(tp.Name.EscapeIdentifier()))
             .WithConstraints(SeparatedList(constraints));
     }
 }
