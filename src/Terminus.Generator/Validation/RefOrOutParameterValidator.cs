@@ -20,13 +20,14 @@ internal class RefOrOutParameterValidator : IMethodValidator
     public void Validate(SourceProductionContext context, ref bool hasErrors)
     {
         var diagnostics = _methods
+            .Select(methodInfo => methodInfo.MethodSymbol)
             .SelectMany(
-                methodInfo =>  methodInfo.MethodSymbol.Parameters.Where(IsRefOrOut),
-                (methodInfo, parameter) => 
+                methodSymbol =>  methodSymbol.Parameters.Where(IsRefOrOut),
+                (methodSymbol, parameter) => 
                     Diagnostic.Create(
                         RefOrOutParameter,
-                        ResolveLocation(parameter, methodInfo), 
-                        methodInfo.MethodSymbol.Name, 
+                        ResolveLocation(parameter, methodSymbol), 
+                        methodSymbol.Name, 
                         parameter.Name));
                 
         foreach (var diagnostic in diagnostics)
@@ -42,10 +43,10 @@ internal class RefOrOutParameterValidator : IMethodValidator
             return p.RefKind is RefKind.Ref or RefKind.Out;
         }
 
-        Location? ResolveLocation(IParameterSymbol parameter, CandidateMethodInfo methodInfo)
+        Location? ResolveLocation(IParameterSymbol parameter, IMethodSymbol methodSymbol)
         {
             return parameter.Locations.FirstOrDefault()
-                   ?? methodInfo.MethodSymbol.Locations.FirstOrDefault();
+                   ?? methodSymbol.Locations.FirstOrDefault();
         }
     }
 }
