@@ -85,9 +85,16 @@ public class EdgeCaseTests : SourceGeneratorTestBase<FacadeGenerator>
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.TestHandlers"/>
+                /// </summary>
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
                     private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IFacade_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
                     public IFacade_Generated(global::System.IServiceProvider serviceProvider)
                     {
                         _serviceProvider = serviceProvider;
@@ -152,9 +159,16 @@ public class EdgeCaseTests : SourceGeneratorTestBase<FacadeGenerator>
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.TestHandlers"/>
+                /// </summary>
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
                     private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IFacade_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
                     public IFacade_Generated(global::System.IServiceProvider serviceProvider)
                     {
                         _serviceProvider = serviceProvider;

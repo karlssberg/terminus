@@ -67,12 +67,19 @@ public class ValueTaskSupportTests : SourceGeneratorTestBase<FacadeGenerator>
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 public sealed class IFacade_Generated : global::Demo.IFacade, global::System.IDisposable, global::System.IAsyncDisposable
                 {
                     private bool _syncDisposed;
                     private bool _asyncDisposed;
                     private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope> _syncScope;
                     private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope> _asyncScope;
+                    /// <summary>
+                    /// Initializes a new instance of the IFacade_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
                     public IFacade_Generated(global::System.IServiceProvider serviceProvider)
                     {
                         _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>(serviceProvider).CreateScope());
@@ -89,6 +96,9 @@ public class ValueTaskSupportTests : SourceGeneratorTestBase<FacadeGenerator>
                         return await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.TestFacadeMethods>(_asyncScope.Value.ServiceProvider).HelloAsync(world).ConfigureAwait(false);
                     }
 
+                    /// <summary>
+                    /// Disposes the synchronous service scope.
+                    /// </summary>
                     public void Dispose()
                     {
                         if (_syncDisposed || !_syncScope.IsValueCreated)
@@ -98,6 +108,10 @@ public class ValueTaskSupportTests : SourceGeneratorTestBase<FacadeGenerator>
                         global::System.GC.SuppressFinalize(this);
                     }
 
+                    /// <summary>
+                    /// Disposes the asynchronous service scope.
+                    /// </summary>
+                    /// <returns>A <see cref = "global::System.Threading.Tasks.ValueTask"/> representing the asynchronous operation.</returns>
                     public async global::System.Threading.Tasks.ValueTask DisposeAsync()
                     {
                         if (_asyncDisposed || !_asyncScope.IsValueCreated)
@@ -174,9 +188,16 @@ public class ValueTaskSupportTests : SourceGeneratorTestBase<FacadeGenerator>
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.TestFacadeMethods"/>
+                /// </summary>
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
                     private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IFacade_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
                     public IFacade_Generated(global::System.IServiceProvider serviceProvider)
                     {
                         _serviceProvider = serviceProvider;

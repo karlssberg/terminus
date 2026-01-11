@@ -39,9 +39,16 @@ public class GlobalNamespaceTests : SourceGeneratorTestBase<FacadeGenerator>
 
             [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
             [global::Terminus.FacadeImplementation(typeof(global::IGlobalFacade))]
+            /// <summary>
+            /// Facade implementation class delegating to: <see cref="TestService"/>
+            /// </summary>
             public sealed class IGlobalFacade_Generated : global::IGlobalFacade
             {
                 private readonly global::System.IServiceProvider _serviceProvider;
+                /// <summary>
+                /// Initializes a new instance of the IGlobalFacade_Generated class.
+                /// </summary>
+                /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
                 public IGlobalFacade_Generated(global::System.IServiceProvider serviceProvider)
                 {
                     _serviceProvider = serviceProvider;
