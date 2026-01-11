@@ -21,10 +21,13 @@ public sealed class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] 
     public string? AsyncStreamName { get; set; }
 
     private static Type[] BuildFacadeMethodAttributesArray(
-        Type facadeMethodAttribute,
-        Type[] facadeMethodAttributes) => Enumerable
-            .Empty<Type>()
-            .Append(facadeMethodAttribute)
-            .Concat(facadeMethodAttributes)
-            .ToArray();
+        Type facadeMethodAttribute, 
+        Type[] facadeMethodAttributes)
+    {
+        return
+        [
+            facadeMethodAttribute,
+            ..facadeMethodAttributes
+        ];
+    }
 }
