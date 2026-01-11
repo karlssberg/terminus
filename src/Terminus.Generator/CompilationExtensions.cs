@@ -14,9 +14,11 @@ public static class CompilationExtensions
         var valueTaskOfTType = compilation.GetTypeByMetadataName("System.Threading.Tasks.ValueTask`1");
         var asyncEnumerableType = compilation.GetTypeByMetadataName("System.Collections.Generic.IAsyncEnumerable`1");
         
-        if (SymbolEqualityComparer.Default.Equals(returnType, taskType)
-            || SymbolEqualityComparer.Default.Equals(returnType, valueTaskType))
+        if (SymbolEqualityComparer.Default.Equals(returnType, taskType))
             return ReturnTypeKind.Task;
+
+        if (SymbolEqualityComparer.Default.Equals(returnType, valueTaskType))
+            return ReturnTypeKind.ValueTask;
 
         if (returnType.SpecialType == SpecialType.System_Void) 
             return ReturnTypeKind.Void;
@@ -24,9 +26,11 @@ public static class CompilationExtensions
         if (returnType is not INamedTypeSymbol namedType) 
             return ReturnTypeKind.Result;
         
-        if (SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, taskOfTType)
-            || SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, valueTaskOfTType))
+        if (SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, taskOfTType))
             return ReturnTypeKind.TaskWithResult;
+
+        if (SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, valueTaskOfTType))
+            return ReturnTypeKind.ValueTaskWithResult;
 
         if (SymbolEqualityComparer.Default.Equals(namedType.OriginalDefinition, asyncEnumerableType))
             return ReturnTypeKind.AsyncEnumerable;

@@ -50,8 +50,12 @@ internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolu
 
         var invocationExpression = InvocationExpression(methodAccess, argumentList);
 
-        // For async Task/Task<T>, append ConfigureAwait(false)
-        var isAsyncTask = methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult;
+        // For async Task/ValueTask/Task<T>/ValueTask<T>, append ConfigureAwait(false)
+        var isAsyncTask = methodInfo.ReturnTypeKind is ReturnTypeKind.Task
+                                                    or ReturnTypeKind.TaskWithResult 
+                                                    or ReturnTypeKind.ValueTask 
+                                                    or ReturnTypeKind.ValueTaskWithResult;
+        
         if (isAsyncTask)
         {
             invocationExpression = InvocationExpression(

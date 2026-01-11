@@ -39,7 +39,11 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 ExpressionStatement(invocationExpression),
             ReturnTypeKind.Task => 
                 ExpressionStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.ValueTask => 
+                ExpressionStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.TaskWithResult => 
+                ReturnStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.ValueTaskWithResult => 
                 ReturnStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.AsyncEnumerable when facadeInfo.Scoped =>
                 BuildAsyncEnumerableProxyStatement(facadeInfo, methodInfo),

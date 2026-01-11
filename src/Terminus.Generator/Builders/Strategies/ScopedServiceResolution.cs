@@ -20,7 +20,9 @@ internal sealed class ScopedServiceResolution : IServiceResolutionStrategy
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
         // Determine which scope to use based on method return type
-        var scopeExpression = methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult or ReturnTypeKind.AsyncEnumerable
+        var scopeExpression = methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult 
+                                                           or ReturnTypeKind.ValueTask or ReturnTypeKind.ValueTaskWithResult 
+                                                           or ReturnTypeKind.AsyncEnumerable
             ? "_asyncScope.Value.ServiceProvider"
             : "_syncScope.Value.ServiceProvider";
 

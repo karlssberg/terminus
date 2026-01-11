@@ -6,5 +6,7 @@ public enum ReturnTypeKind
      Result,
      Task,
      TaskWithResult,
+     ValueTask,
+     ValueTaskWithResult,
      AsyncEnumerable,
  }

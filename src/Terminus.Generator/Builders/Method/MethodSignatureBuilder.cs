@@ -57,15 +57,26 @@ internal sealed class MethodSignatureBuilder
             .WithTypeParameterList(typeParameterList)
             .WithParameterList(parameterList);
 
-        // Add async modifier when returning Task/Task<T> or when generating an async iterator
-        // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
-        if (methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult
-            || (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Scoped))
+        // Maybe use async keyword
+        if (ShouldUseAsyncKeyword(facadeInfo, methodInfo))
         {
             method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
         }
 
         return method;
+    }
+
+    private static bool ShouldUseAsyncKeyword(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
+    {
+        // Add async modifier when returning Task/ValueTask/Task<T>/ValueTask<T> or when generating an async iterator
+        // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
+        if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Scoped)
+            return true;
+
+        return methodInfo.ReturnTypeKind is ReturnTypeKind.Task
+                                         or ReturnTypeKind.TaskWithResult
+                                         or ReturnTypeKind.ValueTask
+                                         or ReturnTypeKind.ValueTaskWithResult;
     }
 
     private static TypeSyntax BuildReturnType(CandidateMethodInfo methodInfo)

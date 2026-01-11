@@ -15,7 +15,9 @@ internal static class MethodNamingStrategy
             ReturnTypeKind.Void => facadeInfo.CommandName ?? candidate.MethodSymbol.Name,
             ReturnTypeKind.Result => facadeInfo.QueryName ?? candidate.MethodSymbol.Name,
             ReturnTypeKind.Task => facadeInfo.AsyncCommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTask => facadeInfo.AsyncCommandName ?? candidate.MethodSymbol.Name,
             ReturnTypeKind.TaskWithResult => facadeInfo.AsyncQueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTaskWithResult => facadeInfo.AsyncQueryName ?? candidate.MethodSymbol.Name,
             ReturnTypeKind.AsyncEnumerable => facadeInfo.AsyncStreamName ?? candidate.MethodSymbol.Name,
             _ => candidate.MethodSymbol.Name
         };
