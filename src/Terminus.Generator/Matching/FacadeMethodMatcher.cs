@@ -6,7 +6,7 @@ namespace Terminus.Generator.Matching;
 /// <summary>
 /// Matches candidate methods to facade interfaces based on attribute inheritance and target types.
 /// </summary>
-internal sealed class FacadeMethodMatcher
+internal static class FacadeMethodMatcher
 {
     /// <summary>
     /// Filters methods to match the facade's attribute types and target types.

@@ -485,9 +485,11 @@ The generator follows a four-stage pipeline:
    - Supports attribute inheritance (derived attributes match)
 
 **3. Validation Phase**
-   - `UsageValidator.Validate()`: Checks for errors:
-     - **TM0001**: Duplicate method signatures (same name and parameter types)
-     - **TM0003**: Ref/out parameters (not supported)
+   - `UsageValidator.Validate()`: Static utility that orchestrates validation using a `CompositeMethodValidator` which wraps specialized validators implementing `IMethodValidator`.
+   - Validation is performed in a single pass over discovered methods.
+   - Validators include:
+     - `RefOrOutParameterValidator`: Checks for unsupported `ref` or `out` parameters (**TM0002**).
+     - `DuplicateSignatureValidator`: Detects duplicate method signatures within the same facade (**TM0001**).
    - Reports diagnostics via `SourceProductionContext`
    - Skips code generation if errors found
 
@@ -1016,8 +1018,9 @@ public static class StaticHandlers
 4. `Discovery/FacadeInterfaceDiscovery.cs` - Discovers `[FacadeOf]` interfaces
 5. `Discovery/FacadeMethodDiscovery.cs` - Discovers methods with attributes
 6. `Matching/FacadeMethodMatcher.cs` - Matches methods to facades
-7. `UsageValidator.cs` - Validates matched methods
-8. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
+7. `UsageValidator.cs` - Orchestrates validation
+8. `Validation/` - Specialized method validators implementing `IMethodValidator`
+9. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
 
 **For Understanding Generated Code:**
 1. `Builders/Interface/InterfaceBuilder.cs` - Generates partial interface

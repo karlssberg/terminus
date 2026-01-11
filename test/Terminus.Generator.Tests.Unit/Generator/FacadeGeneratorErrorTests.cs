@@ -47,8 +47,6 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             sourceFilename: SourceFilename);
     }
 
-
-
     [Fact]
     public async Task Given_the_presence_of_ref_and_out_parameters_Should_fail_TM0002()
     {

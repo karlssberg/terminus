@@ -40,7 +40,7 @@ internal static class FacadeGenerationPipeline
             .ToImmutableArray();
 
         // Step 2: Validate the matched methods
-        var hasErrors = UsageValidator.Validate(context, matchedMethods, facade);
+        var hasErrors = UsageValidator.Validate(context, matchedMethods);
 
         // Skip code generation if there were errors
         if (hasErrors)
