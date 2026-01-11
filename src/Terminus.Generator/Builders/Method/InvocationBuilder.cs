@@ -21,10 +21,28 @@ internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolu
         var instanceExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo);
 
         // Build method access
-        var methodAccess = MemberAccessExpression(
-            SyntaxKind.SimpleMemberAccessExpression,
-            instanceExpression,
-            IdentifierName(methodInfo.MethodSymbol.Name));
+        var methodName = methodInfo.MethodSymbol.Name;
+        ExpressionSyntax methodAccess;
+
+        if (methodInfo.MethodSymbol.IsGenericMethod)
+        {
+            var typeArguments = TypeArgumentList(SeparatedList(
+                methodInfo.MethodSymbol.TypeParameters.Select(tp =>
+                    ParseTypeName(tp.Name))));
+            
+            methodAccess = MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                instanceExpression,
+                GenericName(Identifier(methodName))
+                    .WithTypeArgumentList(typeArguments));
+        }
+        else
+        {
+            methodAccess = MemberAccessExpression(
+                SyntaxKind.SimpleMemberAccessExpression,
+                instanceExpression,
+                IdentifierName(methodName));
+        }
 
         // Build argument list
         var argumentList = ArgumentList(SeparatedList(

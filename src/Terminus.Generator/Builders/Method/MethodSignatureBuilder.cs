@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Documentation;
 using Terminus.Generator.Builders.Naming;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Microsoft.CodeAnalysis.SymbolDisplayFormat;
 
 namespace Terminus.Generator.Builders.Method;
 
@@ -22,11 +23,15 @@ internal sealed class MethodSignatureBuilder
         var returnTypeSyntax = BuildReturnType(methodInfo);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
+        var typeParameterList = BuildTypeParameterList(methodInfo);
+        var typeParameterConstraintList = BuildTypeParameterConstraintList(methodInfo);
         var documentation = DocumentationBuilder.BuildMethodDocumentation(facadeInfo, methodInfo);
 
         return MethodDeclaration(returnTypeSyntax, Identifier(methodName))
             .WithLeadingTrivia(documentation)
+            .WithTypeParameterList(typeParameterList)
             .WithParameterList(parameterList)
+            .WithConstraintClauses(typeParameterConstraintList)
             .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
 
@@ -40,14 +45,16 @@ internal sealed class MethodSignatureBuilder
         var returnTypeSyntax = BuildReturnType(methodInfo);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
+        var typeParameterList = BuildTypeParameterList(methodInfo);
 
         // Use explicit interface implementation
         var interfaceName = facadeInfo.InterfaceSymbol
-            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            .ToDisplayString(FullyQualifiedFormat);
         var explicitInterfaceSpecifier = ExplicitInterfaceSpecifier(ParseName(interfaceName));
 
         var method = MethodDeclaration(returnTypeSyntax, Identifier(methodName))
             .WithExplicitInterfaceSpecifier(explicitInterfaceSpecifier)
+            .WithTypeParameterList(typeParameterList)
             .WithParameterList(parameterList);
 
         // Add async modifier when returning Task/Task<T> or when generating an async iterator
@@ -66,7 +73,7 @@ internal sealed class MethodSignatureBuilder
         return methodInfo.MethodSymbol.ReturnsVoid
             ? PredefinedType(Token(SyntaxKind.VoidKeyword))
             : ParseTypeName(methodInfo.MethodSymbol.ReturnType
-                .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
+                .ToDisplayString(FullyQualifiedFormat));
     }
 
     private static ParameterListSyntax BuildParameterList(CandidateMethodInfo methodInfo)
@@ -75,6 +82,52 @@ internal sealed class MethodSignatureBuilder
             methodInfo.MethodSymbol.Parameters.Select(p =>
                 Parameter(Identifier(p.Name))
                     .WithType(ParseTypeName(p.Type
-                        .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))))));
+                        .ToDisplayString(FullyQualifiedFormat))))));
+    }
+
+    private static TypeParameterListSyntax? BuildTypeParameterList(CandidateMethodInfo methodInfo)
+    {
+        if (!methodInfo.MethodSymbol.IsGenericMethod)
+            return null;
+
+        return TypeParameterList(SeparatedList(
+            methodInfo.MethodSymbol.TypeParameters.Select(tp =>
+                TypeParameter(Identifier(tp.Name)))));
+    }
+
+    private static SyntaxList<TypeParameterConstraintClauseSyntax> BuildTypeParameterConstraintList(CandidateMethodInfo methodInfo)
+    {
+        if (!methodInfo.MethodSymbol.IsGenericMethod)
+            return default;
+
+        var clauses = methodInfo.MethodSymbol.TypeParameters
+            .Select(BuildTypeParameterConstraintClause)
+            .Where(c => c != null)
+            .Cast<TypeParameterConstraintClauseSyntax>();
+
+        return List(clauses);
+    }
+
+    private static TypeParameterConstraintClauseSyntax? BuildTypeParameterConstraintClause(ITypeParameterSymbol tp)
+    {
+        var constraints = new List<TypeParameterConstraintSyntax>();
+
+        if (tp.HasReferenceTypeConstraint)
+            constraints.Add(ClassOrStructConstraint(SyntaxKind.ClassConstraint));
+        else if (tp.HasValueTypeConstraint)
+            constraints.Add(ClassOrStructConstraint(SyntaxKind.StructConstraint));
+
+        constraints.AddRange(tp.ConstraintTypes
+            .Select(typeConstraint => 
+                TypeConstraint(ParseTypeName(typeConstraint.ToDisplayString(FullyQualifiedFormat)))).Cast<TypeParameterConstraintSyntax>());
+
+        if (tp.HasConstructorConstraint)
+            constraints.Add(ConstructorConstraint());
+
+        if (constraints.Count == 0)
+            return null;
+
+        return TypeParameterConstraintClause(IdentifierName(tp.Name))
+            .WithConstraints(SeparatedList(constraints));
     }
 }

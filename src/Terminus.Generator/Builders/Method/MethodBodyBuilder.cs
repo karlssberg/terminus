@@ -33,20 +33,21 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         var invocationExpression = _invocationBuilder.BuildInvocation(facadeInfo, methodInfo);
 
         // Return or expression statement depending on void / async kind
-        StatementSyntax innerStatement = methodInfo.ReturnTypeKind switch
+        yield return methodInfo.ReturnTypeKind switch
         {
-            ReturnTypeKind.Void => ExpressionStatement(invocationExpression),
-            ReturnTypeKind.Task => ExpressionStatement(AwaitExpression(invocationExpression)),
-            ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.Void => 
+                ExpressionStatement(invocationExpression),
+            ReturnTypeKind.Task => 
+                ExpressionStatement(AwaitExpression(invocationExpression)),
+            ReturnTypeKind.TaskWithResult => 
+                ReturnStatement(AwaitExpression(invocationExpression)),
             ReturnTypeKind.AsyncEnumerable when facadeInfo.Scoped =>
                 BuildAsyncEnumerableProxyStatement(facadeInfo, methodInfo),
             _ => ReturnStatement(invocationExpression)
         };
-
-        yield return innerStatement;
     }
 
-    private StatementSyntax BuildAsyncEnumerableProxyStatement(
+    private static StatementSyntax BuildAsyncEnumerableProxyStatement(
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo)
     {
@@ -55,12 +56,25 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         var instanceExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo);
         var parameters = string.Join(", ", methodInfo.MethodSymbol.Parameters.Select(p => p.Name));
 
+        var methodName = GetMethodName(methodInfo);
+
         return ParseStatement(
             $$"""
-            await foreach (var item in {{instanceExpression.ToFullString()}}.{{methodInfo.MethodSymbol.Name}}({{parameters}}))
+            await foreach (var item in {{instanceExpression.ToFullString()}}.{{methodName}}({{parameters}}))
             {
                 yield return item;
             }
             """);
+    }
+
+    private static string GetMethodName(CandidateMethodInfo methodInfo)
+    {
+        var methodSymbol = methodInfo.MethodSymbol;
+        
+        if (!methodSymbol.IsGenericMethod)
+            return methodSymbol.Name;
+        
+        var typeArgs = string.Join(", ", methodSymbol.TypeParameters.Select(tp => tp.Name));
+        return $"{methodSymbol.Name}<{typeArgs}>";
     }
 }

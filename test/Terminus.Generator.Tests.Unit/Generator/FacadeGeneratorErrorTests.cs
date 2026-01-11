@@ -47,42 +47,10 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             sourceFilename: SourceFilename);
     }
 
-    [Fact]
-    public async Task Given_generic_entry_point_method_Should_fail_compilation_with_TM0002()
-    {
-        const string source =
-            """
-            using System;
-            using Terminus;
-
-            namespace Demo
-            {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
-                public partial interface IFacade;
-                
-                public class FacadeMethodAttribute : Attribute;
-
-                public static class TestFacadeMethods
-                {
-                    [FacadeMethod]
-                    public static T Echo<T>(T value) => value;
-                }
-            }
-            """;
-
-        await VerifyAsync(
-            source,
-            expectedDiagnostics: [
-                DiagnosticResult.CompilerError("TM0002")
-                    .WithSpan(SourceFilename, 14, 25, 14, 29) // TestFacadeMethods.Echo<T>() method identifier
-                    .WithArguments("Echo"),
-            ],
-            sourceFilename: SourceFilename);
-    }
 
 
     [Fact]
-    public async Task Given_the_presence_of_ref_and_out_parameters_Should_fail_TM0003()
+    public async Task Given_the_presence_of_ref_and_out_parameters_Should_fail_TM0002()
     {
         const string source =
             """
@@ -110,10 +78,10 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
         await VerifyAsync(
             source,
             expectedDiagnostics: [
-                DiagnosticResult.CompilerError("TM0003")
+                DiagnosticResult.CompilerError("TM0002")
                     .WithSpan(SourceFilename, 14, 47, 14, 52) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
                     .WithArguments("ProcessRef", "value"),
-                DiagnosticResult.CompilerError("TM0003")
+                DiagnosticResult.CompilerError("TM0002")
                     .WithSpan(SourceFilename, 17, 47, 17, 52) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
                     .WithArguments("ProcessOut", "value"),
             ],

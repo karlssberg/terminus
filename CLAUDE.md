@@ -61,7 +61,8 @@ Terminus enables developers to create clean, type-safe facades over implementati
 - **Flexible service resolution**: Supports static methods, scoped instances, and non-scoped instances
 - **Custom attribute support**: Works with any custom attribute type you define
 - **Scope management**: Automatic scope creation and disposal for scoped facades
-- **Async support**: Full support for async methods, including `Task`, `Task<T>`, and `IAsyncEnumerable<T>`
+- **Async support**: Full support for async methods, including `Task`, `ValueTask`, `Task<T>`, `ValueTask<T>`, and `IAsyncEnumerable<T>`
+- **Generic method support**: Full support for generic methods with type parameters and constraints across all return types
 - **Custom method naming**: Configure different method names based on return types (Command, Query, etc.)
 - **Dependency injection integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
 
@@ -244,7 +245,6 @@ public class MyHandlers
 - Applies to all public instance and static methods
 - Excludes private, protected, and internal methods
 - Excludes special methods (constructors, property accessors, operators, finalizers, etc.)
-- Excludes generic methods
 - Can be combined with method-level attributes (no duplicates in facade)
 - Supports classes, structs, and records
 
@@ -386,7 +386,7 @@ Terminus automatically detects return types and generates appropriate code:
 | `Task<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
 | `ValueTask` | `Task` | `await instance.Method().ConfigureAwait(false);` | Yes |
 | `ValueTask<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
-| `IAsyncEnumerable<T>` | `AsyncEnumerable` | `await foreach (var item in ...) yield return item;` | Yes |
+| `IAsyncEnumerable<T>` | `AsyncEnumerable` | `await foreach (var item in ...) yield return item;` (scoped) or `return instance.Method();` (non-scoped) | Yes (scoped) / No (non-scoped) |
 
 ### Method Naming Strategy
 
@@ -487,7 +487,6 @@ The generator follows a four-stage pipeline:
 **3. Validation Phase**
    - `UsageValidator.Validate()`: Checks for errors:
      - **TM0001**: Duplicate method signatures (same name and parameter types)
-     - **TM0002**: Generic methods (not supported)
      - **TM0003**: Ref/out parameters (not supported)
    - Reports diagnostics via `SourceProductionContext`
    - Skips code generation if errors found
@@ -706,7 +705,9 @@ await test.RunAsync();
 - Methods with various return types (void, T, Task, Task<T>, IAsyncEnumerable<T>)
 - Scoped vs non-scoped facades
 - Custom naming (CommandName, QueryName, etc.)
-- Error cases (duplicate signatures, generic methods, ref/out parameters)
+- Error cases (duplicate signatures, ref/out parameters)
+- Generic methods with constraints
+- Type parameter propagation in facade methods
 
 **Test structure:**
 ```csharp
@@ -1057,9 +1058,8 @@ public static class StaticHandlers
 
 ### Potential Enhancements
 
-1. **Generic method support**: Currently not supported (TM0002 error)
-2. **Ref/out parameter support**: Currently not supported (TM0003 error)
-3. **Source link support**: Map generated code back to original methods
+1. **Ref/out parameter support**: Currently not supported (TM0003 error)
+2. **Source link support**: Map generated code back to original methods
 4. **Configuration API**: Builder pattern for complex facade configuration
 5. **Multiple facade implementations**: Generate different implementations for same interface
 6. **Method overload disambiguation**: Handle methods with same name but different parameter types

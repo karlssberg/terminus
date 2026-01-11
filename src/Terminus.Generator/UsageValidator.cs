@@ -10,7 +10,7 @@ internal static class UsageValidator
     {
         var hasErrors = false;
         
-        // TM0003: No ref/out parameters allowed
+        // TM0002: No ref/out parameters allowed
         foreach (var facadeMethod in facadeMethodMethodInfos)
         {
             var refOrOutParameters = facadeMethod.MethodSymbol
@@ -26,20 +26,6 @@ internal static class UsageValidator
                 context.ReportDiagnostic(diagnostic);
                 hasErrors = true;
             }
-        }
-
-        // TM0002: Generic methods not allowed
-        var genericFacadeMethodMethods = facadeMethodMethodInfos
-            .Where(ep => ep.MethodSymbol.IsGenericMethod );
-        
-        foreach (var facadeMethod in genericFacadeMethodMethods)
-        {
-            var diagnostic = Diagnostic.Create(
-                Diagnostics.GenericFacadeMethodMethod,
-                facadeMethod.MethodSymbol.Locations.FirstOrDefault(),
-                facadeMethod.MethodSymbol.Name);
-            context.ReportDiagnostic(diagnostic);
-            hasErrors = true;
         }
 
         // TM0001: Detect duplicate signatures
