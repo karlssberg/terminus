@@ -14,6 +14,19 @@ internal static class DocumentationBuilder
     /// </summary>
     public static SyntaxTriviaList BuildInterfaceDocumentation(ImmutableArray<CandidateMethodInfo> methods)
     {
+        return BuildTypeDocumentation("Facade interface", methods);
+    }
+
+    /// <summary>
+    /// Builds XML documentation for the facade implementation class, listing all types being delegated to.
+    /// </summary>
+    public static SyntaxTriviaList BuildImplementationDocumentation(ImmutableArray<CandidateMethodInfo> methods)
+    {
+        return BuildTypeDocumentation("Facade implementation class", methods);
+    }
+
+    private static SyntaxTriviaList BuildTypeDocumentation(string description, ImmutableArray<CandidateMethodInfo> methods)
+    {
         var containingTypes = methods
             .Select(m => m.MethodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat))
             .Distinct()
@@ -28,7 +41,7 @@ internal static class DocumentationBuilder
             return TriviaList(
                 Comment($"/// <summary>"),
                 CarriageReturnLineFeed,
-                Comment($"/// Facade interface delegating to: <see cref=\"{containingTypes[0]}\"/>"),
+                Comment($"/// {description} delegating to: <see cref=\"{containingTypes[0]}\"/>"),
                 CarriageReturnLineFeed,
                 Comment($"/// </summary>"),
                 CarriageReturnLineFeed);
@@ -39,7 +52,7 @@ internal static class DocumentationBuilder
         {
             Comment("/// <summary>"),
             CarriageReturnLineFeed,
-            Comment("/// Facade interface delegating to:<br/>")
+            Comment($"/// {description} delegating to:<br/>")
         };
 
         foreach (var type in containingTypes)

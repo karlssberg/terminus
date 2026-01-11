@@ -15,6 +15,9 @@ internal static class DisposalBuilder
     {
         yield return ParseMemberDeclaration(
             """
+            /// <summary>
+            /// Disposes the synchronous service scope.
+            /// </summary>
             public void Dispose()
             {
                 if (_syncDisposed || !_syncScope.IsValueCreated) return;
@@ -28,6 +31,10 @@ internal static class DisposalBuilder
 
         yield return ParseMemberDeclaration(
             """
+            /// <summary>
+            /// Disposes the asynchronous service scope.
+            /// </summary>
+            /// <returns>A <see cref="global::System.Threading.Tasks.ValueTask"/> representing the asynchronous operation.</returns>
             public async global::System.Threading.Tasks.ValueTask DisposeAsync()
             {
                 if (_asyncDisposed || !_asyncScope.IsValueCreated) return;

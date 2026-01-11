@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Attributes;
+using Terminus.Generator.Builders.Documentation;
 using Terminus.Generator.Builders.Method;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -24,10 +25,16 @@ internal static class ImplementationClassBuilder
         var interfaceName = facadeInfo.InterfaceSymbol
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var implementationClassName = facadeInfo.GetImplementationClassName();
+        var documentation = DocumentationBuilder.BuildImplementationDocumentation(methods);
 
         var classDeclaration = ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
+
+        if (documentation.Any())
+        {
+            classDeclaration = classDeclaration.WithLeadingTrivia((IEnumerable<SyntaxTrivia>)documentation);
+        }
 
         // Determine if we need IServiceProvider based on whether we have instance methods
         var hasInstanceMethods = methods.Any(m => !m.MethodSymbol.IsStatic);

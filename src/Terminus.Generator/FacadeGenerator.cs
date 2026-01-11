@@ -11,6 +11,10 @@ namespace Terminus.Generator;
 [Generator]
 public class FacadeGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// Initializes the source generator by registering discovery and generation stages.
+    /// </summary>
+    /// <param name="context">The initialization context provided by the Roslyn compiler.</param>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         // Discover facade interfaces marked with [FacadeOf]

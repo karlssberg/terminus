@@ -15,6 +15,10 @@ internal static class ConstructorBuilder
     {
         return ParseMemberDeclaration(
             $$"""
+              /// <summary>
+              /// Initializes a new instance of the {{implementationClassName}} class.
+              /// </summary>
+              /// <param name="serviceProvider">The service provider used for resolving dependencies.</param>
               public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
               {
                   _serviceProvider = serviceProvider;
@@ -29,6 +33,10 @@ internal static class ConstructorBuilder
     {
         return ParseMemberDeclaration(
             $$"""
+              /// <summary>
+              /// Initializes a new instance of the {{implementationClassName}} class.
+              /// </summary>
+              /// <param name="serviceProvider">The service provider used for resolving dependencies.</param>
               public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
               {
                   _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>(serviceProvider).CreateScope());

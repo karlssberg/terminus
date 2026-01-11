@@ -29,7 +29,7 @@ internal static class InterfaceBuilder
         // Add documentation as leading trivia to the attribute list
         if (documentation.Any())
         {
-            attributeList = attributeList.WithLeadingTrivia(documentation);
+            attributeList = attributeList.WithLeadingTrivia((IEnumerable<SyntaxTrivia>)documentation);
         }
 
         var interfaceDeclaration = InterfaceDeclaration(interfaceName)
