@@ -64,3 +64,8 @@ nunit-*.xml
 # AI
 .claude/
 .junie/
+
+# DocFX
+_site/
+api/.manifest
+api/.mta.cache

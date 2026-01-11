@@ -1,0 +1,8 @@
+- name: Overview
+  href: basic.md
+- name: Basic Example
+  href: basic.md
+- name: MediatR Alternative
+  href: meditr-alternative.md
+- name: Strangler Fig Pattern
+  href: strangler-fig.md
