@@ -10,20 +10,20 @@ namespace Terminus.Generator.Validation;
 internal sealed class CompositeMethodValidator(params IMethodValidator[] validators) : IMethodValidator
 {
     /// <inheritdoc />
-    public void Validate(CandidateMethodInfo methodInfo)
+    public void Add(CandidateMethodInfo methodInfo)
     {
         foreach (var validator in validators)
         {
-            validator.Validate(methodInfo);
+            validator.Add(methodInfo);
         }
     }
 
     /// <inheritdoc />
-    public void Finalize(SourceProductionContext context, ref bool hasErrors)
+    public void Validate(SourceProductionContext context, ref bool hasErrors)
     {
         foreach (var validator in validators)
         {
-            validator.Finalize(context, ref hasErrors);
+            validator.Validate(context, ref hasErrors);
         }
     }
 }

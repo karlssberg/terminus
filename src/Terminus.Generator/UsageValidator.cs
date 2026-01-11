@@ -9,17 +9,17 @@ internal static class UsageValidator
     internal static bool Validate(SourceProductionContext context, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
     {
         var validator = new CompositeMethodValidator(
-            new RefOrOutParameterValidator(context),
+            new RefOrOutParameterValidator(),
             new DuplicateSignatureValidator()
         );
 
         foreach (var facadeMethod in facadeMethodMethodInfos)
         {
-            validator.Validate(facadeMethod);
+            validator.Add(facadeMethod);
         }
 
         var hasErrors = false;
-        validator.Finalize(context, ref hasErrors);
+        validator.Validate(context, ref hasErrors);
 
         return hasErrors;
     }

@@ -12,7 +12,7 @@ internal class DuplicateSignatureValidator : IMethodValidator
     private bool _hasErrors;
 
     /// <inheritdoc />
-    public void Validate(CandidateMethodInfo methodInfo)
+    public void Add(CandidateMethodInfo methodInfo)
     {
         var signature = GetMethodSignature(methodInfo.MethodSymbol);
         if (_signatures.TryGetValue(signature, out var symbols))
@@ -26,7 +26,7 @@ internal class DuplicateSignatureValidator : IMethodValidator
     }
 
     /// <inheritdoc />
-    public void Finalize(SourceProductionContext context, ref bool hasErrors)
+    public void Validate(SourceProductionContext context, ref bool hasErrors)
     {
         var diagnostics = _signatures
             .Select(entry => entry.Value)

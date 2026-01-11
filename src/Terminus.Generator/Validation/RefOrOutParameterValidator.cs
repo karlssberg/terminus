@@ -1,40 +1,53 @@
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
+using static Terminus.Generator.Diagnostics;
 
 namespace Terminus.Generator.Validation;
 
 /// <summary>
 /// Validates that methods do not have unsupported 'ref' or 'out' parameters.
 /// </summary>
-/// <param name="context">The source production context used to report diagnostics.</param>
-internal class RefOrOutParameterValidator(SourceProductionContext context) : IMethodValidator
+internal class RefOrOutParameterValidator : IMethodValidator
 {
-    private bool _hasErrors;
+    private readonly List<CandidateMethodInfo> _methods = [];
 
     /// <inheritdoc />
-    public void Validate(CandidateMethodInfo methodInfo)
+    public void Add(CandidateMethodInfo methodInfo)
     {
-        var refOrOutParameters = methodInfo.MethodSymbol
-            .Parameters.Where(p => p.RefKind is RefKind.Ref or RefKind.Out);
-
-        foreach (var parameter in refOrOutParameters)
-        {
-            var diagnostic = Diagnostic.Create(
-                Diagnostics.RefOrOutParameter,
-                parameter.Locations.FirstOrDefault() ?? methodInfo.MethodSymbol.Locations.FirstOrDefault(),
-                methodInfo.MethodSymbol.Name,
-                parameter.Name);
-            
-            context.ReportDiagnostic(diagnostic);
-            _hasErrors = true;
-        }
+        _methods.Add(methodInfo);
     }
 
     /// <inheritdoc />
-    public void Finalize(SourceProductionContext _, ref bool hasErrors)
+    public void Validate(SourceProductionContext context, ref bool hasErrors)
     {
-        if (_hasErrors)
+        var diagnostics = _methods
+            .SelectMany(
+                methodInfo =>  methodInfo.MethodSymbol.Parameters.Where(IsRefOrOut),
+                (methodInfo, parameter) => 
+                    Diagnostic.Create(
+                        RefOrOutParameter,
+                        ResolveLocation(parameter, methodInfo), 
+                        methodInfo.MethodSymbol.Name, 
+                        parameter.Name));
+                
+        foreach (var diagnostic in diagnostics)
         {
+            context.ReportDiagnostic(diagnostic);
             hasErrors = true;
+        }
+
+        return;
+
+        bool IsRefOrOut(IParameterSymbol p)
+        {
+            return p.RefKind is RefKind.Ref or RefKind.Out;
+        }
+
+        Location? ResolveLocation(IParameterSymbol parameter, CandidateMethodInfo methodInfo)
+        {
+            return parameter.Locations.FirstOrDefault()
+                   ?? methodInfo.MethodSymbol.Locations.FirstOrDefault();
         }
     }
 }
