@@ -38,7 +38,7 @@ public sealed class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] 
     public string? AsyncCommandName { get; set; }
 
     /// <summary>
-    /// Gets or sets the name of the asynchronous query method in the generated facade (i.e. for methords that return a Task&lt;T&gt; or ValueTask&lt;T&gt;).
+    /// Gets or sets the name of the asynchronous query method in the generated facade (i.e. for methods that return a Task&lt;T&gt; or ValueTask&lt;T&gt;).
     /// </summary>
     public string? AsyncQueryName { get; set; }
     

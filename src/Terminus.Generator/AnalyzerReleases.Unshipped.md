@@ -7,3 +7,4 @@ Rule ID | Category | Severity | Notes
 --------|----------|----------|-------
 TM0001 | Terminus.Generator | Error | Diagnostics
 TM0002 | Terminus.Generator | Error | Diagnostics
+TM0003 | Terminus.Generator | Error | Diagnostics

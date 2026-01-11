@@ -108,7 +108,7 @@ internal sealed class MethodSignatureBuilder
                         string s => LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(s)),
                         bool b => LiteralExpression(b ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
                         null => LiteralExpression(SyntaxKind.NullLiteralExpression),
-                        _ => ParseExpression(p.ExplicitDefaultValue.ToString())
+                        _ => ParseExpression(p.ExplicitDefaultValue.ToString() ?? "default")
                     };
 
                     parameter = parameter.WithDefault(EqualsValueClause(defaultValue));
@@ -152,7 +152,7 @@ internal sealed class MethodSignatureBuilder
 
         constraints.AddRange(tp.ConstraintTypes
             .Select(typeConstraint => 
-                TypeConstraint(ParseTypeName(typeConstraint.ToDisplayString(FullyQualifiedFormat)))).Cast<TypeParameterConstraintSyntax>());
+                TypeConstraint(ParseTypeName(typeConstraint.ToDisplayString(FullyQualifiedFormat)))));
 
         if (tp.HasConstructorConstraint)
             constraints.Add(ConstructorConstraint());
