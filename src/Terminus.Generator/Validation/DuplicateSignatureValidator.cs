@@ -5,48 +5,32 @@ using Terminus.Generator.Builders.Naming;
 namespace Terminus.Generator.Validation;
 
 /// <summary>
-/// Validates that there are no duplicate method signatures within the same facade.
+/// Tracks duplicate method signatures for aggregation.
+/// Duplicate signatures are now a feature (like MediatR notifications) rather than an error.
 /// </summary>
 internal class DuplicateSignatureValidator : IMethodValidator
 {
     private readonly Dictionary<MethodSignature, List<IMethodSymbol>> _signatures = new(MethodSignatureEqualityComparer.Instance);
-    private bool _hasErrors;
 
     /// <inheritdoc />
     public void Add(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
         var signature = GetMethodSignature(methodInfo, facadeInfo);
         if (_signatures.TryGetValue(signature, out var symbols))
-        {   
+        {
             symbols.Add(methodInfo.MethodSymbol);
             return;
         }
 
         _signatures[signature] = [methodInfo.MethodSymbol];
-
     }
 
     /// <inheritdoc />
     public bool Validate(SourceProductionContext context)
     {
-        var diagnostics = _signatures
-            .Select(entry => entry.Value)
-            .Where(symbols => symbols.Count > 1 && symbols.Distinct(SymbolEqualityComparer.Default).Count() > 1)
-            .SelectMany(
-                symbols => symbols,
-                (_, symbol) =>
-                    Diagnostic.Create(
-                        Diagnostics.DuplicateFacadeMethodSignature,
-                        symbol.Locations.FirstOrDefault(),
-                        symbol.Name));
-        
-        foreach (var diagnostic in diagnostics)
-        {
-            context.ReportDiagnostic(diagnostic);
-            _hasErrors = true;
-        }
-
-        return _hasErrors;
+        // Duplicate signatures are allowed for aggregation (similar to MediatR notifications)
+        // No validation errors to report
+        return false;
     }
 
     private static MethodSignature GetMethodSignature(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)

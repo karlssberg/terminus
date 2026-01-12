@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Terminus.Generator.Grouping;
 
 namespace Terminus.Generator.Builders;
 
@@ -7,7 +8,7 @@ namespace Terminus.Generator.Builders;
 /// </summary>
 internal sealed record FacadeGenerationContext(
     FacadeInterfaceInfo Facade,
-    ImmutableArray<CandidateMethodInfo> FacadeMethodMethodInfos)
+    ImmutableArray<AggregatedMethodGroup> MethodGroups)
 {
     /// <summary>
     /// Creates a new facade generation context.
@@ -16,6 +17,7 @@ internal sealed record FacadeGenerationContext(
         FacadeInterfaceInfo facade,
         ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
     {
-        return new FacadeGenerationContext(facade, facadeMethodMethodInfos);
+        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, facadeMethodMethodInfos);
+        return new FacadeGenerationContext(facade, methodGroups);
     }
 }

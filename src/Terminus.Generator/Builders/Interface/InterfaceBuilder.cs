@@ -19,13 +19,16 @@ internal static class InterfaceBuilder
     /// </summary>
     public static InterfaceDeclarationSyntax Build(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<CandidateMethodInfo> methods)
+        ImmutableArray<AggregatedMethodGroup> methodGroups)
     {
         var interfaceName = facadeInfo.InterfaceSymbol.Name;
-        var documentation = DocumentationBuilder.BuildInterfaceDocumentation(methods);
+
+        // Flatten all methods from groups for documentation
+        var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
+        var documentation = DocumentationBuilder.BuildInterfaceDocumentation(allMethods);
 
         var attributeList = GeneratedCodeAttributeBuilder.Build();
-        
+
         // Add documentation as leading trivia to the attribute list
         if (documentation.Any())
         {
@@ -39,20 +42,17 @@ internal static class InterfaceBuilder
                 Token(SyntaxKind.PartialKeyword)));
 
         // Build interface method declarations
-        var memberDeclarations = BuildInterfaceMembers(facadeInfo, methods);
+        var memberDeclarations = BuildInterfaceMembers(facadeInfo, methodGroups);
 
         return interfaceDeclaration.WithMembers(memberDeclarations);
     }
 
     private static SyntaxList<MemberDeclarationSyntax> BuildInterfaceMembers(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<CandidateMethodInfo> methods)
+        ImmutableArray<AggregatedMethodGroup> methodGroups)
     {
-        // For interface methods, we don't need service resolution, so we can use a dummy strategy
-        var signatureBuilder = new MethodSignatureBuilder();
-
-        return methods
-            .Select(method => MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, method))
+        return methodGroups
+            .Select(group => MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, group))
             .ToSyntaxList<MemberDeclarationSyntax>();
     }
 }

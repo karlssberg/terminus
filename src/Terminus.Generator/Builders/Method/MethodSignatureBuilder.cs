@@ -18,14 +18,15 @@ internal sealed class MethodSignatureBuilder
     /// </summary>
     public static MethodDeclarationSyntax BuildInterfaceMethod(
         FacadeInterfaceInfo facadeInfo,
-        CandidateMethodInfo methodInfo)
+        AggregatedMethodGroup methodGroup)
     {
-        var returnTypeSyntax = BuildReturnType(methodInfo);
+        var methodInfo = methodGroup.PrimaryMethod;
+        var returnTypeSyntax = BuildReturnType(methodInfo, methodGroup.RequiresAggregation);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
         var typeParameterList = BuildTypeParameterList(methodInfo);
         var typeParameterConstraintList = BuildTypeParameterConstraintList(methodInfo);
-        var documentation = DocumentationBuilder.BuildMethodDocumentation(facadeInfo, methodInfo);
+        var documentation = DocumentationBuilder.BuildMethodDocumentation(facadeInfo, methodGroup);
 
         return MethodDeclaration(returnTypeSyntax, Identifier(methodName))
             .WithLeadingTrivia(documentation)
@@ -40,9 +41,10 @@ internal sealed class MethodSignatureBuilder
     /// </summary>
     public static MethodDeclarationSyntax BuildImplementationMethodStub(
         FacadeInterfaceInfo facadeInfo,
-        CandidateMethodInfo methodInfo)
+        AggregatedMethodGroup methodGroup)
     {
-        var returnTypeSyntax = BuildReturnType(methodInfo);
+        var methodInfo = methodGroup.PrimaryMethod;
+        var returnTypeSyntax = BuildReturnType(methodInfo, methodGroup.RequiresAggregation);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
         var typeParameterList = BuildTypeParameterList(methodInfo);
@@ -58,7 +60,7 @@ internal sealed class MethodSignatureBuilder
             .WithParameterList(parameterList);
 
         // Maybe use async keyword
-        if (ShouldUseAsyncKeyword(facadeInfo, methodInfo))
+        if (ShouldUseAsyncKeyword(facadeInfo, methodInfo, methodGroup.RequiresAggregation))
         {
             method = method.AddModifiers(Token(SyntaxKind.AsyncKeyword));
         }
@@ -66,11 +68,15 @@ internal sealed class MethodSignatureBuilder
         return method;
     }
 
-    private static bool ShouldUseAsyncKeyword(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
+    private static bool ShouldUseAsyncKeyword(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool requiresAggregation)
     {
         // Add async modifier when returning Task/ValueTask/Task<T>/ValueTask<T> or when generating an async iterator
         // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
         if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Scoped)
+            return true;
+
+        // For aggregated methods with async results, we generate IAsyncEnumerable which needs async
+        if (requiresAggregation && (methodInfo.ReturnTypeKind is ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult))
             return true;
 
         return methodInfo.ReturnTypeKind is ReturnTypeKind.Task
@@ -79,12 +85,48 @@ internal sealed class MethodSignatureBuilder
                                          or ReturnTypeKind.ValueTaskWithResult;
     }
 
-    private static TypeSyntax BuildReturnType(CandidateMethodInfo methodInfo)
+    private static TypeSyntax BuildReturnType(CandidateMethodInfo methodInfo, bool requiresAggregation)
     {
-        return methodInfo.MethodSymbol.ReturnsVoid
-            ? PredefinedType(Token(SyntaxKind.VoidKeyword))
-            : ParseTypeName(methodInfo.MethodSymbol.ReturnType
-                .ToDisplayString(FullyQualifiedFormat));
+        // For non-aggregated methods, use original return type
+        if (!requiresAggregation)
+        {
+            return methodInfo.MethodSymbol.ReturnsVoid
+                ? PredefinedType(Token(SyntaxKind.VoidKeyword))
+                : ParseTypeName(methodInfo.MethodSymbol.ReturnType
+                    .ToDisplayString(FullyQualifiedFormat));
+        }
+
+        // For aggregated methods, transform return types:
+        // - void stays void (all handlers execute, no return)
+        // - T becomes IEnumerable<T>
+        // - Task<T> becomes IAsyncEnumerable<T>
+        // - ValueTask<T> becomes IAsyncEnumerable<T>
+        if (methodInfo.MethodSymbol.ReturnsVoid)
+        {
+            return PredefinedType(Token(SyntaxKind.VoidKeyword));
+        }
+
+        var returnType = methodInfo.MethodSymbol.ReturnType;
+
+        switch (methodInfo.ReturnTypeKind)
+        {
+            case ReturnTypeKind.Result:
+                // T → IEnumerable<T>
+                var resultType = returnType.ToDisplayString(FullyQualifiedFormat);
+                return ParseTypeName($"global::System.Collections.Generic.IEnumerable<{resultType}>");
+
+            case ReturnTypeKind.TaskWithResult:
+            case ReturnTypeKind.ValueTaskWithResult:
+                // Task<T> → IAsyncEnumerable<T>
+                // ValueTask<T> → IAsyncEnumerable<T>
+                var namedTypeSymbol = (INamedTypeSymbol)returnType;
+                var elementType = namedTypeSymbol.TypeArguments[0].ToDisplayString(FullyQualifiedFormat);
+                return ParseTypeName($"global::System.Collections.Generic.IAsyncEnumerable<{elementType}>");
+
+            default:
+                // Task, ValueTask, void - keep as is
+                return ParseTypeName(returnType.ToDisplayString(FullyQualifiedFormat));
+        }
     }
 
     private static ParameterListSyntax BuildParameterList(CandidateMethodInfo methodInfo)

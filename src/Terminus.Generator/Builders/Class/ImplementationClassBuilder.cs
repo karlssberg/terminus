@@ -20,12 +20,15 @@ internal static class ImplementationClassBuilder
     /// </summary>
     public static ClassDeclarationSyntax Build(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<CandidateMethodInfo> methods)
+        ImmutableArray<AggregatedMethodGroup> methodGroups)
     {
         var interfaceName = facadeInfo.InterfaceSymbol
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var implementationClassName = facadeInfo.GetImplementationClassName();
-        var documentation = DocumentationBuilder.BuildImplementationDocumentation(methods);
+
+        // Flatten all methods from groups for documentation and analysis
+        var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
+        var documentation = DocumentationBuilder.BuildImplementationDocumentation(allMethods);
 
         var classDeclaration = ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
@@ -37,7 +40,7 @@ internal static class ImplementationClassBuilder
         }
 
         // Determine if we need IServiceProvider based on whether we have instance methods
-        var hasInstanceMethods = methods.Any(m => !m.MethodSymbol.IsStatic);
+        var hasInstanceMethods = allMethods.Any(m => !m.MethodSymbol.IsStatic);
 
         // Add [FacadeImplementation] attribute
         classDeclaration = AddFacadeImplementationAttribute(
@@ -80,7 +83,7 @@ internal static class ImplementationClassBuilder
         }
 
         // Add implementation methods
-        members.AddRange(BuildImplementationMethods(facadeInfo, methods));
+        members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
 
         // Add disposal methods for scoped facades
         if (facadeInfo.Scoped && hasInstanceMethods)
@@ -121,13 +124,14 @@ internal static class ImplementationClassBuilder
 
     private static IEnumerable<MemberDeclarationSyntax> BuildImplementationMethods(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<CandidateMethodInfo> methods)
+        ImmutableArray<AggregatedMethodGroup> methodGroups)
     {
-        foreach (var method in methods)
+        foreach (var group in methodGroups)
         {
-            var strategy = ServiceResolutionStrategyFactory.GetStrategy(facadeInfo, method);
+            // Use the primary method for strategy determination
+            var strategy = ServiceResolutionStrategyFactory.GetStrategy(facadeInfo, group.PrimaryMethod);
             var methodBuilder = new MethodBuilder(strategy);
-            yield return methodBuilder.BuildImplementationMethod(facadeInfo, method);
+            yield return methodBuilder.BuildImplementationMethod(facadeInfo, group);
         }
     }
 }

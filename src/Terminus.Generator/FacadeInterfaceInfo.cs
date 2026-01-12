@@ -13,7 +13,8 @@ internal readonly record struct FacadeInterfaceInfo(
     string? QueryName,
     string? AsyncCommandName,
     string? AsyncQueryName,
-    string? AsyncStreamName)
+    string? AsyncStreamName,
+    int AggregationMode)
 {
     public INamedTypeSymbol InterfaceSymbol { get; } = InterfaceSymbol;
     public ImmutableArray<INamedTypeSymbol> FacadeMethodAttributeTypes { get; } = FacadeMethodAttributeTypes;
@@ -24,8 +25,8 @@ internal readonly record struct FacadeInterfaceInfo(
     public string? QueryName { get; } = QueryName;
     public string? AsyncCommandName { get; } = AsyncCommandName;
     public string? AsyncQueryName { get; } = AsyncQueryName;
-    
     public string? AsyncStreamName { get; } = AsyncStreamName;
+    public int AggregationMode { get; } = AggregationMode;
 
     public string GetImplementationClassName() => $"{InterfaceSymbol.Name}_Generated";
 }

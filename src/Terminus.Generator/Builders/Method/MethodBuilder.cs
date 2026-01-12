@@ -12,24 +12,14 @@ internal sealed class MethodBuilder(IServiceResolutionStrategy serviceResolution
     private readonly MethodBodyBuilder _bodyBuilder = new(serviceResolution);
 
     /// <summary>
-    /// Builds an interface method declaration (signature only).
-    /// </summary>
-    public MethodDeclarationSyntax BuildInterfaceMethod(
-        FacadeInterfaceInfo facadeInfo,
-        CandidateMethodInfo methodInfo)
-    {
-        return MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, methodInfo);
-    }
-
-    /// <summary>
     /// Builds a complete implementation method declaration (signature + body).
     /// </summary>
     public MethodDeclarationSyntax BuildImplementationMethod(
         FacadeInterfaceInfo facadeInfo,
-        CandidateMethodInfo methodInfo)
+        AggregatedMethodGroup methodGroup)
     {
-        var methodStub = MethodSignatureBuilder.BuildImplementationMethodStub(facadeInfo, methodInfo);
-        var body = _bodyBuilder.BuildMethodBody(facadeInfo, methodInfo);
+        var methodStub = MethodSignatureBuilder.BuildImplementationMethodStub(facadeInfo, methodGroup);
+        var body = _bodyBuilder.BuildMethodBody(facadeInfo, methodGroup);
 
         return methodStub.WithBody(Block(body));
     }

@@ -70,7 +70,8 @@ internal sealed class FacadeInterfaceDiscovery
                 generationFeatures.QueryName,
                 generationFeatures.AsyncCommandName,
                 generationFeatures.AsyncQueryName,
-                generationFeatures.AsyncStreamName
+                generationFeatures.AsyncStreamName,
+                generationFeatures.AggregationMode
             );
         }
 

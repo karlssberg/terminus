@@ -19,7 +19,7 @@ internal static class FacadeBuilderOrchestrator
     {
         var members = NamespaceBuilder.Build(
             context.Facade,
-            context.FacadeMethodMethodInfos);
+            context.MethodGroups);
 
         return CompilationUnit()
             .WithMembers(List(members))

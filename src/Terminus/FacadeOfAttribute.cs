@@ -17,10 +17,20 @@ public sealed class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] 
     public Type[] FacadeMethodAttributes { get; set; } = BuildFacadeMethodAttributesArray(facadeMethodAttribute, facadeMethodAttributes);
 
     /// <summary>
+    /// Gets or sets the lifetime behavior for the generated facade.
+    /// </summary>
+    public FacadeLifetime Lifetime { get; set; } = FacadeLifetime.Transient;
+
+    /// <summary>
     /// Gets or sets whether the facade should be registered with a scoped lifetime.
     /// When true, a new instance of the facade is created per scope (e.g., per web request).
     /// </summary>
-    public bool Scoped { get; set; }
+    [Obsolete("Use Lifetime property instead. This property will be removed in a future version.")]
+    public bool Scoped
+    {
+        get => Lifetime == FacadeLifetime.Scoped;
+        set => Lifetime = value ? FacadeLifetime.Scoped : FacadeLifetime.Transient;
+    }
 
     /// <summary>
     /// Gets or sets the name of the synchronous command method in the generated facade (i.e. for methods that have a void return).
@@ -46,6 +56,12 @@ public sealed class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] 
     /// Gets or sets the name of the asynchronous stream method in the generated facade (i.e for methods that return an IAsyncEnumerable&lt;T&gt;).
     /// </summary>
     public string? AsyncStreamName { get; set; }
+
+    /// <summary>
+    /// Gets or sets how methods should be aggregated in the generated facade interface.
+    /// Default is <see cref="FacadeAggregationMode.None"/> (no aggregation, separate methods).
+    /// </summary>
+    public FacadeAggregationMode AggregationMode { get; set; } = FacadeAggregationMode.None;
 
     private static Type[] BuildFacadeMethodAttributesArray(
         Type facadeMethodAttribute, 
