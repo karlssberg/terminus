@@ -4,6 +4,8 @@
   href: facades.md
 - name: Custom Attributes
   href: attributes.md
+- name: Method Aggregation
+  href: aggregation.md
 - name: Service Resolution
   href: service-resolution.md
 - name: Async Support

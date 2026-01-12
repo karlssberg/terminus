@@ -64,6 +64,7 @@ Terminus enables developers to create clean, type-safe facades over implementati
 - **Async support**: Full support for async methods, including `Task`, `ValueTask`, `Task<T>`, `ValueTask<T>`, and `IAsyncEnumerable<T>`
 - **Generic method support**: Full support for generic methods with type parameters and constraints across all return types
 - **Custom method naming**: Configure different method names based on return types (Command, Query, etc.)
+- **Method aggregation**: Automatically aggregates methods with identical signatures into a single facade method, enabling notification/broadcast patterns (similar to MediatR)
 - **Dependency injection integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
 
 ### Core Value Proposition
@@ -178,6 +179,9 @@ public sealed class FacadeOfAttribute : Attribute
     public string? AsyncCommandName { get; set; }   // Task methods
     public string? AsyncQueryName { get; set; }     // Task<T> methods
     public string? AsyncStreamName { get; set; }    // IAsyncEnumerable<T> methods
+
+    // Method aggregation control (default: None)
+    public FacadeAggregationMode AggregationMode { get; set; }
 }
 ```
 
@@ -378,15 +382,17 @@ public sealed class IHandlers_Generated : IHandlers, IDisposable, IAsyncDisposab
 
 Terminus automatically detects return types and generates appropriate code:
 
-| Return Type | ReturnTypeKind | Generated Code | Async Modifier |
-|-------------|---------------|----------------|----------------|
-| `void` | `Void` | `instance.Method();` | No |
-| `T` | `Result` | `return instance.Method();` | No |
-| `Task` | `Task` | `await instance.Method().ConfigureAwait(false);` | Yes |
-| `Task<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
-| `ValueTask` | `Task` | `await instance.Method().ConfigureAwait(false);` | Yes |
-| `ValueTask<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | Yes |
-| `IAsyncEnumerable<T>` | `AsyncEnumerable` | `await foreach (var item in ...) yield return item;` (scoped) or `return instance.Method();` (non-scoped) | Yes (scoped) / No (non-scoped) |
+| Return Type | ReturnTypeKind | Generated Code (Single Method) | Generated Code (Aggregated) | Async Modifier |
+|-------------|---------------|--------------------------------|---------------------------|----------------|
+| `void` | `Void` | `instance.Method();` | Execute all handlers | No |
+| `T` | `Result` | `return instance.Method();` | `yield return` each result (returns `IEnumerable<T>`) | No |
+| `Task` | `Task` | `await instance.Method().ConfigureAwait(false);` | Await all handlers | Yes |
+| `Task<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | `yield return await` each result (returns `IAsyncEnumerable<T>`) | Yes |
+| `ValueTask` | `Task` | `await instance.Method().ConfigureAwait(false);` | Await all handlers | Yes |
+| `ValueTask<T>` | `TaskWithResult` | `return await instance.Method().ConfigureAwait(false);` | `yield return await` each result (returns `IAsyncEnumerable<T>`) | Yes |
+| `IAsyncEnumerable<T>` | `AsyncEnumerable` | `await foreach (var item in ...) yield return item;` (scoped) or `return instance.Method();` (non-scoped) | Not aggregated | Yes (scoped) / No (non-scoped) |
+
+**Note:** When multiple methods with the same signature are discovered, they are aggregated and return types are transformed as shown in the "Generated Code (Aggregated)" column. See [Method Aggregation](#method-aggregation) for details.
 
 ### Method Naming Strategy
 
@@ -468,6 +474,216 @@ async IAsyncEnumerable<Item> IHandlers.GetItemsAsync()
 }
 ```
 
+### Method Aggregation
+
+Terminus supports automatic method aggregation, where multiple methods with identical signatures are combined into a single facade method. This enables notification/broadcast patterns similar to MediatR's `INotification` handlers.
+
+#### Default Aggregation Behavior
+
+**By default**, when multiple methods share the same signature (name, parameters, and generic constraints), they are automatically aggregated into a single facade method that executes all handlers in sequence.
+
+**Void Methods (Commands/Notifications):**
+```csharp
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface INotificationBus;
+
+public class HandlerAttribute : Attribute { }
+
+// Multiple handlers for the same notification type
+public class EmailNotificationHandler
+{
+    [Handler]
+    public void Handle(UserCreatedNotification notification)
+    {
+        // Send email
+    }
+}
+
+public class LoggingNotificationHandler
+{
+    [Handler]
+    public void Handle(UserCreatedNotification notification)
+    {
+        // Log event
+    }
+}
+
+public class AuditNotificationHandler
+{
+    [Handler]
+    public void Handle(UserCreatedNotification notification)
+    {
+        // Audit trail
+    }
+}
+
+// Generated: Single method that executes all three handlers
+void Handle(UserCreatedNotification notification);
+
+// Usage - all handlers execute:
+notificationBus.Handle(new UserCreatedNotification(userId, email));
+```
+
+**Result Methods (Queries):**
+
+When handlers return results, the aggregated method returns `IEnumerable<T>` to yield all results:
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface ISearchBus;
+
+public class PrimarySearchHandler
+{
+    [Handler]
+    public SearchResult Search(string query)
+    {
+        return new SearchResult("Primary", score: 10);
+    }
+}
+
+public class SecondarySearchHandler
+{
+    [Handler]
+    public SearchResult Search(string query)
+    {
+        return new SearchResult("Secondary", score: 5);
+    }
+}
+
+// Generated: Returns IEnumerable<SearchResult>
+IEnumerable<SearchResult> Search(string query);
+
+// Usage - collect all results:
+var results = searchBus.Search("query").OrderByDescending(r => r.Score).ToList();
+```
+
+**Async Result Methods:**
+
+For async methods returning `Task<T>` or `ValueTask<T>`, the aggregated method returns `IAsyncEnumerable<T>`:
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute))]
+public partial interface IAsyncQueryBus;
+
+public class DatabaseSearchHandler
+{
+    [Handler]
+    public async Task<User> SearchAsync(string query)
+    {
+        return await database.FindUserAsync(query);
+    }
+}
+
+public class CacheSearchHandler
+{
+    [Handler]
+    public async Task<User> SearchAsync(string query)
+    {
+        return await cache.GetUserAsync(query);
+    }
+}
+
+// Generated: Returns IAsyncEnumerable<User>
+IAsyncEnumerable<User> SearchAsync(string query);
+
+// Usage - stream all results:
+await foreach (var user in asyncQueryBus.SearchAsync("john"))
+{
+    Console.WriteLine(user.Name);
+}
+```
+
+#### Return Type Transformations
+
+When methods are aggregated, return types are transformed to accommodate multiple results:
+
+| Original Return Type | Aggregated Return Type | Behavior |
+|---------------------|----------------------|----------|
+| `void` | `void` | Executes all handlers in sequence, no return value |
+| `T` | `IEnumerable<T>` | Yields result from each handler |
+| `Task` | `Task` | Awaits all handlers in sequence |
+| `ValueTask` | `Task` | Awaits all handlers in sequence |
+| `Task<T>` | `IAsyncEnumerable<T>` | Yields awaited result from each handler |
+| `ValueTask<T>` | `IAsyncEnumerable<T>` | Yields awaited result from each handler |
+| `IAsyncEnumerable<T>` | N/A | Not aggregated (streaming not composable) |
+
+#### Selective Aggregation with AggregationMode
+
+The `AggregationMode` property provides fine-grained control over which return types should be aggregated. This is useful when you want to prevent accidental aggregation while still enabling it for specific patterns.
+
+**Available Flags:**
+
+```csharp
+public enum FacadeAggregationMode
+{
+    None = 0,              // Default: aggregate all matching signatures
+    Commands = 1 << 0,     // Aggregate void methods only
+    Queries = 1 << 1,      // Aggregate result (T) methods only
+    AsyncCommands = 1 << 2,    // Aggregate Task/ValueTask methods only
+    AsyncQueries = 1 << 3,     // Aggregate Task<T>/ValueTask<T> methods only
+    AsyncStreams = 1 << 4,     // Aggregate IAsyncEnumerable<T> methods only
+    All = Commands | Queries | AsyncCommands | AsyncQueries | AsyncStreams
+}
+```
+
+**Example: Aggregate Only Commands**
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.Commands)]
+public partial interface ICommandBus;
+
+public class UserHandlers
+{
+    [Handler]
+    public void CreateUser(CreateUserCommand cmd) { }  // Will be aggregated
+
+    [Handler]
+    public void DeleteUser(DeleteUserCommand cmd) { }  // Will be aggregated
+
+    [Handler]
+    public string GetUser(GetUserQuery query) { }  // Separate method (not void)
+}
+```
+
+**Example: Combine Multiple Flags**
+
+```csharp
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
+public partial interface IHybridBus;
+
+// Only void methods and Task<T> methods will be aggregated
+// Other return types generate separate facade methods
+```
+
+**Example: Disable Aggregation for Specific Return Types**
+
+To prevent aggregation for specific return types while allowing default behavior for others, you can explicitly set which types should aggregate:
+
+```csharp
+// Aggregate everything EXCEPT queries (result methods)
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.Commands |
+                     FacadeAggregationMode.AsyncCommands |
+                     FacadeAggregationMode.AsyncQueries)]
+public partial interface IMediator;
+```
+
+#### When to Use Aggregation
+
+**Good Use Cases:**
+- **Notification patterns**: Multiple handlers reacting to the same event (audit, logging, email)
+- **Multi-source queries**: Collecting results from multiple data sources (cache + database, primary + secondary search)
+- **Side effects**: Triggering multiple independent actions (send email, update cache, log event)
+- **Observability**: Multiple observers monitoring the same action
+
+**Avoid Aggregation When:**
+- Handlers have different purposes despite same signature (use different attributes instead)
+- Order of execution matters critically (aggregation order is alphabetical by type name)
+- Only one handler should execute (use separate methods or different signatures)
+- Performance is critical and you need fine-grained control over execution
+
 ## Architecture Deep Dive
 
 ### Generator Pipeline
@@ -483,6 +699,11 @@ The generator follows a four-stage pipeline:
 **2. Matching Phase** (`Matching/`)
    - `FacadeMethodMatcher.MatchMethodsToFacade()`: Filters methods where attribute inherits from facade's specified attribute types
    - Supports attribute inheritance (derived attributes match)
+
+**2.5. Grouping Phase** (`Grouping/`)
+   - `MethodSignatureGrouper.GroupBySignature()`: Groups methods by signature for aggregation
+   - `AggregatedMethodGroup`: Represents grouped methods with shared signatures
+   - Respects `AggregationMode` flags to control which return types get aggregated
 
 **3. Validation Phase**
    - `UsageValidator.Validate()`: Static utility that orchestrates validation using a `CompositeMethodValidator` which wraps specialized validators implementing `IMethodValidator`.
@@ -708,6 +929,9 @@ await test.RunAsync();
 - Methods with various return types (void, T, Task, Task<T>, IAsyncEnumerable<T>)
 - Scoped vs non-scoped facades
 - Custom naming (CommandName, QueryName, etc.)
+- Method aggregation with multiple handlers sharing signatures
+- Selective aggregation with AggregationMode flags
+- Return type transformations for aggregated methods
 - Error cases (duplicate signatures, ref/out parameters)
 - Generic methods with constraints
 - Type parameter propagation in facade methods
@@ -1014,14 +1238,16 @@ public static class StaticHandlers
 
 **For Generator Development:**
 1. `FacadeGenerator.cs` - Entry point for source generation
-2. `Pipeline/FacadeGenerationPipeline.cs` - Orchestrates discovery → matching → validation → generation
+2. `Pipeline/FacadeGenerationPipeline.cs` - Orchestrates discovery → matching → grouping → validation → generation
 3. `Builders/FacadeBuilderOrchestrator.cs` - Top-level builder
 4. `Discovery/FacadeInterfaceDiscovery.cs` - Discovers `[FacadeOf]` interfaces
 5. `Discovery/FacadeMethodDiscovery.cs` - Discovers methods with attributes
 6. `Matching/FacadeMethodMatcher.cs` - Matches methods to facades
-7. `UsageValidator.cs` - Orchestrates validation
-8. `Validation/` - Specialized method validators implementing `IMethodValidator`
-9. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
+7. `Grouping/MethodSignatureGrouper.cs` - Groups methods by signature for aggregation
+8. `AggregatedMethodGroup.cs` - Represents method groups for aggregation
+9. `UsageValidator.cs` - Orchestrates validation
+10. `Validation/` - Specialized method validators implementing `IMethodValidator`
+11. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
 
 **For Understanding Generated Code:**
 1. `Builders/Interface/InterfaceBuilder.cs` - Generates partial interface
@@ -1047,6 +1273,11 @@ public static class StaticHandlers
 **Test generator changes:**
 → Add test case to `FacadeGeneratorTests.cs`
 → Provide input source and expected generated output
+
+**Modify aggregation behavior:**
+→ Edit `Grouping/MethodSignatureGrouper.cs`
+→ Update `ShouldAggregate()` logic for new aggregation rules
+→ Update tests in `AggregationTests.cs` and `AggregationModeTests.cs`
 
 **Debug generation:**
 → Set `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` in consumer `.csproj`

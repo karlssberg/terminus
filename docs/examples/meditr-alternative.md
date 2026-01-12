@@ -373,8 +373,54 @@ var user = await mediator.Handle(new GetUserQuery(123));
    dotnet run
    ```
 
+## Notifications with Multiple Handlers
+
+Terminus also supports MediatR's notification pattern through method aggregation. Multiple handlers can react to the same event:
+
+```csharp
+[FacadeOf(typeof(NotificationAttribute),
+    CommandName = "Publish")]
+public partial interface IEventBus;
+
+public class NotificationAttribute : Attribute { }
+
+// Multiple handlers for the same event - all execute
+public class EmailHandler
+{
+    [Notification]
+    public async Task Handle(UserRegisteredEvent evt)
+    {
+        await _email.SendWelcomeEmailAsync(evt.Email);
+    }
+}
+
+public class AnalyticsHandler
+{
+    [Notification]
+    public async Task Handle(UserRegisteredEvent evt)
+    {
+        await _analytics.TrackAsync("UserRegistered", evt.UserId);
+    }
+}
+
+public class CacheHandler
+{
+    [Notification]
+    public async Task Handle(UserRegisteredEvent evt)
+    {
+        await _cache.InvalidateAsync("users");
+    }
+}
+
+// Usage: All handlers execute automatically
+await eventBus.Publish(new UserRegisteredEvent(userId: 123, email: "user@example.com"));
+```
+
+**Learn more:** [Method Aggregation](../concepts/aggregation.md)
+
 ## Next Steps
 
 - Explore the [Strangler Fig Pattern](strangler-fig.md) example
+- Learn about [Method Aggregation](../concepts/aggregation.md) for notification patterns
 - Learn about [Custom Method Naming](../guides/advanced-scenarios.md#custom-method-naming)
 - Read about [Service Resolution](../concepts/service-resolution.md)

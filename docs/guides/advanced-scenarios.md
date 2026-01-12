@@ -315,28 +315,78 @@ var order = await gateway.GetOrderAsync(456);
 var product = await gateway.GetProductAsync(789);
 ```
 
-## MediatR Alternative
+## Method Aggregation (Notification Pattern)
 
-Replace MediatR with compile-time safe facades:
+Multiple handlers can react to the same event automatically through method aggregation:
 
 ```csharp
-// Traditional MediatR approach
-public class CreateUserCommand : IRequest<User>
-{
-    public string Name { get; set; }
-}
+[FacadeOf(typeof(NotificationAttribute))]
+public partial interface IEventBus;
 
-public class CreateUserHandler : IRequestHandler<CreateUserCommand, User>
+// Multiple handlers for the same event - all execute
+public class EmailHandler
 {
-    public async Task<User> Handle(CreateUserCommand request, CancellationToken ct)
+    [Notification]
+    public async Task Handle(OrderPlacedEvent evt)
     {
-        // Implementation
+        await _email.SendOrderConfirmationAsync(evt.OrderId, evt.CustomerEmail);
     }
 }
 
-// Usage:
-var user = await mediator.Send(new CreateUserCommand { Name = "John" });
+public class InventoryHandler
+{
+    [Notification]
+    public async Task Handle(OrderPlacedEvent evt)
+    {
+        await _inventory.ReserveItemsAsync(evt.Items);
+    }
+}
 
+public class AnalyticsHandler
+{
+    [Notification]
+    public async Task Handle(OrderPlacedEvent evt)
+    {
+        await _analytics.TrackAsync("OrderPlaced", evt.OrderId);
+    }
+}
+
+// Usage: All handlers execute automatically
+await eventBus.Handle(new OrderPlacedEvent(
+    orderId: 123,
+    customerEmail: "customer@example.com",
+    items: orderItems
+));
+```
+
+### Selective Aggregation
+
+Control which return types should be aggregated:
+
+```csharp
+// Only aggregate void methods (commands/notifications)
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.Commands)]
+public partial interface ICommandBus;
+
+// Aggregate async queries only
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.AsyncQueries)]
+public partial interface IQueryBus;
+
+// Multiple flags
+[FacadeOf(typeof(HandlerAttribute),
+    AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
+public partial interface IHybridBus;
+```
+
+**Learn more:** [Method Aggregation](../concepts/aggregation.md)
+
+## MediatR Alternative
+
+Replace MediatR with compile-time safe facades. See the complete [MediatR Alternative Example](../examples/meditr-alternative.md) for details.
+
+```csharp
 // Terminus approach - Compile-time safe!
 [FacadeOf(typeof(HandlerAttribute))]
 public partial interface IMediator { }
