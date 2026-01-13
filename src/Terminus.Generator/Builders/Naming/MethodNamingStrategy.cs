@@ -12,14 +12,39 @@ internal static class MethodNamingStrategy
     {
         return candidate.ReturnTypeKind switch
         {
-            ReturnTypeKind.Void => facadeInfo.Features.CommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.Result => facadeInfo.Features.QueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.Task => facadeInfo.Features.AsyncCommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.ValueTask => facadeInfo.Features.AsyncCommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.TaskWithResult => facadeInfo.Features.AsyncQueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.ValueTaskWithResult => facadeInfo.Features.AsyncQueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.AsyncEnumerable => facadeInfo.Features.AsyncStreamName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Void => GetValidMethodNameOrNull(facadeInfo.Features.CommandName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Result => GetValidMethodNameOrNull(facadeInfo.Features.QueryName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Task => GetValidMethodNameOrNull(facadeInfo.Features.AsyncCommandName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTask => GetValidMethodNameOrNull(facadeInfo.Features.AsyncCommandName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.TaskWithResult => GetValidMethodNameOrNull(facadeInfo.Features.AsyncQueryName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTaskWithResult => GetValidMethodNameOrNull(facadeInfo.Features.AsyncQueryName) ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.AsyncEnumerable => GetValidMethodNameOrNull(facadeInfo.Features.AsyncStreamName) ?? candidate.MethodSymbol.Name,
             _ => candidate.MethodSymbol.Name
         };
+    }
+
+    /// <summary>
+    /// Returns the input string if it's a valid method name, otherwise returns null.
+    /// </summary>
+    private static string? GetValidMethodNameOrNull(string? name)
+    {
+        // Check if it's a valid C# identifier
+        return IsValidIdentifier(name) ? name : null;
+    }
+
+    /// <summary>
+    /// Checks if a string is a valid C# identifier.
+    /// </summary>
+    private static bool IsValidIdentifier(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+
+        // First character must be a letter or underscore
+        if (!char.IsLetter(name![0]) && name[0] != '_')
+            return false;
+
+        // Remaining characters must be letters, digits, or underscores
+        return name.All(ch => char.IsLetterOrDigit(ch) || ch == '_');
     }
 }
