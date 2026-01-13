@@ -11,7 +11,7 @@ internal sealed class NonScopedServiceResolution : IServiceResolutionStrategy
 {
     public bool CanResolve(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
     {
-        return !facadeInfo.Scoped && !methodInfo.MethodSymbol.IsStatic;
+        return !facadeInfo.Features.IsScoped && !methodInfo.MethodSymbol.IsStatic;
     }
 
     public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)

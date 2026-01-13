@@ -12,13 +12,13 @@ internal static class MethodNamingStrategy
     {
         return candidate.ReturnTypeKind switch
         {
-            ReturnTypeKind.Void => facadeInfo.CommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.Result => facadeInfo.QueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.Task => facadeInfo.AsyncCommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.ValueTask => facadeInfo.AsyncCommandName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.TaskWithResult => facadeInfo.AsyncQueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.ValueTaskWithResult => facadeInfo.AsyncQueryName ?? candidate.MethodSymbol.Name,
-            ReturnTypeKind.AsyncEnumerable => facadeInfo.AsyncStreamName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Void => facadeInfo.Features.CommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Result => facadeInfo.Features.QueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.Task => facadeInfo.Features.AsyncCommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTask => facadeInfo.Features.AsyncCommandName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.TaskWithResult => facadeInfo.Features.AsyncQueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.ValueTaskWithResult => facadeInfo.Features.AsyncQueryName ?? candidate.MethodSymbol.Name,
+            ReturnTypeKind.AsyncEnumerable => facadeInfo.Features.AsyncStreamName ?? candidate.MethodSymbol.Name,
             _ => candidate.MethodSymbol.Name
         };
     }

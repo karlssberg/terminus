@@ -39,7 +39,7 @@ internal static class MethodSignatureGrouper
 
     private static bool ShouldAggregate(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
     {
-        var mode = facadeInfo.AggregationMode;
+        var mode = facadeInfo.Features.AggregationMode;
 
         // FacadeAggregationMode enum values (from Terminus assembly)
         const int None = 0;

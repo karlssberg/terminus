@@ -51,7 +51,7 @@ internal sealed class FacadeInterfaceDiscovery
             // ConstructorArguments: [0] = first type, [1...] = params Type[] or following types
             var allConstructorArguments = aggregatorAttrData.ConstructorArguments;
             var facadeMethodAttrTypes = allConstructorArguments
-                .Where(arg => arg.Kind == TypedConstantKind.Type || arg.Kind == TypedConstantKind.Array)
+                .Where(arg => arg.Kind is TypedConstantKind.Type or TypedConstantKind.Array)
                 .SelectMany(arg => arg.Kind == TypedConstantKind.Array ? arg.Values : [arg])
                 .Select(arg => arg.Value)
                 .OfType<INamedTypeSymbol>()
@@ -65,13 +65,7 @@ internal sealed class FacadeInterfaceDiscovery
                 facadeMethodAttrTypes,
                 targetTypes,
                 dotnetFeatures,
-                generationFeatures.IsScoped,
-                generationFeatures.CommandName,
-                generationFeatures.QueryName,
-                generationFeatures.AsyncCommandName,
-                generationFeatures.AsyncQueryName,
-                generationFeatures.AsyncStreamName,
-                generationFeatures.AggregationMode
+                generationFeatures
             );
         }
 

@@ -46,11 +46,11 @@ internal static class ImplementationClassBuilder
         classDeclaration = AddFacadeImplementationAttribute(
             classDeclaration,
             interfaceName,
-            facadeInfo.Scoped,
+            facadeInfo.Features.IsScoped,
             hasInstanceMethods);
 
         // Add disposal interfaces for scoped facades with instance methods
-        if (facadeInfo.Scoped && hasInstanceMethods)
+        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
         {
             classDeclaration = classDeclaration.AddBaseListTypes(
                 SimpleBaseType(ParseTypeName("global::System.IDisposable")),
@@ -61,7 +61,7 @@ internal static class ImplementationClassBuilder
         var members = new List<MemberDeclarationSyntax>();
 
         // Add fields
-        switch (facadeInfo.Scoped)
+        switch (facadeInfo.Features.IsScoped)
         {
             case true when hasInstanceMethods:
                 members.AddRange(FieldBuilder.BuildScopedFields());
@@ -72,7 +72,7 @@ internal static class ImplementationClassBuilder
         }
 
         // Add constructor
-        switch (facadeInfo.Scoped)
+        switch (facadeInfo.Features.IsScoped)
         {
             case true when hasInstanceMethods:
                 members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
@@ -86,7 +86,7 @@ internal static class ImplementationClassBuilder
         members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
 
         // Add disposal methods for scoped facades
-        if (facadeInfo.Scoped && hasInstanceMethods)
+        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
         {
             members.AddRange(DisposalBuilder.BuildDisposalMethods());
         }

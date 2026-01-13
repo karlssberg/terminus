@@ -72,7 +72,7 @@ internal sealed class MethodSignatureBuilder
     {
         // Add async modifier when returning Task/ValueTask/Task<T>/ValueTask<T> or when generating an async iterator
         // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
-        if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Scoped)
+        if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Features.IsScoped)
             return true;
 
         // For aggregated methods with async results, we generate IAsyncEnumerable which needs async
