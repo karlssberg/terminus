@@ -33,7 +33,7 @@ public class EdgeCaseTests : SourceGeneratorTestBase<FacadeGenerator>
             """;
 
         var expectedDiagnostic = new DiagnosticResult("TM0002", DiagnosticSeverity.Error)
-            .WithSpan("Source.cs", 14, 41, 14, 46)
+            .WithSpan("Source.cs", 14, 34, 14, 36)
             .WithArguments("MethodWithIn", "value");
 
         await VerifyAsync(source, [expectedDiagnostic]);
