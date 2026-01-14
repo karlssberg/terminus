@@ -47,7 +47,17 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         if (argumentSyntax?.NameEquals == null || argumentSyntax.Expression is not LiteralExpressionSyntax literalExpr)
             return argumentSyntax?.Expression.GetLocation();
         
-        var literalLocation = literalExpr.Token.GetLocation();
+        var literalToken = literalExpr.Token;
+        var literalLocation = literalToken.GetLocation();
+        
+        // Adjust location to exclude the opening quote for string literals
+        if (literalToken.Text.StartsWith("\"") && literalToken.Text.Length > 1)
+        {
+            var sourceTree = literalLocation.SourceTree;
+            var span = literalLocation.SourceSpan;
+            var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + 1, span.Length - 2);
+            return Location.Create(sourceTree!, adjustedSpan);
+        }
         
         return literalLocation;
     }

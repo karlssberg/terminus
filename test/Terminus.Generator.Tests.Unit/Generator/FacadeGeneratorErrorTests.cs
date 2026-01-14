@@ -106,10 +106,10 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0002")
-                    .WithSpan(SourceFilename, 14, 38, 14, 41) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
+                    .WithSpan(SourceFilename, 14, 39, 14, 42) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
                     .WithArguments("ProcessRef", "value"),
                 DiagnosticResult.CompilerError("TM0002")
-                    .WithSpan(SourceFilename, 17, 38, 17, 41) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
+                    .WithSpan(SourceFilename, 17, 39, 17, 42) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
                     .WithArguments("ProcessOut", "value"),
             ],
             sourceFilename: SourceFilename);
@@ -213,7 +213,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 6, 57, 6, 69)
+                    .WithSpan(SourceFilename, 6, 59, 6, 69)
                     .WithArguments("123Invalid", "CommandName", "IFacade"),
             ],
             sourceFilename: SourceFilename);
@@ -247,7 +247,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 7, 60, 7, 72)
+                    .WithSpan(SourceFilename, 7, 62, 7, 72)
                     .WithArguments("Query-Name", "AsyncQueryName", "IFacade"),
             ],
             sourceFilename: SourceFilename);
@@ -279,13 +279,13 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 9, 20, 9, 33)
+                    .WithSpan(SourceFilename, 9, 22, 9, 33)
                     .WithArguments("Hello World", "CommandName", "IFacade"),
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 10, 18, 10, 20)
+                    .WithSpan(SourceFilename, 10, 20, 10, 20)
                     .WithArguments("", "QueryName", "IFacade"),
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 11, 24, 11, 37)
+                    .WithSpan(SourceFilename, 11, 26, 11, 37)
                     .WithArguments("Stream.Name", "AsyncStreamName", "IFacade"),
             ],
             sourceFilename: SourceFilename);
@@ -324,27 +324,35 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             namespace Demo
             {
                 /// <summary>
-                /// Facade interface delegating to:<br/>
-                /// <see cref="Demo.TestFacadeMethods"/><br/>
+                /// Facade interface delegating to: <see cref="Demo.TestFacadeMethods"/>
                 /// </summary>
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
                 public partial interface IFacade
                 {
                     /// <summary>
                     /// Delegates to:<br/>
-                    /// <see cref="Demo.TestFacadeMethods.Process()"/>
+                    /// <see cref="Demo.TestFacadeMethods.Process"/>
                     /// </summary>
                     void Execute();
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 /// <summary>
-                /// Facade implementation class delegating to:<br/>
-                /// <see cref="Demo.TestFacadeMethods"/><br/>
+                /// Facade implementation class delegating to: <see cref="Demo.TestFacadeMethods"/>
                 /// </summary>
-                [Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
                 public sealed class IFacade_Generated : global::Demo.IFacade
                 {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IFacade_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IFacade_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
                     void global::Demo.IFacade.Execute()
                     {
                         global::Demo.TestFacadeMethods.Process();

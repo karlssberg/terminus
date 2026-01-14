@@ -29,7 +29,7 @@ internal class RefOrOutParameterValidator : IMethodValidator
             from methodSymbol in methodSymbols
             from parameter in methodSymbol.Parameters
             where IsRefOrOut(parameter) 
-            select CreateNoRefOrOutParameterDiagnostic(methodSymbol, parameter);
+            select CreateNoInOrRefOrOutParameterDiagnostic(methodSymbol, parameter);
                 
         foreach (var diagnostic in diagnostics)
         {
@@ -40,7 +40,7 @@ internal class RefOrOutParameterValidator : IMethodValidator
         return hasErrors;
     }
 
-    private Diagnostic CreateNoRefOrOutParameterDiagnostic(IMethodSymbol methodSymbol, IParameterSymbol parameter)
+    private Diagnostic CreateNoInOrRefOrOutParameterDiagnostic(IMethodSymbol methodSymbol, IParameterSymbol parameter)
     {
         var location = GetRefOrOutKeywordLocation(parameter)
                        ?? parameter.Locations.FirstOrDefault()

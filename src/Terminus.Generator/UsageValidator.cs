@@ -8,12 +8,16 @@ internal static class UsageValidator
 {
     internal static bool Validate(SourceProductionContext context, FacadeInterfaceInfo facadeInfo, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
     {
+        var invalidMethodNameValidator = new InvalidMethodNameValidator();
         var validator = new CompositeMethodValidator(
-            new InvalidMethodNameValidator(),
+            invalidMethodNameValidator,
             new RefOrOutParameterValidator(),
             new DuplicateSignatureValidator(),
             new ConflictingNameValidator()
         );
+
+        // Initialize the method name validator even if there are no methods
+        invalidMethodNameValidator.Initialize(facadeInfo);
 
         foreach (var facadeMethod in facadeMethodMethodInfos)
         {
