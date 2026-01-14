@@ -254,6 +254,75 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
     }
 
     [Fact]
+    public async Task Given_invalid_method_name_When_raw_string_literals_are_used_Should_fail_TM0004()
+    {
+        const string source =
+            """"
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute), AsyncQueryName="""Query-Name""")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class TestFacadeMethods
+                {
+                    [FacadeMethod]
+                    public static Task<int> GetValueAsync() => Task.FromResult(42);
+                }
+            }
+            """";
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 7, 64, 7, 74)
+                    .WithArguments("Query-Name", "AsyncQueryName", "IFacade"),
+            ],
+            sourceFilename: SourceFilename);
+    }
+    
+
+    [Fact]
+    public async Task Given_invalid_method_name_When_raw_string_interpolated_literals_are_used_Should_fail_TM0004()
+    {
+        const string source =
+            """"
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute), AsyncQueryName=$$"""Query-Name""")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class TestFacadeMethods
+                {
+                    [FacadeMethod]
+                    public static Task<int> GetValueAsync() => Task.FromResult(42);
+                }
+            }
+            """";
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 7, 66, 7, 76)
+                    .WithArguments("Query-Name", "AsyncQueryName", "IFacade"),
+            ],
+            sourceFilename: SourceFilename);
+    }
+
+    [Fact]
     public async Task Given_multiple_invalid_method_names_Should_fail_TM0004_for_each()
     {
         const string source =

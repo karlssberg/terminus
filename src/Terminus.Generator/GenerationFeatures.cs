@@ -50,13 +50,39 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         var literalToken = literalExpr.Token;
         var literalLocation = literalToken.GetLocation();
         
-        // Adjust location to exclude the opening quote for string literals
-        if (literalToken.Text.StartsWith("\"") && literalToken.Text.Length > 1)
+        // Adjust location to exclude the opening and closing quotes/delimiters
+        var text = literalToken.Text;
+        if (text.StartsWith("\""))
         {
-            var sourceTree = literalLocation.SourceTree;
-            var span = literalLocation.SourceSpan;
-            var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + 1, span.Length - 2);
-            return Location.Create(sourceTree!, adjustedSpan);
+            var startQuotes = 0;
+            while (startQuotes < text.Length && text[startQuotes] == '"')
+            {
+                startQuotes++;
+            }
+
+            var endQuotes = 0;
+            while (endQuotes < text.Length && text[text.Length - 1 - endQuotes] == '"')
+            {
+                endQuotes++;
+            }
+
+            // Ensure we don't count the same quotes twice for very short strings (like """)
+            if (startQuotes + endQuotes > text.Length)
+            {
+                startQuotes = text.Length / 2;
+                endQuotes = text.Length - startQuotes;
+            }
+
+            if (startQuotes > 0 && endQuotes > 0)
+            {
+                var sourceTree = literalLocation.SourceTree;
+                var span = literalLocation.SourceSpan;
+                var newLength = span.Length - startQuotes - endQuotes;
+                if (newLength < 0) newLength = 0;
+                
+                var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + startQuotes, newLength);
+                return Location.Create(sourceTree!, adjustedSpan);
+            }
         }
         
         return literalLocation;
