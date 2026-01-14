@@ -299,7 +299,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), AsyncQueryName=$$"""Query-Name""")]
+                [FacadeOf(typeof(FacadeMethodAttribute), AsyncQueryName=$"Query-Name")]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -316,7 +316,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0004")
-                    .WithSpan(SourceFilename, 7, 66, 7, 76)
+                    .WithSpan(SourceFilename, 7, 63, 7, 73)
                     .WithArguments("Query-Name", "AsyncQueryName", "IFacade"),
             ],
             sourceFilename: SourceFilename);

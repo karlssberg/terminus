@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis;
-using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Terminus.Generator;
@@ -44,8 +43,16 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         var argumentSyntax = attrSyntax.ArgumentList?.Arguments
             .FirstOrDefault(a => a.NameEquals?.Name.Identifier.Text == name);
 
-        if (argumentSyntax?.NameEquals == null || argumentSyntax.Expression is not LiteralExpressionSyntax literalExpr)
+        if (argumentSyntax?.NameEquals == null)
             return argumentSyntax?.Expression.GetLocation();
+
+        if (argumentSyntax.Expression is InterpolatedStringExpressionSyntax interpolatedString)
+        {
+            return interpolatedString.GetLocation();
+        }
+
+        if (argumentSyntax.Expression is not LiteralExpressionSyntax literalExpr)
+            return argumentSyntax.Expression.GetLocation();
         
         var literalToken = literalExpr.Token;
         var literalLocation = literalToken.GetLocation();
