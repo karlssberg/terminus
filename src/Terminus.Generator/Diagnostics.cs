@@ -33,4 +33,14 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/danielkarlsson/terminus/blob/main/docs/diagnostics/TM0003.md",
         description: "Generated facade implementations use internal field names like _serviceProvider, _syncScope, etc. These names must not be used for entry point methods or their parameters.");
+
+    public static readonly DiagnosticDescriptor InvalidMethodName = new(
+        id: "TM0004",
+        title: "Invalid method name in FacadeOf attribute",
+        messageFormat: "Invalid method name '{0}' specified for '{1}' in facade '{2}'. Method names must be valid C# identifiers.",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0004.md",
+        description: "Custom method names specified in FacadeOfAttribute properties (CommandName, QueryName, AsyncCommandName, AsyncQueryName, AsyncStreamName) must be valid C# identifiers.");
 }

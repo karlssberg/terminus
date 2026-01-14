@@ -29,22 +29,6 @@ internal static class MethodNamingStrategy
     private static string? GetValidMethodNameOrNull(string? name)
     {
         // Check if it's a valid C# identifier
-        return IsValidIdentifier(name) ? name : null;
-    }
-
-    /// <summary>
-    /// Checks if a string is a valid C# identifier.
-    /// </summary>
-    private static bool IsValidIdentifier(string? name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return false;
-
-        // First character must be a letter or underscore
-        if (!char.IsLetter(name![0]) && name[0] != '_')
-            return false;
-
-        // Remaining characters must be letters, digits, or underscores
-        return name.All(ch => char.IsLetterOrDigit(ch) || ch == '_');
+        return Validation.IdentifierValidator.IsValidIdentifier(name) ? name : null;
     }
 }

@@ -1,4 +1,6 @@
 using Microsoft.CodeAnalysis;
+using System.Collections.Generic;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Terminus.Generator;
 
@@ -24,6 +26,31 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
     public string? AsyncQueryName => ResolveNamedArgument<string?>("AsyncQueryName");
     public string? AsyncStreamName => ResolveNamedArgument<string?>("AsyncStreamName");
     public int AggregationMode => ResolveNamedArgument<int>("AggregationMode");
+
+    public Location? GetNamedArgumentLocation(string name)
+    {
+        var arg = aggregatorAttrData.NamedArguments
+            .FirstOrDefault(arg => arg.Key == name);
+
+        if (arg.Value.IsNull)
+            return null;
+
+        // Get the syntax node for the attribute
+        var attributeSyntax = aggregatorAttrData.ApplicationSyntaxReference?.GetSyntax();
+        if (attributeSyntax is not AttributeSyntax attrSyntax)
+            return null;
+
+        // Find the argument with the matching name
+        var argumentSyntax = attrSyntax.ArgumentList?.Arguments
+            .FirstOrDefault(a => a.NameEquals?.Name.Identifier.Text == name);
+
+        if (argumentSyntax?.NameEquals == null || argumentSyntax.Expression is not LiteralExpressionSyntax literalExpr)
+            return argumentSyntax?.Expression.GetLocation();
+        
+        var literalLocation = literalExpr.Token.GetLocation();
+        
+        return literalLocation;
+    }
 
     private T? ResolveNamedArgument<T>(string name)
     {

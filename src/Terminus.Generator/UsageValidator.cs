@@ -9,6 +9,7 @@ internal static class UsageValidator
     internal static bool Validate(SourceProductionContext context, FacadeInterfaceInfo facadeInfo, ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
     {
         var validator = new CompositeMethodValidator(
+            new InvalidMethodNameValidator(),
             new RefOrOutParameterValidator(),
             new DuplicateSignatureValidator(),
             new ConflictingNameValidator()

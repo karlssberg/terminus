@@ -1,4 +1,6 @@
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Terminus.Generator.Diagnostics;
 
 namespace Terminus.Generator.Validation;
@@ -40,7 +42,8 @@ internal class RefOrOutParameterValidator : IMethodValidator
 
     private Diagnostic CreateNoRefOrOutParameterDiagnostic(IMethodSymbol methodSymbol, IParameterSymbol parameter)
     {
-        var location = parameter.Locations.FirstOrDefault()
+        var location = GetRefOrOutKeywordLocation(parameter)
+                       ?? parameter.Locations.FirstOrDefault()
                        ?? methodSymbol.Locations.FirstOrDefault();
         
         return Diagnostic.Create(
@@ -48,6 +51,21 @@ internal class RefOrOutParameterValidator : IMethodValidator
             location, 
             methodSymbol.Name, 
             parameter.Name);
+    }
+
+    private static Location? GetRefOrOutKeywordLocation(IParameterSymbol parameter)
+    {
+        var syntaxReference = parameter.DeclaringSyntaxReferences.FirstOrDefault();
+        if (syntaxReference?.GetSyntax() is not ParameterSyntax parameterSyntax)
+            return null;
+
+        // Get the ref/out/in keyword token
+        var modifierToken = parameterSyntax.Modifiers
+            .FirstOrDefault(m => m.IsKind(SyntaxKind.RefKeyword) || 
+                                 m.IsKind(SyntaxKind.OutKeyword) || 
+                                 m.IsKind(SyntaxKind.InKeyword));
+        
+        return modifierToken.GetLocation();
     }
 
     private static bool IsRefOrOut(IParameterSymbol p) => p.RefKind is RefKind.Ref or RefKind.Out or RefKind.In;

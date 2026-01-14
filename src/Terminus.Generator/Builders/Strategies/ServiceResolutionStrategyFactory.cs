@@ -24,7 +24,7 @@ internal static class ServiceResolutionStrategyFactory
         }
 
         // This should never happen given our strategies cover all cases
-        throw new System.InvalidOperationException(
+        throw new InvalidOperationException(
             $"No service resolution strategy found for method {methodInfo.MethodSymbol.Name}");
     }
 }

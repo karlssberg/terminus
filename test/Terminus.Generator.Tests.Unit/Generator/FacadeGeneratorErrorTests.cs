@@ -106,10 +106,10 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
             source,
             expectedDiagnostics: [
                 DiagnosticResult.CompilerError("TM0002")
-                    .WithSpan(SourceFilename, 14, 47, 14, 52) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
+                    .WithSpan(SourceFilename, 14, 38, 14, 41) // TestFacadeMethods.ProcessRef(ref int value) parameter 'value'
                     .WithArguments("ProcessRef", "value"),
                 DiagnosticResult.CompilerError("TM0002")
-                    .WithSpan(SourceFilename, 17, 47, 17, 52) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
+                    .WithSpan(SourceFilename, 17, 38, 17, 41) // TestFacadeMethods.ProcessOut(out int value) parameter 'value'
                     .WithArguments("ProcessOut", "value"),
             ],
             sourceFilename: SourceFilename);
@@ -178,6 +178,176 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
                     {
                         global::Demo.A.Hello(world);
                         global::Demo.B.Goodbye(world);
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IFacade_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    public async Task Given_invalid_CommandName_Should_fail_TM0004()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute), CommandName="123Invalid")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class TestFacadeMethods
+                {
+                    [FacadeMethod]
+                    public static void Process() { }
+                }
+            }
+            """;
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 6, 57, 6, 69)
+                    .WithArguments("123Invalid", "CommandName", "IFacade"),
+            ],
+            sourceFilename: SourceFilename);
+    }
+
+    [Fact]
+    public async Task Given_invalid_AsyncQueryName_Should_fail_TM0004()
+    {
+        const string source =
+            """
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute), AsyncQueryName="Query-Name")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class TestFacadeMethods
+                {
+                    [FacadeMethod]
+                    public static Task<int> GetValueAsync() => Task.FromResult(42);
+                }
+            }
+            """;
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 7, 60, 7, 72)
+                    .WithArguments("Query-Name", "AsyncQueryName", "IFacade"),
+            ],
+            sourceFilename: SourceFilename);
+    }
+
+    [Fact]
+    public async Task Given_multiple_invalid_method_names_Should_fail_TM0004_for_each()
+    {
+        const string source =
+            """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute),
+                    CommandName="Hello World",
+                    QueryName="",
+                    AsyncStreamName="Stream.Name")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+            }
+            """;
+
+        await VerifyAsync(
+            source,
+            expectedDiagnostics: [
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 9, 20, 9, 33)
+                    .WithArguments("Hello World", "CommandName", "IFacade"),
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 10, 18, 10, 20)
+                    .WithArguments("", "QueryName", "IFacade"),
+                DiagnosticResult.CompilerError("TM0004")
+                    .WithSpan(SourceFilename, 11, 24, 11, 37)
+                    .WithArguments("Stream.Name", "AsyncStreamName", "IFacade"),
+            ],
+            sourceFilename: SourceFilename);
+    }
+
+    [Fact]
+    public async Task Given_valid_custom_method_names_Should_generate_successfully()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                [FacadeOf(typeof(FacadeMethodAttribute),
+                    CommandName="Execute",
+                    QueryName="Query",
+                    AsyncCommandName="ExecuteAsync")]
+                public partial interface IFacade;
+
+                public class FacadeMethodAttribute : Attribute;
+
+                public static class TestFacadeMethods
+                {
+                    [FacadeMethod]
+                    public static void Process() { }
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to:<br/>
+                /// <see cref="Demo.TestFacadeMethods"/><br/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IFacade
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.TestFacadeMethods.Process()"/>
+                    /// </summary>
+                    void Execute();
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                /// <summary>
+                /// Facade implementation class delegating to:<br/>
+                /// <see cref="Demo.TestFacadeMethods"/><br/>
+                /// </summary>
+                [Terminus.FacadeImplementation(typeof(global::Demo.IFacade))]
+                public sealed class IFacade_Generated : global::Demo.IFacade
+                {
+                    void global::Demo.IFacade.Execute()
+                    {
+                        global::Demo.TestFacadeMethods.Process();
                     }
                 }
             }

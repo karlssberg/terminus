@@ -49,7 +49,7 @@ internal static class DocumentationBuilder
         }
 
         // Multiple types - list one per line
-        var triviaList = new System.Collections.Generic.List<SyntaxTrivia>
+        var triviaList = new List<SyntaxTrivia>
         {
             Comment("/// <summary>"),
             CarriageReturnLineFeed,
@@ -120,7 +120,7 @@ internal static class DocumentationBuilder
 
     private static SyntaxTriviaList BuildAggregatedMethodDocumentation(AggregatedMethodGroup methodGroup)
     {
-        var triviaList = new System.Collections.Generic.List<SyntaxTrivia>
+        var triviaList = new List<SyntaxTrivia>
         {
             Comment("/// <summary>"),
             CarriageReturnLineFeed,
