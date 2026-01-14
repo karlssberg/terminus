@@ -34,64 +34,102 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         if (arg.Value.IsNull)
             return null;
 
-        // Get the syntax node for the attribute
+        var argumentSyntax = GetArgumentSyntax(name);
+        if (argumentSyntax == null)
+            return null;
+
+        return argumentSyntax.Expression switch
+        {
+            LiteralExpressionSyntax literalExpr => GetLiteralLocation(literalExpr),
+            InterpolatedStringExpressionSyntax interpolatedString => GetInterpolatedStringLocation(interpolatedString),
+            _ => argumentSyntax.Expression.GetLocation()
+        };
+    }
+
+    private AttributeArgumentSyntax? GetArgumentSyntax(string name)
+    {
         var attributeSyntax = aggregatorAttrData.ApplicationSyntaxReference?.GetSyntax();
         if (attributeSyntax is not AttributeSyntax attrSyntax)
             return null;
 
-        // Find the argument with the matching name
-        var argumentSyntax = attrSyntax.ArgumentList?.Arguments
+        return attrSyntax.ArgumentList?.Arguments
             .FirstOrDefault(a => a.NameEquals?.Name.Identifier.Text == name);
+    }
 
-        if (argumentSyntax?.NameEquals == null)
-            return argumentSyntax?.Expression.GetLocation();
+    private static Location GetInterpolatedStringLocation(InterpolatedStringExpressionSyntax interpolatedString)
+    {
+        var location = interpolatedString.GetLocation();
+        var text = interpolatedString.ToString();
 
-        if (argumentSyntax.Expression is InterpolatedStringExpressionSyntax interpolatedString)
+        var startOffset = 0;
+        if (text.StartsWith("$@\"")) startOffset = 3;
+        else if (text.StartsWith("@$\"")) startOffset = 3;
+        else if (text.StartsWith("$\"")) startOffset = 2;
+        else if (text.StartsWith("$\"\"\""))
         {
-            return interpolatedString.GetLocation();
+            var dollarCount = 0;
+            while (dollarCount < text.Length && text[dollarCount] == '$') dollarCount++;
+            var quoteCount = 0;
+            while (dollarCount + quoteCount < text.Length && text[dollarCount + quoteCount] == '"') quoteCount++;
+            startOffset = dollarCount + quoteCount;
         }
 
-        if (argumentSyntax.Expression is not LiteralExpressionSyntax literalExpr)
-            return argumentSyntax.Expression.GetLocation();
-        
+        var endOffset = 0;
+        if (text.EndsWith("\"\"\""))
+        {
+            while (endOffset < text.Length && text[text.Length - 1 - endOffset] == '"') endOffset++;
+        }
+        else if (text.EndsWith("\""))
+        {
+            endOffset = 1;
+        }
+
+        if (startOffset > 0 || endOffset > 0)
+        {
+            var span = location.SourceSpan;
+            var newLength = Math.Max(0, span.Length - startOffset - endOffset);
+            var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + startOffset, newLength);
+            return Location.Create(location.SourceTree!, adjustedSpan);
+        }
+
+        return location;
+    }
+
+    private static Location GetLiteralLocation(LiteralExpressionSyntax literalExpr)
+    {
         var literalToken = literalExpr.Token;
         var literalLocation = literalToken.GetLocation();
-        
-        // Adjust location to exclude the opening and closing quotes/delimiters
         var text = literalToken.Text;
-        if (text.StartsWith("\""))
+
+        var startOffset = 0;
+        if (text.StartsWith("@\"")) startOffset = 2;
+        else if (text.StartsWith("\"\"\""))
         {
-            var startQuotes = 0;
-            while (startQuotes < text.Length && text[startQuotes] == '"')
-            {
-                startQuotes++;
-            }
-
-            var endQuotes = 0;
-            while (endQuotes < text.Length && text[text.Length - 1 - endQuotes] == '"')
-            {
-                endQuotes++;
-            }
-
-            // Ensure we don't count the same quotes twice for very short strings (like """)
-            if (startQuotes + endQuotes > text.Length)
-            {
-                startQuotes = text.Length / 2;
-                endQuotes = text.Length - startQuotes;
-            }
-
-            if (startQuotes > 0 && endQuotes > 0)
-            {
-                var sourceTree = literalLocation.SourceTree;
-                var span = literalLocation.SourceSpan;
-                var newLength = span.Length - startQuotes - endQuotes;
-                if (newLength < 0) newLength = 0;
-                
-                var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + startQuotes, newLength);
-                return Location.Create(sourceTree!, adjustedSpan);
-            }
+            while (startOffset < text.Length && text[startOffset] == '"') startOffset++;
         }
-        
+        else if (text.StartsWith("\""))
+        {
+            startOffset = 1;
+        }
+
+        var endOffset = 0;
+        if (text.EndsWith("\"\"\""))
+        {
+            while (endOffset < text.Length && text[text.Length - 1 - endOffset] == '"') endOffset++;
+        }
+        else if (text.EndsWith("\""))
+        {
+            endOffset = 1;
+        }
+
+        if (startOffset > 0 || endOffset > 0)
+        {
+            var span = literalLocation.SourceSpan;
+            var newLength = Math.Max(0, span.Length - startOffset - endOffset);
+            var adjustedSpan = new Microsoft.CodeAnalysis.Text.TextSpan(span.Start + startOffset, newLength);
+            return Location.Create(literalLocation.SourceTree!, adjustedSpan);
+        }
+
         return literalLocation;
     }
 
