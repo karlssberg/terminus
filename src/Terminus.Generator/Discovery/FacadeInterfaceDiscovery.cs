@@ -48,14 +48,30 @@ internal sealed class FacadeInterfaceDiscovery
             
             var generationFeatures = new GenerationFeatures(aggregatorAttrData);
 
-            // ConstructorArguments: [0] = first type, [1...] = params Type[] or following types
-            var allConstructorArguments = aggregatorAttrData.ConstructorArguments;
-            var facadeMethodAttrTypes = allConstructorArguments
-                .Where(arg => arg.Kind is TypedConstantKind.Type or TypedConstantKind.Array)
-                .SelectMany(arg => arg.Kind == TypedConstantKind.Array ? arg.Values : [arg])
-                .Select(arg => arg.Value)
-                .OfType<INamedTypeSymbol>()
-                .ToImmutableArray();
+            // For generic attributes like FacadeOfAttribute<T>, get type arguments
+            // For non-generic attributes, get constructor arguments
+            ImmutableArray<INamedTypeSymbol> facadeMethodAttrTypes;
+
+            if (aggregatorAttrData.AttributeClass is { IsGenericType: true, TypeArguments.Length: > 0 })
+            {
+                // Generic attribute: extract type arguments (e.g., FacadeOfAttribute<T> -> T)
+                facadeMethodAttrTypes = [
+                    ..aggregatorAttrData.AttributeClass.TypeArguments
+                        .OfType<INamedTypeSymbol>()
+                ];
+            }
+            else
+            {
+                // Non-generic attribute: extract constructor arguments
+                var allConstructorArguments = aggregatorAttrData.ConstructorArguments;
+                facadeMethodAttrTypes = [
+                    ..allConstructorArguments
+                        .Where(arg => arg.Kind is TypedConstantKind.Type or TypedConstantKind.Array)
+                        .SelectMany(arg => arg.Kind == TypedConstantKind.Array ? arg.Values : [arg])
+                        .Select(arg => arg.Value)
+                        .OfType<INamedTypeSymbol>()
+                ];
+            }
 
             // TargetTypes is not supported in the current design - always empty
             var targetTypes = ImmutableArray<INamedTypeSymbol>.Empty;
