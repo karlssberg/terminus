@@ -77,51 +77,50 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             // For void methods, just execute all handlers in sequence
             case ReturnTypeKind.Void:
             {
-                foreach (var method in methodGroup.Methods)
+                foreach (var statement in methodGroup.Methods.Select(method =>
+                    ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, method))))
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    yield return ExpressionStatement(invocation);
+                    yield return statement;
                 }
                 yield break;
             }
             // For result methods (T), yield return each result
             case ReturnTypeKind.Result:
             {
-                foreach (var method in methodGroup.Methods)
+                foreach (var statement in methodGroup.Methods.Select(method =>
+                    YieldStatement(SyntaxKind.YieldReturnStatement, _invocationBuilder.BuildInvocation(facadeInfo, method))))
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
+                    yield return statement;
                 }
                 yield break;
             }
             // For async result methods (Task<T>, ValueTask<T>), yield return await each result
             case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
             {
-                foreach (var method in methodGroup.Methods)
+                foreach (var statement in methodGroup.Methods.Select(method =>
+                    YieldStatement(SyntaxKind.YieldReturnStatement, AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, method)))))
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    var awaitedInvocation = AwaitExpression(invocation);
-                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
+                    yield return statement;
                 }
                 yield break;
             }
             // For Task/ValueTask without results, await all
             case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
             {
-                foreach (var method in methodGroup.Methods)
+                foreach (var statement in methodGroup.Methods.Select(method =>
+                    ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, method)))))
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    yield return ExpressionStatement(AwaitExpression(invocation));
+                    yield return statement;
                 }
                 yield break;
             }
             // For other return types (e.g., AsyncEnumerable), execute all
             default:
             {
-                foreach (var method in methodGroup.Methods)
+                foreach (var statement in methodGroup.Methods.Select(method =>
+                    ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, method))))
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    yield return ExpressionStatement(invocation);
+                    yield return statement;
                 }
                 yield break;
             }

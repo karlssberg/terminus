@@ -61,26 +61,16 @@ internal static class ImplementationClassBuilder
         var members = new List<MemberDeclarationSyntax>();
 
         // Add fields
-        switch (facadeInfo.Features.IsScoped)
-        {
-            case true when hasInstanceMethods:
-                members.AddRange(FieldBuilder.BuildScopedFields());
-                break;
-            case false:
-                members.AddRange(FieldBuilder.BuildNonScopedFields());
-                break;
-        }
+        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+            members.AddRange(FieldBuilder.BuildScopedFields());
+        else if (!facadeInfo.Features.IsScoped)
+            members.AddRange(FieldBuilder.BuildNonScopedFields());
 
         // Add constructor
-        switch (facadeInfo.Features.IsScoped)
-        {
-            case true when hasInstanceMethods:
-                members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
-                break;
-            case false:
-                members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
-                break;
-        }
+        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+            members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
+        else if (!facadeInfo.Features.IsScoped)
+            members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
 
         // Add implementation methods
         members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
@@ -126,12 +116,12 @@ internal static class ImplementationClassBuilder
         FacadeInterfaceInfo facadeInfo,
         ImmutableArray<AggregatedMethodGroup> methodGroups)
     {
-        foreach (var group in methodGroups)
+        return methodGroups.Select(group =>
         {
             // Use the primary method for strategy determination
             var strategy = ServiceResolutionStrategyFactory.GetStrategy(facadeInfo, group.PrimaryMethod);
             var methodBuilder = new MethodBuilder(strategy);
-            yield return methodBuilder.BuildImplementationMethod(facadeInfo, group);
-        }
+            return methodBuilder.BuildImplementationMethod(facadeInfo, group);
+        });
     }
 }

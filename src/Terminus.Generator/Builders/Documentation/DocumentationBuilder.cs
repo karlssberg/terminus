@@ -56,11 +56,12 @@ internal static class DocumentationBuilder
             Comment($"/// {description} delegating to:<br/>")
         };
 
-        foreach (var type in containingTypes)
-        {
-            triviaList.Add(CarriageReturnLineFeed);
-            triviaList.Add(Comment($"/// <see cref=\"{type}\"/><br/>"));
-        }
+        triviaList.AddRange(containingTypes
+            .SelectMany(IEnumerable<SyntaxTrivia>(type) => 
+            [
+                CarriageReturnLineFeed,
+                Comment($"/// <see cref=\"{type}\"/><br/>")
+            ]));
 
         triviaList.Add(CarriageReturnLineFeed);
         triviaList.Add(Comment("/// </summary>"));
@@ -87,23 +88,32 @@ internal static class DocumentationBuilder
         var crefMethodSignature = BuildMethodCrefSignature(methodInfo.MethodSymbol);
 
         // If the original method has documentation, include it
-        if (!string.IsNullOrWhiteSpace(methodInfo.DocumentationXml))
+        if (string.IsNullOrWhiteSpace(methodInfo.DocumentationXml))
+            return TriviaList(
+                Comment("/// <summary>"),
+                CarriageReturnLineFeed,
+                Comment($"/// Delegates to:<br/>"),
+                CarriageReturnLineFeed,
+                Comment($"/// <see cref=\"{crefMethodSignature}\"/>"),
+                CarriageReturnLineFeed,
+                Comment("/// </summary>"),
+                CarriageReturnLineFeed);
+        
+        var originalDoc = ExtractDocumentationContent(methodInfo.DocumentationXml!);
+        
+        if (!string.IsNullOrWhiteSpace(originalDoc))
         {
-            var originalDoc = ExtractDocumentationContent(methodInfo.DocumentationXml!);
-            if (!string.IsNullOrWhiteSpace(originalDoc))
-            {
-                return TriviaList(
-                    Comment("/// <summary>"),
-                    CarriageReturnLineFeed,
-                    Comment($"/// Delegates to:<br/>"),
-                    CarriageReturnLineFeed,
-                    Comment($"/// <see cref=\"{crefMethodSignature}\"/>"),
-                    CarriageReturnLineFeed,
-                    Comment($"/// <para>{originalDoc}</para>"),
-                    CarriageReturnLineFeed,
-                    Comment("/// </summary>"),
-                    CarriageReturnLineFeed);
-            }
+            return TriviaList(
+                Comment("/// <summary>"),
+                CarriageReturnLineFeed,
+                Comment($"/// Delegates to:<br/>"),
+                CarriageReturnLineFeed,
+                Comment($"/// <see cref=\"{crefMethodSignature}\"/>"),
+                CarriageReturnLineFeed,
+                Comment($"/// <para>{originalDoc}</para>"),
+                CarriageReturnLineFeed,
+                Comment("/// </summary>"),
+                CarriageReturnLineFeed);
         }
 
         // No original documentation, just show delegation

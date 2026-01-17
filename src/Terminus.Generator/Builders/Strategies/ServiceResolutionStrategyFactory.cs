@@ -17,14 +17,8 @@ internal static class ServiceResolutionStrategyFactory
     /// </summary>
     public static IServiceResolutionStrategy GetStrategy(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
     {
-        foreach (var strategy in Strategies)
-        {
-            if (strategy.CanResolve(facadeInfo, methodInfo))
-                return strategy;
-        }
-
-        // This should never happen given our strategies cover all cases
-        throw new InvalidOperationException(
-            $"No service resolution strategy found for method {methodInfo.MethodSymbol.Name}");
+        return Strategies.FirstOrDefault(s => s.CanResolve(facadeInfo, methodInfo))
+            ?? throw new InvalidOperationException(
+                $"No service resolution strategy found for method {methodInfo.MethodSymbol.Name}");
     }
 }

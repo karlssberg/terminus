@@ -62,22 +62,21 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         var text = interpolatedString.ToString();
 
         var startOffset = 0;
-        if (text.StartsWith("$@\"")) startOffset = 3;
-        else if (text.StartsWith("@$\"")) startOffset = 3;
-        else if (text.StartsWith("$\"")) startOffset = 2;
+        if (text.StartsWith("$@\"") || text.StartsWith("@$\""))
+            startOffset = 3;
+        else if (text.StartsWith("$\""))
+            startOffset = 2;
         else if (text.StartsWith("$\"\"\""))
         {
-            var dollarCount = 0;
-            while (dollarCount < text.Length && text[dollarCount] == '$') dollarCount++;
-            var quoteCount = 0;
-            while (dollarCount + quoteCount < text.Length && text[dollarCount + quoteCount] == '"') quoteCount++;
+            var dollarCount = text.TakeWhile(c => c == '$').Count();
+            var quoteCount = text.Skip(dollarCount).TakeWhile(c => c == '"').Count();
             startOffset = dollarCount + quoteCount;
         }
 
         var endOffset = 0;
         if (text.EndsWith("\"\"\""))
         {
-            while (endOffset < text.Length && text[text.Length - 1 - endOffset] == '"') endOffset++;
+            endOffset = text.Reverse().TakeWhile(c => c == '"').Count();
         }
         else if (text.EndsWith("\""))
         {
@@ -102,25 +101,18 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         var text = literalToken.Text;
 
         var startOffset = 0;
-        if (text.StartsWith("@\"")) startOffset = 2;
+        if (text.StartsWith("@\""))
+            startOffset = 2;
         else if (text.StartsWith("\"\"\""))
-        {
-            while (startOffset < text.Length && text[startOffset] == '"') startOffset++;
-        }
+            startOffset = text.TakeWhile(c => c == '"').Count();
         else if (text.StartsWith("\""))
-        {
             startOffset = 1;
-        }
 
         var endOffset = 0;
         if (text.EndsWith("\"\"\""))
-        {
-            while (endOffset < text.Length && text[text.Length - 1 - endOffset] == '"') endOffset++;
-        }
+            endOffset = text.Reverse().TakeWhile(c => c == '"').Count();
         else if (text.EndsWith("\""))
-        {
             endOffset = 1;
-        }
 
         if (startOffset > 0 || endOffset > 0)
         {

@@ -73,21 +73,15 @@ internal class DuplicateSignatureValidator : IMethodValidator
 
             if (x.ParameterTypes.Length != y.ParameterTypes.Length)
                 return false;
-            
+
             if (x.GenericConstraints.Length != y.GenericConstraints.Length)
                 return false;
 
-            for (var i = 0; i < x.ParameterTypes.Length; i++)
-            {
-                if (!SymbolEqualityComparer.Default.Equals(x.ParameterTypes[i], y.ParameterTypes[i]))
-                    return false;
-            }
+            if (!x.ParameterTypes.AsEnumerable().SequenceEqual(y.ParameterTypes, SymbolEqualityComparer.Default))
+                return false;
 
-            for (var i = 0; i < x.GenericConstraints.Length; i++)
-            {
-                if (x.GenericConstraints[i] != y.GenericConstraints[i])
-                    return false;
-            }
+            if (!x.GenericConstraints.AsEnumerable().SequenceEqual(y.GenericConstraints))
+                return false;
 
             return true;
         }

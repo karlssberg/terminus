@@ -135,17 +135,11 @@ internal static class MethodSignatureGrouper
             if (x.GenericConstraints.Length != y.GenericConstraints.Length)
                 return false;
 
-            for (var i = 0; i < x.ParameterTypes.Length; i++)
-            {
-                if (!SymbolEqualityComparer.Default.Equals(x.ParameterTypes[i], y.ParameterTypes[i]))
-                    return false;
-            }
+            if (!x.ParameterTypes.AsEnumerable().SequenceEqual(y.ParameterTypes, SymbolEqualityComparer.Default))
+                return false;
 
-            for (var i = 0; i < x.GenericConstraints.Length; i++)
-            {
-                if (x.GenericConstraints[i] != y.GenericConstraints[i])
-                    return false;
-            }
+            if (!x.GenericConstraints.AsEnumerable().SequenceEqual(y.GenericConstraints))
+                return false;
 
             return true;
         }
@@ -157,16 +151,12 @@ internal static class MethodSignatureGrouper
                 var hash = 17;
                 hash = hash * 31 + (obj.Name?.GetHashCode() ?? 0);
                 hash = hash * 31 + obj.ParameterTypes.Length;
-                foreach (var paramType in obj.ParameterTypes)
-                {
-                    hash = hash * 31 + SymbolEqualityComparer.Default.GetHashCode(paramType);
-                }
+                hash = obj.ParameterTypes.Aggregate(hash, (current, paramType) =>
+                    current * 31 + SymbolEqualityComparer.Default.GetHashCode(paramType));
 
                 hash = hash * 31 + obj.GenericConstraints.Length;
-                foreach (var constraint in obj.GenericConstraints)
-                {
-                    hash = hash * 31 + (constraint?.GetHashCode() ?? 0);
-                }
+                hash = obj.GenericConstraints.Aggregate(hash, (current, constraint) =>
+                    current * 31 + (constraint?.GetHashCode() ?? 0));
 
                 return hash;
             }

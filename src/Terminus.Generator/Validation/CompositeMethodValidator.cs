@@ -12,24 +12,12 @@ internal sealed class CompositeMethodValidator(params IMethodValidator[] validat
     /// <inheritdoc />
     public void Add(CandidateMethodInfo methodInfo, FacadeInterfaceInfo facadeInfo)
     {
-        foreach (var validator in validators)
-        {
-            validator.Add(methodInfo, facadeInfo);
-        }
+        Array.ForEach(validators, v => v.Add(methodInfo, facadeInfo));
     }
 
     /// <inheritdoc />
     public bool Validate(SourceProductionContext context)
     {
-        var hasErrors = false;
-        foreach (var validator in validators)
-        {
-            if (validator.Validate(context))
-            {
-                hasErrors = true;
-            }
-        }
-
-        return hasErrors;
+        return validators.Aggregate(false, (hasErrors, validator) => validator.Validate(context) || hasErrors);
     }
 }

@@ -108,25 +108,20 @@ internal sealed class MethodSignatureBuilder
 
         var returnType = methodInfo.MethodSymbol.ReturnType;
 
-        switch (methodInfo.ReturnTypeKind)
+        return methodInfo.ReturnTypeKind switch
         {
-            case ReturnTypeKind.Result:
-                // T → IEnumerable<T>
-                var resultType = returnType.ToDisplayString(FullyQualifiedFormat);
-                return ParseTypeName($"global::System.Collections.Generic.IEnumerable<{resultType}>");
+            // T → IEnumerable<T>
+            ReturnTypeKind.Result => ParseTypeName(
+                $"global::System.Collections.Generic.IEnumerable<{returnType.ToDisplayString(FullyQualifiedFormat)}>"),
 
-            case ReturnTypeKind.TaskWithResult:
-            case ReturnTypeKind.ValueTaskWithResult:
-                // Task<T> → IAsyncEnumerable<T>
-                // ValueTask<T> → IAsyncEnumerable<T>
-                var namedTypeSymbol = (INamedTypeSymbol)returnType;
-                var elementType = namedTypeSymbol.TypeArguments[0].ToDisplayString(FullyQualifiedFormat);
-                return ParseTypeName($"global::System.Collections.Generic.IAsyncEnumerable<{elementType}>");
+            // Task<T> → IAsyncEnumerable<T>
+            // ValueTask<T> → IAsyncEnumerable<T>
+            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult => ParseTypeName(
+                $"global::System.Collections.Generic.IAsyncEnumerable<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(FullyQualifiedFormat)}>"),
 
-            default:
-                // Task, ValueTask, void - keep as is
-                return ParseTypeName(returnType.ToDisplayString(FullyQualifiedFormat));
-        }
+            // Task, ValueTask, void - keep as is
+            _ => ParseTypeName(returnType.ToDisplayString(FullyQualifiedFormat))
+        };
     }
 
     private static ParameterListSyntax BuildParameterList(CandidateMethodInfo methodInfo)

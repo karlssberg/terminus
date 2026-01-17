@@ -30,38 +30,42 @@ internal class ConflictingNameValidator : IMethodValidator
     /// <inheritdoc />
     public bool Validate(SourceProductionContext context)
     {
-        var hasErrors = false;
-
         if (_facadeInfo is not { } facadeInfo)
             return false;
 
-        foreach (var methodInfo in _methods)
-        {
-            var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
-            if (ReservedNames.Contains(methodName))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    Diagnostics.ConflictingGeneratedMemberName,
-                    methodInfo.MethodSymbol.Locations.FirstOrDefault(),
-                    methodName,
-                    methodInfo.MethodSymbol.Name));
-                hasErrors = true;
-            }
+        // Check method name conflicts
+        var methodNameConflicts = _methods
+            .Select(methodInfo => (methodInfo, methodName: MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo)))
+            .Where(x => ReservedNames.Contains(x.methodName))
+            .ToList();
 
-            foreach (var parameter in methodInfo.MethodSymbol.Parameters)
-            {
-                if (ReservedNames.Contains(parameter.Name))
-                {
-                    context.ReportDiagnostic(Diagnostic.Create(
-                        Diagnostics.ConflictingGeneratedMemberName,
-                        parameter.Locations.FirstOrDefault() ?? methodInfo.MethodSymbol.Locations.FirstOrDefault(),
-                        parameter.Name,
-                        methodInfo.MethodSymbol.Name));
-                    hasErrors = true;
-                }
-            }
+        // Check parameter name conflicts
+        var parameterNameConflicts = _methods
+            .SelectMany(methodInfo => methodInfo.MethodSymbol.Parameters
+                .Where(parameter => ReservedNames.Contains(parameter.Name))
+                .Select(parameter => (methodInfo, parameter)))
+            .ToList();
+
+        // Report method name conflicts
+        foreach (var (methodInfo, methodName) in methodNameConflicts)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.ConflictingGeneratedMemberName,
+                methodInfo.MethodSymbol.Locations.FirstOrDefault(),
+                methodName,
+                methodInfo.MethodSymbol.Name));
         }
 
-        return hasErrors;
+        // Report parameter name conflicts
+        foreach (var (methodInfo, parameter) in parameterNameConflicts)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.ConflictingGeneratedMemberName,
+                parameter.Locations.FirstOrDefault() ?? methodInfo.MethodSymbol.Locations.FirstOrDefault(),
+                parameter.Name,
+                methodInfo.MethodSymbol.Name));
+        }
+
+        return methodNameConflicts.Count > 0 || parameterNameConflicts.Count > 0;
     }
 }
