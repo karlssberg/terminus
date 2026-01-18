@@ -1,14 +1,16 @@
 namespace Terminus.Generator.Tests.Unit.Generator;
 
 /// <summary>
-/// Tests for attribute metadata inclusion in aggregated method results.
-/// When IncludeAttributeMetadata = true, aggregated methods return tuples containing
-/// both the attribute instance and the result.
+/// Tests for attribute metadata inclusion with lazy execution in facade methods.
+/// When IncludeAttributeMetadata = true, facade methods return IEnumerable of tuples containing
+/// the attribute instance and a delegate (Func or Action) that can be invoked to execute the handler.
+/// This enables filtering handlers based on attribute properties before execution.
+/// Works with single methods and aggregated methods alike.
 /// </summary>
 public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
 {
     [Fact]
-    public async Task Given_aggregated_methods_with_metadata_enabled_Should_return_tuple_with_common_base()
+    public async Task Given_aggregated_methods_with_metadata_enabled_Should_return_lazy_tuple_with_common_base()
     {
         const string source =
             """
@@ -70,7 +72,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handlers1.Process(string)"/><br/>
                     /// <see cref="Demo.Handlers2.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -92,10 +94,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.CommandAttribute("Create"), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handlers1>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.QueryAttribute("Get"), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handlers2>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.CommandAttribute("Create"), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handlers1>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.QueryAttribute("Get"), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handlers2>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -188,7 +190,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
     }
 
     [Fact]
-    public async Task Given_aggregated_methods_with_no_common_base_Should_return_tuple_with_System_Attribute()
+    public async Task Given_aggregated_methods_with_no_common_base_Should_return_lazy_tuple_with_System_Attribute()
     {
         const string source =
             """
@@ -237,7 +239,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.CommandHandler.Process(string)"/><br/>
                     /// <see cref="Demo.QueryHandler.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::System.Attribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::System.Attribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -259,10 +261,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::System.Attribute Attribute, string Result)> global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::System.Attribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.CommandAttribute(), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.CommandHandler>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.QueryAttribute(), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.QueryHandler>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.CommandAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.CommandHandler>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.QueryAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.QueryHandler>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -272,7 +274,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
     }
 
     [Fact]
-    public async Task Given_void_aggregated_methods_with_metadata_Should_not_return_tuple()
+    public async Task Given_void_aggregated_methods_with_metadata_Should_return_Action_tuple()
     {
         const string source =
             """
@@ -319,7 +321,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.Process(string)"/><br/>
                     /// <see cref="Demo.Handler2.Process(string)"/>
                     /// </summary>
-                    void Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Action Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -341,10 +343,16 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    void global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Action Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input);
-                        global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input);
+                        yield return (new global::Demo.HandlerAttribute(), () =>
+                        {
+                            global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input);
+                        });
+                        yield return (new global::Demo.HandlerAttribute(), () =>
+                        {
+                            global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input);
+                        });
                     }
                 }
             }
@@ -354,7 +362,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
     }
 
     [Fact]
-    public async Task Given_Task_aggregated_methods_with_metadata_Should_not_return_tuple()
+    public async Task Given_Task_aggregated_methods_with_metadata_Should_return_FuncTask_tuple()
     {
         const string source =
             """
@@ -402,7 +410,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.ProcessAsync(string)"/><br/>
                     /// <see cref="Demo.Handler2.ProcessAsync(string)"/>
                     /// </summary>
-                    global::System.Threading.Tasks.Task ProcessAsync(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.Task> Handler)> ProcessAsync(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -424,10 +432,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    async global::System.Threading.Tasks.Task global::Demo.IHandlers.ProcessAsync(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.Task> Handler)> global::Demo.IHandlers.ProcessAsync(string input)
                     {
-                        await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).ProcessAsync(input).ConfigureAwait(false);
-                        await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).ProcessAsync(input).ConfigureAwait(false);
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).ProcessAsync(input));
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).ProcessAsync(input));
                     }
                 }
             }
@@ -437,7 +445,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
     }
 
     [Fact]
-    public async Task Given_async_result_aggregated_methods_with_metadata_Should_return_async_enumerable_tuple()
+    public async Task Given_async_result_aggregated_methods_with_metadata_Should_return_FuncTaskT_tuple()
     {
         const string source =
             """
@@ -500,7 +508,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.GetUserAsync(int)"/><br/>
                     /// <see cref="Demo.Handler2.GetUserAsync(int)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IAsyncEnumerable<(global::Demo.HandlerAttribute Attribute, global::Demo.User Result)> GetUserAsync(int id);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.Task<global::Demo.User>> Handler)> GetUserAsync(int id);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -522,10 +530,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    async global::System.Collections.Generic.IAsyncEnumerable<(global::Demo.HandlerAttribute Attribute, global::Demo.User Result)> global::Demo.IHandlers.GetUserAsync(int id)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.Task<global::Demo.User>> Handler)> global::Demo.IHandlers.GetUserAsync(int id)
                     {
-                        yield return (new global::Demo.HandlerAttribute(1), await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false));
-                        yield return (new global::Demo.HandlerAttribute(2), await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false));
+                        yield return (new global::Demo.HandlerAttribute(1), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).GetUserAsync(id));
+                        yield return (new global::Demo.HandlerAttribute(2), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).GetUserAsync(id));
                     }
                 }
             }
@@ -587,7 +595,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.Process(string)"/><br/>
                     /// <see cref="Demo.Handler2.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -609,10 +617,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.HandlerAttribute("First"), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.HandlerAttribute("Second"), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute("First"), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute("Second"), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -674,7 +682,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.CommandHandler.Process(string)"/><br/>
                     /// <see cref="Demo.QueryHandler.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.SyncHandlerAttribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.SyncHandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -696,10 +704,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.SyncHandlerAttribute Attribute, string Result)> global::Demo.ISyncHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.SyncHandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.ISyncHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.CommandAttribute(), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.CommandHandler>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.QueryAttribute(), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.QueryHandler>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.CommandAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.CommandHandler>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.QueryAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.QueryHandler>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -761,7 +769,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.Process(string)"/><br/>
                     /// <see cref="Demo.Handler2.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -783,10 +791,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.HandlerAttribute { Name = "First", Priority = 1 }, global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.HandlerAttribute { Name = "Second", Priority = 2 }, global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute { Name = "First", Priority = 1 }, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute { Name = "Second", Priority = 2 }, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -850,7 +858,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// <see cref="Demo.Handler1.Process(string)"/><br/>
                     /// <see cref="Demo.Handler2.Process(string)"/>
                     /// </summary>
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -872,10 +880,10 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, string Result)> global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        yield return (new global::Demo.HandlerAttribute((global::Demo.HandlerType)0), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
-                        yield return (new global::Demo.HandlerAttribute((global::Demo.HandlerType)1), global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute((global::Demo.HandlerType)0), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler1>(_serviceProvider).Process(input));
+                        yield return (new global::Demo.HandlerAttribute((global::Demo.HandlerType)1), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler2>(_serviceProvider).Process(input));
                     }
                 }
             }
@@ -885,7 +893,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
     }
 
     [Fact]
-    public async Task Given_non_aggregated_method_with_metadata_Should_not_affect_single_method()
+    public async Task Given_single_method_with_metadata_Should_return_lazy_tuple()
     {
         const string source =
             """
@@ -927,7 +935,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     /// Delegates to:<br/>
                     /// <see cref="Demo.Handler.Process(string)"/>
                     /// </summary>
-                    string Process(string input);
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
                 }
 
                 [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
@@ -947,9 +955,380 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                         _serviceProvider = serviceProvider;
                     }
 
-                    string global::Demo.IHandlers.Process(string input)
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
                     {
-                        return global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).Process(input);
+                        yield return (new global::Demo.HandlerAttribute("OnlyOne"), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).Process(input));
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IHandlers_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    public async Task Given_single_void_method_with_metadata_Should_return_Action_tuple()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                public class HandlerAttribute : Attribute { }
+
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                public partial interface IHandlers;
+
+                public class Handler
+                {
+                    [Handler]
+                    public void Process(string input) { }
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IHandlers
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.Handler.Process(string)"/>
+                    /// </summary>
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Action Handler)> Process(string input);
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IHandlers))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                public sealed class IHandlers_Generated : global::Demo.IHandlers
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IHandlers_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IHandlers_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Action Handler)> global::Demo.IHandlers.Process(string input)
+                    {
+                        yield return (new global::Demo.HandlerAttribute(), () =>
+                        {
+                            global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).Process(input);
+                        });
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IHandlers_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    [Trait("Category", "RequiresCoreRuntime")]
+    public async Task Given_ValueTask_method_with_metadata_Should_return_FuncValueTask_tuple()
+    {
+#if NET472
+        // Skip on .NET Framework 4.7.2 - ValueTask doesn't exist
+        await Task.CompletedTask;
+        return;
+#endif
+        const string source =
+            """
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                public class HandlerAttribute : Attribute { }
+
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                public partial interface IHandlers;
+
+                public class Handler
+                {
+                    [Handler]
+                    public ValueTask ProcessAsync(string input) => new ValueTask();
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IHandlers
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.Handler.ProcessAsync(string)"/>
+                    /// </summary>
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.ValueTask> Handler)> ProcessAsync(string input);
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IHandlers))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                public sealed class IHandlers_Generated : global::Demo.IHandlers
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IHandlers_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IHandlers_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.ValueTask> Handler)> global::Demo.IHandlers.ProcessAsync(string input)
+                    {
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).ProcessAsync(input));
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IHandlers_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    [Trait("Category", "RequiresCoreRuntime")]
+    public async Task Given_ValueTaskT_method_with_metadata_Should_return_FuncValueTaskT_tuple()
+    {
+#if NET472
+        // Skip on .NET Framework 4.7.2 - ValueTask.FromResult doesn't exist
+        await Task.CompletedTask;
+        return;
+#endif
+        const string source =
+            """
+            using System;
+            using System.Threading.Tasks;
+            using Terminus;
+
+            namespace Demo
+            {
+                public class HandlerAttribute : Attribute { }
+
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                public partial interface IHandlers;
+
+                public class Handler
+                {
+                    [Handler]
+                    public ValueTask<string> ProcessAsync(string input) => ValueTask.FromResult(input);
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IHandlers
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.Handler.ProcessAsync(string)"/>
+                    /// </summary>
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.ValueTask<string>> Handler)> ProcessAsync(string input);
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IHandlers))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                public sealed class IHandlers_Generated : global::Demo.IHandlers
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IHandlers_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IHandlers_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Threading.Tasks.ValueTask<string>> Handler)> global::Demo.IHandlers.ProcessAsync(string input)
+                    {
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).ProcessAsync(input));
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IHandlers_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    public async Task Given_IAsyncEnumerable_method_with_metadata_Should_return_Func_tuple()
+    {
+        const string source =
+            """
+            using System;
+            using System.Collections.Generic;
+            using Terminus;
+
+            namespace Demo
+            {
+                public class HandlerAttribute : Attribute { }
+
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                public partial interface IHandlers;
+
+                public class Handler
+                {
+                    [Handler]
+                    public async IAsyncEnumerable<string> StreamAsync(string input)
+                    {
+                        yield return input;
+                    }
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IHandlers
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.Handler.StreamAsync(string)"/>
+                    /// </summary>
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Collections.Generic.IAsyncEnumerable<string>> Handler)> StreamAsync(string input);
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IHandlers))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.Handler"/>
+                /// </summary>
+                public sealed class IHandlers_Generated : global::Demo.IHandlers
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IHandlers_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IHandlers_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<global::System.Collections.Generic.IAsyncEnumerable<string>> Handler)> global::Demo.IHandlers.StreamAsync(string input)
+                    {
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.Handler>(_serviceProvider).StreamAsync(input));
+                    }
+                }
+            }
+            """;
+
+        await VerifyAsync(source, ("Demo_IHandlers_Generated.g.cs", expected));
+    }
+
+    [Fact]
+    public async Task Given_static_method_with_metadata_Should_call_directly()
+    {
+        const string source =
+            """
+            using System;
+            using Terminus;
+
+            namespace Demo
+            {
+                public class HandlerAttribute : Attribute { }
+
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                public partial interface IHandlers;
+
+                public static class StaticHandler
+                {
+                    [Handler]
+                    public static string Process(string input) => input.ToUpper();
+                }
+            }
+            """;
+
+        const string expected =
+            """
+            // <auto-generated/> Generated by Terminus FacadeGenerator
+            #nullable enable
+            namespace Demo
+            {
+                /// <summary>
+                /// Facade interface delegating to: <see cref="Demo.StaticHandler"/>
+                /// </summary>
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                public partial interface IHandlers
+                {
+                    /// <summary>
+                    /// Delegates to:<br/>
+                    /// <see cref="Demo.StaticHandler.Process(string)"/>
+                    /// </summary>
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> Process(string input);
+                }
+
+                [global::System.CodeDom.Compiler.GeneratedCode("Terminus.Generator", "1.0.0")]
+                [global::Terminus.FacadeImplementation(typeof(global::Demo.IHandlers))]
+                /// <summary>
+                /// Facade implementation class delegating to: <see cref="Demo.StaticHandler"/>
+                /// </summary>
+                public sealed class IHandlers_Generated : global::Demo.IHandlers
+                {
+                    private readonly global::System.IServiceProvider _serviceProvider;
+                    /// <summary>
+                    /// Initializes a new instance of the IHandlers_Generated class.
+                    /// </summary>
+                    /// <param name = "serviceProvider">The service provider used for resolving dependencies.</param>
+                    public IHandlers_Generated(global::System.IServiceProvider serviceProvider)
+                    {
+                        _serviceProvider = serviceProvider;
+                    }
+
+                    global::System.Collections.Generic.IEnumerable<(global::Demo.HandlerAttribute Attribute, global::System.Func<string> Handler)> global::Demo.IHandlers.Process(string input)
+                    {
+                        yield return (new global::Demo.HandlerAttribute(), () => global::Demo.StaticHandler.Process(input));
                     }
                 }
             }

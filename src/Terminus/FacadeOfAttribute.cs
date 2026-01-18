@@ -70,9 +70,11 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     public MethodDiscoveryMode MethodDiscovery { get; set; } = MethodDiscoveryMode.None;
 
     /// <summary>
-    /// Gets or sets whether to include attribute metadata in aggregated method results.
-    /// When true, aggregated methods return tuples containing both the attribute instance
-    /// and the result. Only applies to result-returning methods (T, Task&lt;T&gt;, ValueTask&lt;T&gt;).
+    /// Gets or sets whether to include attribute metadata with lazy execution in facade methods.
+    /// When true, facade methods return IEnumerable of tuples containing the attribute instance
+    /// and a delegate (Func or Action) that can be invoked to execute the handler.
+    /// This enables filtering handlers based on attribute properties before execution.
+    /// Works with single methods and aggregated methods alike.
     /// Default is false.
     /// </summary>
     public bool IncludeAttributeMetadata { get; set; }

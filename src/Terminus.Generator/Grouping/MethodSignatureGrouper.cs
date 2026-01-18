@@ -28,9 +28,9 @@ internal static class MethodSignatureGrouper
             {
                 var methodsList = group.ToImmutableArray();
 
-                // Compute common attribute type only when needed
+                // Compute common attribute type when metadata is enabled (works for single or multiple methods)
                 INamedTypeSymbol? commonAttributeType = null;
-                if (includeMetadata && methodsList.Length > 1)
+                if (includeMetadata)
                 {
                     commonAttributeType = FindCommonBaseAttributeType(methodsList, compilation);
                 }

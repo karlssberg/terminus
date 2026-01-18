@@ -20,7 +20,19 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         FacadeInterfaceInfo facadeInfo,
         AggregatedMethodGroup methodGroup)
     {
-        // For aggregated methods, generate yield return statements
+        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
+
+        // Handle metadata mode with lazy execution (works for single or multiple methods)
+        if (includeMetadata)
+        {
+            foreach (var statement in BuildLazyMetadataMethodBody(facadeInfo, methodGroup))
+            {
+                yield return statement;
+            }
+            yield break;
+        }
+
+        // For aggregated methods (without metadata), generate yield return statements
         if (methodGroup.RequiresAggregation)
         {
             foreach (var statement in BuildAggregatedMethodBody(facadeInfo, methodGroup))
@@ -30,7 +42,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             yield break;
         }
 
-        // For single methods, use existing logic
+        // For single methods (without metadata), use existing logic
         var methodInfo = methodGroup.PrimaryMethod;
 
         // Handle CancellationToken.ThrowIfCancellationRequested() first for static scoped methods
@@ -66,17 +78,67 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         };
     }
 
+    /// <summary>
+    /// Builds method body for lazy metadata mode: yield return (attribute, delegate) tuples.
+    /// </summary>
+    private IEnumerable<StatementSyntax> BuildLazyMetadataMethodBody(
+        FacadeInterfaceInfo facadeInfo,
+        AggregatedMethodGroup methodGroup)
+    {
+        foreach (var method in methodGroup.Methods)
+        {
+            var attributeExpression = BuildAttributeInstantiation(method);
+            var delegateExpression = BuildDelegateExpression(facadeInfo, method);
+
+            var tupleExpression = TupleExpression(
+                SeparatedList(new[]
+                {
+                    Argument(attributeExpression),
+                    Argument(delegateExpression)
+                }));
+
+            yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
+        }
+    }
+
+    /// <summary>
+    /// Builds a delegate expression (Func or Action lambda) wrapping the method invocation.
+    /// </summary>
+    private ExpressionSyntax BuildDelegateExpression(
+        FacadeInterfaceInfo facadeInfo,
+        CandidateMethodInfo method)
+    {
+        // For lazy execution in metadata mode, we don't want ConfigureAwait(false)
+        // The delegate returns Task/ValueTask directly without awaiting
+        var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method, includeConfigureAwait: false);
+        var returnTypeKind = method.ReturnTypeKind;
+
+        // For void, use Action lambda with block body: () => { invocation; }
+        if (returnTypeKind == ReturnTypeKind.Void)
+        {
+            return ParenthesizedLambdaExpression()
+                .WithParameterList(ParameterList())
+                .WithBlock(Block(ExpressionStatement(invocation)))
+                .NormalizeWhitespace();
+        }
+
+        // For all other types, use Func lambda with expression body: () => invocation
+        return ParenthesizedLambdaExpression()
+            .WithParameterList(ParameterList())
+            .WithExpressionBody(invocation)
+            .NormalizeWhitespace();
+    }
+
     private IEnumerable<StatementSyntax> BuildAggregatedMethodBody(
         FacadeInterfaceInfo facadeInfo,
         AggregatedMethodGroup methodGroup)
     {
         var primaryMethod = methodGroup.PrimaryMethod;
         var returnTypeKind = primaryMethod.ReturnTypeKind;
-        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
 
         switch (returnTypeKind)
         {
-            // For void methods, just execute all handlers in sequence (no metadata for void)
+            // For void methods, just execute all handlers in sequence
             case ReturnTypeKind.Void:
             {
                 foreach (var statement in methodGroup.Methods.Select(method =>
@@ -86,58 +148,28 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 }
                 yield break;
             }
-            // For result methods (T), yield return each result (with optional metadata tuple)
+            // For result methods (T), yield return each result
             case ReturnTypeKind.Result:
             {
                 foreach (var method in methodGroup.Methods)
                 {
                     var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-
-                    if (includeMetadata)
-                    {
-                        var attributeExpression = BuildAttributeInstantiation(method);
-                        var tupleExpression = TupleExpression(
-                            SeparatedList(new[]
-                            {
-                                Argument(attributeExpression),
-                                Argument(invocation)
-                            }));
-                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
-                    }
-                    else
-                    {
-                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
-                    }
+                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
                 }
                 yield break;
             }
-            // For async result methods (Task<T>, ValueTask<T>), yield return await each result (with optional metadata tuple)
+            // For async result methods (Task<T>, ValueTask<T>), yield return await each result
             case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
             {
                 foreach (var method in methodGroup.Methods)
                 {
                     var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
                     var awaitedInvocation = AwaitExpression(invocation);
-
-                    if (includeMetadata)
-                    {
-                        var attributeExpression = BuildAttributeInstantiation(method);
-                        var tupleExpression = TupleExpression(
-                            SeparatedList(new[]
-                            {
-                                Argument(attributeExpression),
-                                Argument(awaitedInvocation)
-                            }));
-                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
-                    }
-                    else
-                    {
-                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
-                    }
+                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
                 }
                 yield break;
             }
-            // For Task/ValueTask without results, await all (no metadata for void-returning tasks)
+            // For Task/ValueTask without results, await all
             case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
             {
                 foreach (var statement in methodGroup.Methods.Select(method =>
