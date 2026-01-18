@@ -1026,6 +1026,14 @@ When adding new features to the generator:
    - Clean up code while keeping tests green
    - Follow existing patterns and conventions
 
+### Tooling and Permissions
+
+The project uses the Serena and context7 MCP servers for various code analysis and modification tasks. To ensure a smooth development experience while maintaining control over changes, permissions are configured in `.claude/settings.local.json`.
+
+For Serena, read-only operations are configured to be always allowed, while write operations require explicit user approval. Read-only tools use wildcard patterns like `mcp__serena__read_*:*`, `mcp__serena__list_*:*`, and `mcp__serena__find_*:*` in the `allow` section. Write operations such as `mcp__serena__replace_content:*` and `mcp__serena__create_text_file:*` are placed in the `allow` section as well in the current configuration (as per recent updates), or can be moved to `ask` for more control.
+
+For context7, all operations are always allowed using the wildcard pattern `mcp__context7__*:*` in the `allow` section.
+
 **Test Infrastructure:**
 
 All generator tests inherit from `TerminusSourceGeneratorTest<T>`:

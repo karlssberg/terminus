@@ -37,7 +37,7 @@ public class CrossAssemblyDiscoveryTests
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), IncludeReferencedAssemblies = true)]
+                [FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
                 public partial interface IFacade;
             }
             """;
@@ -173,7 +173,7 @@ public class CrossAssemblyDiscoveryTests
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), IncludeReferencedAssemblies = true)]
+                [FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
                 public partial interface IFacade;
             }
             """;
@@ -273,7 +273,7 @@ public class CrossAssemblyDiscoveryTests
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), IncludeReferencedAssemblies = true)]
+                [FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
                 public partial interface IFacade;
 
                 public class LocalHandlers
@@ -384,7 +384,7 @@ public class CrossAssemblyDiscoveryTests
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), IncludeReferencedAssemblies = true)]
+                [FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
                 public partial interface IFacade;
             }
             """;

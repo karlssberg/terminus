@@ -5,7 +5,6 @@ namespace Terminus.Generator.Discovery;
 
 /// <summary>
 /// Discovers facade methods from referenced assemblies.
-/// Used when <c>IncludeReferencedAssemblies = true</c> is set on a facade interface.
 /// </summary>
 internal static class ReferencedAssemblyDiscovery
 {
