@@ -4,10 +4,15 @@
     <Project Path="examples\Terminus.Example.MediatrAlternative\Terminus.Example.MediatrAlternative.csproj" />
     <Project Path="examples\Terminus.Example.StranglerFig\Terminus.Example.StranglerFig.csproj" />
   </Folder>
+  <Folder Name="/Examples/CrossProject/">
+    <Project Path="examples/cross-project/Terminus.Example.CrossProject.Dependent/Terminus.Example.CrossProject.Dependent.csproj" />
+    <Project Path="examples/cross-project/Terminus.Example.CrossProject.Host/Terminus.Example.CrossProject.Host.csproj" />
+  </Folder>
   <Folder Name="/test/">
     <Project Path="test\Terminus.Generator.Tests.Unit\Terminus.Generator.Tests.Unit.csproj" />
     <Project Path="test\Terminus.Tests.Unit\Terminus.Tests.Unit.csproj" />
   </Folder>
+  <Project Path="examples/cross-project/Terminus.Example.CrossProjectc.Root/Terminus.Example.CrossProjectc.Root.csproj" />
   <Project Path="src\Terminus.Generator\Terminus.Generator.csproj" />
   <Project Path="src\Terminus\Terminus.csproj" />
 </Solution>
