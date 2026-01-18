@@ -23,4 +23,16 @@ internal sealed record FacadeGenerationContext(
         var properties = facadePropertyInfos.IsDefault ? ImmutableArray<CandidatePropertyInfo>.Empty : facadePropertyInfos;
         return new FacadeGenerationContext(facade, methodGroups, properties);
     }
+
+    /// <summary>
+    /// Creates a new facade generation context with pre-grouped methods.
+    /// </summary>
+    public static FacadeGenerationContext CreateWithGroups(
+        FacadeInterfaceInfo facade,
+        ImmutableArray<AggregatedMethodGroup> methodGroups,
+        ImmutableArray<CandidatePropertyInfo> facadePropertyInfos = default)
+    {
+        var properties = facadePropertyInfos.IsDefault ? ImmutableArray<CandidatePropertyInfo>.Empty : facadePropertyInfos;
+        return new FacadeGenerationContext(facade, methodGroups, properties);
+    }
 }

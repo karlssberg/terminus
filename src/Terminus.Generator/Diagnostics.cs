@@ -53,4 +53,24 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0005.md",
         description: "Facade properties must have unique names. Unlike methods which can be aggregated, properties represent state and cannot be combined.");
+
+    public static readonly DiagnosticDescriptor MethodPropertyNameConflict = new(
+        id: "TM0006",
+        title: "Method name conflicts with property name",
+        messageFormat: "Method '{0}' conflicts with property '{1}' in facade '{2}'",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0006.md",
+        description: "Facade methods and properties must have unique names.");
+
+    public static readonly DiagnosticDescriptor IncompatibleReturnTypesInAggregation = new(
+        id: "TM0007",
+        title: "Incompatible return types in aggregated methods",
+        messageFormat: "Methods with signature '{0}' have incompatible return types: '{1}' and '{2}'",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0007.md",
+        description: "Aggregated methods must have compatible return types.");
 }

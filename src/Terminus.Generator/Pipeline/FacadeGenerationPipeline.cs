@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Terminus.Generator.Builders;
 using Terminus.Generator.Discovery;
+using Terminus.Generator.Grouping;
 using Terminus.Generator.Matching;
 using Terminus.Generator.Validation;
 
@@ -64,8 +65,8 @@ internal static class FacadeGenerationPipeline
             .Select(group => group.First())
             .ToImmutableArray();
 
-        // Step 2: Validate the matched methods
-        var hasMethodErrors = UsageValidator.Validate(context, facade, matchedMethods);
+        // Step 2: Validate the matched methods (including method-property name conflicts)
+        var hasMethodErrors = UsageValidator.Validate(context, facade, matchedMethods, matchedProperties);
 
         // Step 2b: Validate the matched properties (check for duplicate names)
         var hasPropertyErrors = DuplicatePropertyValidator.Validate(context, matchedProperties);
@@ -74,8 +75,18 @@ internal static class FacadeGenerationPipeline
         if (hasMethodErrors || hasPropertyErrors)
             return;
 
-        // Step 3: Generate the facade implementation
-        var generationContext = FacadeGenerationContext.Create(facade, matchedMethods, matchedProperties);
+        // Step 3: Group methods by signature for aggregation
+        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, matchedMethods);
+
+        // Step 3b: Validate that aggregated methods have compatible return types
+        var hasAggregationErrors = AggregationReturnTypeValidator.Validate(context, facade, methodGroups);
+
+        // Skip code generation if there were aggregation errors
+        if (hasAggregationErrors)
+            return;
+
+        // Step 4: Generate the facade implementation
+        var generationContext = FacadeGenerationContext.CreateWithGroups(facade, methodGroups, matchedProperties);
         
         var source = FacadeBuilderOrchestrator
             .Generate(generationContext)
