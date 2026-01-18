@@ -22,7 +22,7 @@ public class HandlerAttribute : Attribute
 ```csharp
 using Terminus;
 
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -190,15 +190,15 @@ Separate facades by domain:
 
 ```csharp
 // User management facade
-[FacadeOf(typeof(UserOperationAttribute))]
+[FacadeOf<UserOperationAttribute>]
 public partial interface IUserFacade { }
 
 // Order management facade
-[FacadeOf(typeof(OrderOperationAttribute))]
+[FacadeOf<OrderOperationAttribute>]
 public partial interface IOrderFacade { }
 
 // Product catalog facade
-[FacadeOf(typeof(CatalogOperationAttribute))]
+[FacadeOf<CatalogOperationAttribute>]
 public partial interface ICatalogFacade { }
 ```
 
@@ -213,10 +213,10 @@ public class CommandAttribute : Attribute { }
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class QueryAttribute : Attribute { }
 
-[FacadeOf(typeof(CommandAttribute))]
+[FacadeOf<CommandAttribute>]
 public partial interface ICommands { }
 
-[FacadeOf(typeof(QueryAttribute))]
+[FacadeOf<QueryAttribute>]
 public partial interface IQueries { }
 
 public class UserService
@@ -420,10 +420,10 @@ public class MegaService
 ### 3. Separate Read and Write Operations
 
 ```csharp
-[FacadeOf(typeof(CommandAttribute))]
+[FacadeOf<CommandAttribute>]
 public partial interface ICommands { }
 
-[FacadeOf(typeof(QueryAttribute))]
+[FacadeOf<QueryAttribute>]
 public partial interface IQueries { }
 ```
 

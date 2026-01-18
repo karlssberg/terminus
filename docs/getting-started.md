@@ -40,7 +40,7 @@ Create a `partial interface` and decorate it with the `[FacadeOf]` attribute:
 ```csharp
 using Terminus;
 
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -107,7 +107,7 @@ Console.WriteLine(facade.GetLatestNews());
 
 When you build your project, Terminus:
 
-1. Discovered your `IAppFacade` interface marked with `[FacadeOf(typeof(HandlerAttribute))]`
+1. Discovered your `IAppFacade` interface marked with `[FacadeOf<HandlerAttribute>]`
 2. Found all methods marked with `[Handler]` across your codebase
 3. Generated the interface definition with method signatures:
    ```csharp

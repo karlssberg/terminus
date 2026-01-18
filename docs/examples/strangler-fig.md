@@ -58,7 +58,7 @@ Console.WriteLine("\nMigration in progress: Facade provides stable contract.");
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class StranglerAttribute : Attribute;
 
-[FacadeOf(typeof(StranglerAttribute))]
+[FacadeOf<StranglerAttribute>]
 public partial interface ISystemFacade;
 
 // --- Legacy Implementation ---
@@ -187,7 +187,7 @@ public class LegacyService
 }
 
 // Facade wraps all legacy methods
-[FacadeOf(typeof(StranglerAttribute))]
+[FacadeOf<StranglerAttribute>]
 public partial interface ISystemFacade;
 ```
 

@@ -38,7 +38,7 @@ Console.WriteLine(facade.GetLatestNews());
 public class FacadeMethodAttribute : Attribute;
 
 // Mark interface for facade generation
-[FacadeOf(typeof(FacadeMethodAttribute))]
+[FacadeOf<FacadeMethodAttribute>]
 public partial interface IAppFacade;
 
 // Service implementations
@@ -135,7 +135,7 @@ This attribute marks methods for inclusion in the facade. You can name it anythi
 ### 2. Facade Interface
 
 ```csharp
-[FacadeOf(typeof(FacadeMethodAttribute))]
+[FacadeOf<FacadeMethodAttribute>]
 public partial interface IAppFacade;
 ```
 

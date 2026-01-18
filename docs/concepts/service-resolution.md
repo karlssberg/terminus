@@ -17,7 +17,7 @@ When a facade method is called, Terminus needs to obtain an instance of the serv
 **Behavior:** Direct invocation on the type (no service resolution needed)
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -53,7 +53,7 @@ void IAppFacade.Log(string message)
 **Behavior:** Resolves service from root `IServiceProvider` on every invocation
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]  // Scoped = false (default)
+[FacadeOf<HandlerAttribute>]  // Scoped = false (default)
 public partial interface IAppFacade
 {
 }
@@ -99,7 +99,7 @@ services.AddTerminusFacades();  // Registers facade as Transient
 **Behavior:** Creates a DI scope lazily on first use, reuses it for the facade's lifetime, disposes on facade disposal
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IAppFacade
 {
 }
@@ -232,7 +232,7 @@ public static class ValidationHelpers
 
 **Example:**
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IApiHandlers { }
 
 public class WeatherService
@@ -256,7 +256,7 @@ public class NewsService
 
 **Example:**
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IOrderFacade { }
 
 public class OrderService
@@ -331,14 +331,14 @@ public static class FastHelpers
 **For methods that don't share state:**
 ```csharp
 // Use non-scoped (default)
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }
 ```
 
 **For transactional operations:**
 ```csharp
 // Use scoped to reuse DbContext
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IOrderFacade { }
 ```
 
@@ -371,7 +371,7 @@ public class OrdersController : ControllerBase
 ### Unit of Work Pattern
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IUnitOfWork { }
 
 await using var unitOfWork = provider.GetRequiredService<IUnitOfWork>();

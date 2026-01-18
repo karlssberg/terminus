@@ -156,7 +156,7 @@ Terminus supports `IAsyncEnumerable<T>` for streaming results asynchronously.
 For non-scoped facades, the async enumerable is returned directly:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]  // Scoped = false (default)
+[FacadeOf<HandlerAttribute>]  // Scoped = false (default)
 public partial interface IAppFacade { }
 
 public class DataService
@@ -186,7 +186,7 @@ IAsyncEnumerable<Item> IAppFacade.GetItemsAsync()
 For scoped facades, Terminus generates a proxy iterator to ensure the scope lifetime:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IAppFacade { }
 
 public class DataService
@@ -294,7 +294,7 @@ void IAppFacade.CheckCancellation(CancellationToken ct)
 Use `AsyncCommandName` and `AsyncQueryName` to customize method names:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AsyncCommandName = "ExecuteAsync",
     AsyncQueryName = "QueryAsync",
     AsyncStreamName = "StreamAsync")]
@@ -382,7 +382,7 @@ public Order CreateOrder(Order order)
 
 ```csharp
 // ✅ Good - Scoped facade for DbContext
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IOrderFacade { }
 
 public class OrderService

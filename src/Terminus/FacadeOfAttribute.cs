@@ -63,6 +63,25 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     /// </summary>
     public FacadeAggregationMode AggregationMode { get; set; } = FacadeAggregationMode.None;
 
+    /// <summary>
+    /// <summary>
+    /// Gets or sets which assemblies should be scanned when discovering facade methods.
+    /// Default is <see cref="MethodDiscoveryMode.None"/> (only methods in the current compilation are discovered).
+    /// </summary>
+    public MethodDiscoveryMode MethodDiscovery { get; set; } = MethodDiscoveryMode.None;
+
+    /// <summary>
+    /// Gets or sets whether to discover facade methods from referenced assemblies.
+    /// When true, the generator will scan all referenced assemblies including transitive dependencies.
+    /// Default is false (only methods in the current compilation are discovered).
+    /// </summary>
+    [Obsolete("Use MethodDiscovery property instead. This property will be removed in a future version.")]
+    public bool IncludeReferencedAssemblies
+    {
+        get => MethodDiscovery != MethodDiscoveryMode.None;
+        set => MethodDiscovery = value ? MethodDiscoveryMode.TransitiveAssemblies : MethodDiscoveryMode.None;
+    }
+
     private static Type[] BuildFacadeMethodAttributesArray(
         Type facadeMethodAttribute,
         Type[] facadeMethodAttributes)

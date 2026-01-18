@@ -7,7 +7,7 @@ This guide covers advanced usage patterns for Terminus including scoped facades,
 Use `Scoped = true` when methods need to share state (like DbContext):
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IOrderFacade
 {
 }
@@ -56,7 +56,7 @@ await facade.ProcessPaymentAsync(order.Id);
 Rename facade methods based on return type:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     CommandName = "Execute",           // void methods
     QueryName = "Query",               // T methods
     AsyncCommandName = "ExecuteAsync", // Task methods
@@ -94,7 +94,7 @@ public class CommandAttribute : Attribute { }
 public class QueryAttribute : Attribute { }
 public class EventAttribute : Attribute { }
 
-[FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute), typeof(EventAttribute))]
+[FacadeOf<CommandAttribute, QueryAttribute, EventAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -155,15 +155,15 @@ Create specialized facades for different concerns:
 
 ```csharp
 // Read operations
-[FacadeOf(typeof(QueryAttribute))]
+[FacadeOf<QueryAttribute>]
 public partial interface IReadFacade { }
 
 // Write operations
-[FacadeOf(typeof(CommandAttribute))]
+[FacadeOf<CommandAttribute>]
 public partial interface IWriteFacade { }
 
 // Background jobs
-[FacadeOf(typeof(JobAttribute))]
+[FacadeOf<JobAttribute>]
 public partial interface IJobFacade { }
 
 public class UserService
@@ -192,7 +192,7 @@ public class ReadOperationAttribute : OperationAttribute { }
 public class WriteOperationAttribute : OperationAttribute { }
 
 // Facade discovers all derived attributes
-[FacadeOf(typeof(OperationAttribute))]
+[FacadeOf<OperationAttribute>]
 public partial interface IAppFacade { }
 
 public class UserService
@@ -210,7 +210,7 @@ public class UserService
 Combine scoped facades with explicit commits:
 
 ```csharp
-[FacadeOf(typeof(TransactionAttribute), Scoped = true)]
+[FacadeOf<TransactionAttribute>(Scoped = true)]
 public partial interface IUnitOfWork
 {
 }
@@ -247,7 +247,7 @@ Gradually replace legacy code:
 // New attribute for modernized services
 public class ModernizedAttribute : Attribute { }
 
-[FacadeOf(typeof(LegacyAttribute), typeof(ModernizedAttribute))]
+[FacadeOf<LegacyAttribute, ModernizedAttribute>]
 public partial interface IAppFacade { }
 
 // Legacy service (don't touch)
@@ -275,7 +275,7 @@ Aggregate microservices into a unified facade:
 ```csharp
 public class GatewayOperationAttribute : Attribute { }
 
-[FacadeOf(typeof(GatewayOperationAttribute))]
+[FacadeOf<GatewayOperationAttribute>]
 public partial interface IApiGateway { }
 
 // User microservice
@@ -320,7 +320,7 @@ var product = await gateway.GetProductAsync(789);
 Multiple handlers can react to the same event automatically through method aggregation:
 
 ```csharp
-[FacadeOf(typeof(NotificationAttribute))]
+[FacadeOf<NotificationAttribute>]
 public partial interface IEventBus;
 
 // Multiple handlers for the same event - all execute
@@ -365,22 +365,89 @@ Control which return types should be aggregated:
 
 ```csharp
 // Only aggregate void methods (commands/notifications)
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands)]
 public partial interface ICommandBus;
 
 // Aggregate async queries only
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.AsyncQueries)]
 public partial interface IQueryBus;
 
 // Multiple flags
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
 public partial interface IHybridBus;
 ```
 
 **Learn more:** [Method Aggregation](../concepts/aggregation.md)
+
+## Cross-Assembly Method Discovery
+
+Discover methods from referenced assemblies for multi-project architectures:
+
+```csharp
+// In a library project (MyLibrary.dll)
+public class HandlerAttribute : Attribute { }
+
+public class LibraryHandlers
+{
+    [Handler]
+    public string ProcessLibrary(string data)
+    {
+        return $"Library: {data}";
+    }
+}
+
+// In the main application (references MyLibrary)
+[FacadeOf<HandlerAttribute>( MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IHandlers { }
+
+public class AppHandlers
+{
+    [Handler]
+    public string ProcessApp(string data)
+    {
+        return $"App: {data}";
+    }
+}
+
+// Generated facade includes both:
+// - ProcessLibrary() from MyLibrary
+// - ProcessApp() from the main application
+```
+
+### Plugin Architecture
+
+Use cross-assembly discovery for plugin systems:
+
+```csharp
+// Core application
+[FacadeOf<PluginActionAttribute>(MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IPluginHost { }
+
+// Plugin assemblies contribute actions automatically
+// Each plugin just needs to reference the core and mark methods with [PluginAction]
+```
+
+### Feature Modules
+
+Aggregate handlers from multiple feature modules:
+
+```csharp
+// Solution structure:
+// - Features.Users/     → UserHandlers
+// - Features.Orders/    → OrderHandlers
+// - Features.Payments/  → PaymentHandlers
+// - App/                → Aggregates all
+
+[FacadeOf<FeatureHandlerAttribute>(MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IFeatureFacade { }
+
+// All feature handlers from all referenced assemblies appear in IFeatureFacade
+```
+
+**Learn more:** [Cross-Assembly Discovery](../concepts/cross-assembly-discovery.md)
 
 ## MediatR Alternative
 
@@ -388,7 +455,7 @@ Replace MediatR with compile-time safe facades. See the complete [MediatR Altern
 
 ```csharp
 // Terminus approach - Compile-time safe!
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IMediator { }
 
 public class UserHandlers
@@ -409,7 +476,7 @@ var user = await mediator.CreateUser("John");
 For scoped facades with `IAsyncEnumerable<T>`:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf<HandlerAttribute>(Scoped = true)]
 public partial interface IDataFacade { }
 
 public class DataService

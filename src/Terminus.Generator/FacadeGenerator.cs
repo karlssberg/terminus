@@ -49,8 +49,10 @@ public class FacadeGenerator : IIncrementalGenerator
             .Combine(discoveredTypeMethods)
             .Select(static (data, _) => data.Left.AddRange(data.Right));
 
-        // Combine facades with all candidate methods and execute generation pipeline
-        var combined = discoveredFacades.Combine(allCandidateMethods);
+        // Combine facades with all candidate methods and compilation for cross-assembly discovery
+        var combined = discoveredFacades
+            .Combine(allCandidateMethods)
+            .Combine(context.CompilationProvider);
 
         context.RegisterSourceOutput(combined, FacadeGenerationPipeline.Execute);
     }

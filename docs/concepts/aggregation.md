@@ -21,7 +21,7 @@ By default, methods with identical signatures are automatically aggregated. This
 When multiple void methods share the same signature, they all execute in sequence:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface INotificationBus;
 
 public class HandlerAttribute : Attribute { }
@@ -81,7 +81,7 @@ notificationBus.Handle(new UserCreatedNotification(123, "user@example.com"));
 When methods return results, the aggregated method returns `IEnumerable<T>` to collect all results:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface ISearchBus;
 
 public class PrimarySearchHandler
@@ -136,7 +136,7 @@ foreach (var result in results)
 For async methods returning `Task<T>` or `ValueTask<T>`, the aggregated method returns `IAsyncEnumerable<T>`:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAsyncQueryBus;
 
 public class DatabaseSearchHandler
@@ -221,7 +221,7 @@ public enum FacadeAggregationMode
 Prevent accidental aggregation of query results while still enabling notification patterns:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands)]
 public partial interface ICommandBus;
 
@@ -243,7 +243,7 @@ public class UserHandlers
 Control aggregation for multiple return types:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
 public partial interface IHybridBus;
 
@@ -255,7 +255,7 @@ public partial interface IHybridBus;
 
 ```csharp
 // Aggregate everything EXCEPT queries (result methods)
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands |
                      FacadeAggregationMode.AsyncCommands |
                      FacadeAggregationMode.AsyncQueries)]
@@ -269,7 +269,7 @@ public partial interface IMediator;
 Send notifications through multiple channels (email, SMS, push) automatically:
 
 ```csharp
-[FacadeOf(typeof(NotificationAttribute))]
+[FacadeOf<NotificationAttribute>]
 public partial interface INotificationService;
 
 public class EmailNotifier
@@ -318,7 +318,7 @@ await notificationService.Send(new OrderShippedEvent(
 Search multiple data sources and combine results:
 
 ```csharp
-[FacadeOf(typeof(SearchAttribute))]
+[FacadeOf<SearchAttribute>]
 public partial interface IFederatedSearch;
 
 public class DatabaseSearch
@@ -365,7 +365,7 @@ await foreach (var product in federatedSearch.FindProducts("laptop"))
 Multiple projections updating from the same event:
 
 ```csharp
-[FacadeOf(typeof(ProjectionAttribute),
+[FacadeOf<ProjectionAttribute>(
     AggregationMode = FacadeAggregationMode.AsyncCommands)]
 public partial interface IProjectionEngine;
 
@@ -499,7 +499,7 @@ When some methods should aggregate and others shouldn't:
 
 ```csharp
 // Only aggregate notifications (void methods)
-[FacadeOf(typeof(HandlerAttribute),
+[FacadeOf<HandlerAttribute>(
     AggregationMode = FacadeAggregationMode.Commands)]
 public partial interface IApplicationBus;
 

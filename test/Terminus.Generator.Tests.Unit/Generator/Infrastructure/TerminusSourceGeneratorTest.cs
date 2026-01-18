@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 
@@ -136,5 +139,45 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         {
             TestState.Sources.Add(("AsyncEnumerableShim.cs", AsyncEnumerableShim));
         }
+    }
+
+    /// <summary>
+    /// Compiles the provided source code into an in-memory assembly and adds it as a reference.
+    /// This enables testing cross-assembly method discovery scenarios.
+    /// </summary>
+    /// <param name="source">The source code to compile.</param>
+    /// <param name="assemblyName">The name for the generated assembly.</param>
+    public async Task AddReferencedAssemblyFromSourceAsync(string source, string assemblyName)
+    {
+        // Get the same reference assemblies used by the test framework
+        var referenceAssemblies = await ReferenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
+        var references = referenceAssemblies.ToList();
+        
+        // Add Terminus reference
+        references.Add(MetadataReference.CreateFromFile(typeof(Terminus.FacadeOfAttribute).Assembly.Location));
+
+        var syntaxTree = CSharpSyntaxTree.ParseText(source);
+        var compilation = CSharpCompilation.Create(
+            assemblyName,
+            [syntaxTree],
+            references,
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        using var stream = new MemoryStream();
+        var emitResult = compilation.Emit(stream);
+
+        if (!emitResult.Success)
+        {
+            var errors = string.Join(Environment.NewLine,
+                emitResult.Diagnostics
+                    .Where(d => d.Severity == DiagnosticSeverity.Error)
+                    .Select(d => d.ToString()));
+            throw new InvalidOperationException(
+                $"Failed to compile referenced assembly '{assemblyName}':{Environment.NewLine}{errors}");
+        }
+
+        stream.Seek(0, SeekOrigin.Begin);
+        var assemblyReference = MetadataReference.CreateFromStream(stream);
+        TestState.AdditionalReferences.Add(assemblyReference);
     }
 }

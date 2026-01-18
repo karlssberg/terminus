@@ -233,11 +233,11 @@ Error CS0260: Missing partial modifier on declaration of type 'IAppFacade'
 
 ```csharp
 // ❌ Missing partial keyword
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public interface IAppFacade { }  // Error
 
 // ✅ Fix: Add partial keyword
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }  // OK
 ```
 
@@ -293,7 +293,7 @@ public partial interface IAppFacade { }  // OK
 
 4. **Verify attribute is correct:**
    ```csharp
-   [FacadeOf(typeof(HandlerAttribute))]  // Correct attribute type?
+   [FacadeOf<HandlerAttribute>]  // Correct attribute type?
    public partial interface IAppFacade { }
 
    public class MyService
@@ -328,7 +328,7 @@ public partial interface IAppFacade { }  // OK
 
 1. **Use scoped facades** for multiple related calls:
    ```csharp
-   [FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+   [FacadeOf<HandlerAttribute>(Scoped = true)]
    public partial interface IAppFacade { }
    ```
 
@@ -428,18 +428,18 @@ else
 
 ```csharp
 // ❌ Error
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public interface IAppFacade { }
 
 // ✅ Correct
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }
 ```
 
 ### 2. Wrong Attribute Type
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }
 
 public class MyService

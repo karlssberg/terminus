@@ -70,7 +70,7 @@ public class HandlerAttribute : Attribute;
 
 // The facade interface represents our "Mediator"
 // CommandName = "Publish" renames void methods to "Publish"
-[FacadeOf(typeof(HandlerAttribute), CommandName = "Publish")]
+[FacadeOf<HandlerAttribute>(CommandName = "Publish")]
 public partial interface IMediator;
 
 // --- Commands & Queries ---
@@ -159,7 +159,7 @@ public sealed class IMediator_Generated : global::IMediator
 ### 1. Custom Method Naming
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), CommandName = "Publish")]
+[FacadeOf<HandlerAttribute>(CommandName = "Publish")]
 public partial interface IMediator;
 ```
 
@@ -244,11 +244,11 @@ services.AddTransient<SendEmailHandler>();
 
 ```csharp
 // Command bus
-[FacadeOf(typeof(CommandAttribute), CommandName = "Execute")]
+[FacadeOf<CommandAttribute>(CommandName = "Execute")]
 public partial interface ICommandBus;
 
 // Query bus
-[FacadeOf(typeof(QueryAttribute), QueryName = "Query")]
+[FacadeOf<QueryAttribute>(QueryName = "Query")]
 public partial interface IQueryBus;
 
 // Mark handlers accordingly
@@ -378,7 +378,7 @@ var user = await mediator.Handle(new GetUserQuery(123));
 Terminus also supports MediatR's notification pattern through method aggregation. Multiple handlers can react to the same event:
 
 ```csharp
-[FacadeOf(typeof(NotificationAttribute),
+[FacadeOf<NotificationAttribute>(
     CommandName = "Publish")]
 public partial interface IEventBus;
 

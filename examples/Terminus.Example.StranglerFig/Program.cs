@@ -21,7 +21,7 @@ services.AddTerminusFacades();
 var serviceProvider = services.BuildServiceProvider();
 
 // The client only interacts with ISystemFacade
-var facade = serviceProvider.GetRequiredService<ISystemFacade>();
+var facade = serviceProvider.GetRequiredService<IMyStranglerPatternFacade>();
 
 Console.WriteLine("--- Strangler Fig Migration Demo ---");
 
@@ -43,10 +43,10 @@ Console.WriteLine("\nMigration in progress: Facade provides a stable contract wh
 // --- Infrastructure ---
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-public class StranglerAttribute : Attribute;
+public class MyStranglerTargetAttribute : Attribute;
 
-[FacadeOf(typeof(StranglerAttribute))]
-public partial interface ISystemFacade;
+[FacadeOf<MyStranglerTargetAttribute>]
+public partial interface IMyStranglerPatternFacade;
 
 // --- Implementations ---
 
@@ -55,28 +55,30 @@ public partial interface ISystemFacade;
 /// </summary>
 public class LegacyService
 {
-    [Strangler]
+    [MyStranglerTarget]
     public string GetLegacyData(int id)
     {
         return $"[LegacyService] Returning old data format for ID {id}";
     }
 
     // This method used to be here, but was moved to ModernService.
-    // We simply removed the [Strangler] attribute from here and added it there.
+    // We simply removed the [MyStranglerTarget] attribute from here and added it there.
     // public void ProcessOrder(int id) { ... }
 }
 
 /// <summary>
 /// Represents the new service we are migrating towards.
 /// </summary>
-[Strangler] // All methods in ModernService are included in the facade
+[MyStranglerTarget] // All methods in ModernService are included in the facade
 public class ModernService
 {
+    // Included in facade via class-level [MyStranglerTarget] attribute
     public void ProcessOrder(int orderId)
     {
         Console.WriteLine($"[ModernService] Processing order {orderId} using the new high-performance engine.");
     }
 
+    // Included in facade via class-level [MyStranglerTarget] attribute
     public string GetStatus(int orderId)
     {
         return $"Order {orderId} is COMPLETED (via Modern system)";

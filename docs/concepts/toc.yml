@@ -6,6 +6,8 @@
   href: attributes.md
 - name: Method Aggregation
   href: aggregation.md
+- name: Cross-Assembly Discovery
+  href: cross-assembly-discovery.md
 - name: Service Resolution
   href: service-resolution.md
 - name: Async Support

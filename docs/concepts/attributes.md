@@ -155,7 +155,7 @@ public class CommandHandlerAttribute : HandlerAttribute
 }
 
 // Facade looking for HandlerAttribute
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -178,7 +178,7 @@ public class MyService
 A facade can aggregate methods from multiple attribute types:
 
 ```csharp
-[FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute))]
+[FacadeOf<CommandAttribute, QueryAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -201,7 +201,7 @@ public class MyService
 A single method can have multiple attributes, but it will only appear **once** in the facade:
 
 ```csharp
-[FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute))]
+[FacadeOf<CommandAttribute, QueryAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -317,10 +317,10 @@ public class CommandAttribute : Attribute { }
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class QueryAttribute : Attribute { }
 
-[FacadeOf(typeof(CommandAttribute), CommandName = "Execute")]
+[FacadeOf<CommandAttribute>(CommandName = "Execute")]
 public partial interface ICommands { }
 
-[FacadeOf(typeof(QueryAttribute), QueryName = "Query")]
+[FacadeOf<QueryAttribute>(QueryName = "Query")]
 public partial interface IQueries { }
 ```
 
@@ -330,7 +330,7 @@ public partial interface IQueries { }
 public class InventoryOperationAttribute : Attribute { }
 public class ShippingOperationAttribute : Attribute { }
 
-[FacadeOf(typeof(InventoryOperationAttribute), typeof(ShippingOperationAttribute))]
+[FacadeOf<InventoryOperationAttribute, ShippingOperationAttribute>]
 public partial interface ILogisticsFacade { }
 ```
 
@@ -343,7 +343,7 @@ public class HttpHandlerAttribute : Attribute
     public HttpHandlerAttribute(string route) => Route = route;
 }
 
-[FacadeOf(typeof(HttpHandlerAttribute))]
+[FacadeOf<HttpHandlerAttribute>]
 public partial interface IHttpHandlers { }
 
 public class UserService
@@ -359,5 +359,6 @@ public class UserService
 ## Next Steps
 
 - Understand [Service Resolution](service-resolution.md) strategies for method invocation
+- Explore [Cross-Assembly Discovery](cross-assembly-discovery.md) for multi-project facades
 - Learn about [Async Support](async-support.md) for asynchronous methods
 - Explore [Advanced Scenarios](../guides/advanced-scenarios.md) including custom method naming

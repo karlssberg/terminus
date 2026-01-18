@@ -66,6 +66,7 @@ Terminus enables developers to create clean, type-safe facades over implementati
 - **Custom method naming**: Configure different method names based on return types (Command, Query, etc.)
 - **Method aggregation**: Automatically aggregates methods with identical signatures into a single facade method, enabling notification/broadcast patterns (similar to MediatR)
 - **Dependency injection integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
+- **Cross-assembly discovery**: Opt-in discovery of facade methods from referenced assemblies, enabling multi-project facade aggregation
 
 ### Core Value Proposition
 
@@ -182,6 +183,9 @@ public sealed class FacadeOfAttribute : Attribute
 
     // Method aggregation control (default: None)
     public FacadeAggregationMode AggregationMode { get; set; }
+
+    // Cross-assembly discovery (default: None)
+    public MethodDiscoveryMode MethodDiscovery { get; set; }
 }
 ```
 
@@ -684,6 +688,127 @@ public partial interface IMediator;
 - Only one handler should execute (use separate methods or different signatures)
 - Performance is critical and you need fine-grained control over execution
 
+### Cross-Assembly Method Discovery
+
+By default, Terminus only discovers methods in the **current compilation** (the project being built). With the `MethodDiscovery` property, you can enable discovery of facade methods from **referenced assemblies**, enabling multi-project facade aggregation.
+
+#### MethodDiscoveryMode Enum
+
+```csharp
+public enum MethodDiscoveryMode
+{
+    /// <summary>
+    /// Only discover methods from the current compilation (default).
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Discover methods from directly referenced assemblies only.
+    /// Scans assemblies that are explicitly referenced by the current project,
+    /// but not their transitive dependencies.
+    /// </summary>
+    ReferencedAssemblies = 1,
+
+    /// <summary>
+    /// Discover methods from all referenced assemblies, including transitive dependencies.
+    /// Scans all assemblies available to the compilation.
+    /// </summary>
+    TransitiveAssemblies = 2
+}
+```
+
+#### Enabling Cross-Assembly Discovery
+
+```csharp
+// Discover from directly referenced assemblies only
+[FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
+public partial interface IHandlers;
+
+// Discover from all assemblies including transitive dependencies
+[FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IHandlers;
+```
+
+**Backward Compatibility:** The deprecated `IncludeReferencedAssemblies = true` property is still supported and maps to `MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies`.
+
+When cross-assembly discovery is enabled:
+- The generator scans assembly references for methods marked with the facade's attribute types
+- System assemblies (`System.*`, `Microsoft.*`, `mscorlib`, `netstandard`) are automatically skipped
+- Methods from referenced assemblies are merged with local methods before matching and generation
+
+#### Multi-Project Architecture Example
+
+**Handlers.Core** (library project):
+```csharp
+// Define shared attribute
+public class HandlerAttribute : Attribute { }
+
+// Core handlers
+public class CoreHandlers
+{
+    [Handler]
+    public void ProcessCore(string data) { }
+}
+```
+
+**Handlers.Extensions** (library project, references Handlers.Core):
+```csharp
+// Additional handlers
+public class ExtensionHandlers
+{
+    [Handler]
+    public void ProcessExtension(string data) { }
+}
+```
+
+**App** (main project, references both):
+```csharp
+// Facade aggregates handlers from ALL referenced assemblies
+[FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IHandlers;
+
+// Local handlers also included
+public class LocalHandlers
+{
+    [Handler]
+    public void ProcessLocal(string data) { }
+}
+
+// Generated facade includes all three:
+// - ProcessCore() from Handlers.Core
+// - ProcessExtension() from Handlers.Extensions
+// - ProcessLocal() from App
+```
+
+#### When to Use Cross-Assembly Discovery
+
+**Good Use Cases:**
+- **Plugin architectures**: Aggregate handlers from plugin assemblies
+- **Modular applications**: Combine handlers from feature modules
+- **Shared libraries**: Reuse handlers across multiple applications
+- **Domain-driven design**: Aggregate handlers from bounded context assemblies
+
+**Avoid When:**
+- **Performance is critical**: Cross-assembly scanning adds compilation overhead
+- **Simple projects**: Single-project applications don't need this feature
+- **Controlled discovery**: You want explicit control over which methods are included
+
+#### Performance Considerations
+
+- **Opt-in by default**: `MethodDiscovery = MethodDiscoveryMode.None` to avoid overhead on existing projects
+- **Assembly filtering**: Only scans assemblies that could contain facade methods (skips system assemblies)
+- **Fine-grained control**: Use `ReferencedAssemblies` for direct references only, or `TransitiveAssemblies` for all dependencies
+- **Attribute matching**: Uses fully-qualified name comparison for cross-assembly attribute matching
+
+#### Technical Notes
+
+Cross-assembly discovery walks `IAssemblySymbol.GlobalNamespace` to find types with matching attributes. The discovery mode determines which assemblies are scanned:
+
+- **ReferencedAssemblies**: Uses `compilation.Assembly.Modules[0].ReferencedAssemblySymbols` to get only direct references
+- **TransitiveAssemblies**: Uses `Compilation.References` to get all available assemblies including transitive dependencies
+
+Since `SymbolEqualityComparer` doesn't work across different compilations, attribute matching uses fully-qualified name comparison via `ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)`.
+
 ## Architecture Deep Dive
 
 ### Generator Pipeline
@@ -935,6 +1060,7 @@ await test.RunAsync();
 - Error cases (duplicate signatures, ref/out parameters)
 - Generic methods with constraints
 - Type parameter propagation in facade methods
+- Cross-assembly method discovery (see `CrossAssemblyDiscoveryTests.cs`)
 
 **Test structure:**
 ```csharp
@@ -1232,6 +1358,33 @@ public static class StaticHandlers
 }
 ```
 
+### Cross-Assembly Facade
+
+```csharp
+// In a separate library project (MyLibrary.dll):
+public class HandlerAttribute : Attribute { }
+
+public class LibraryHandlers
+{
+    [Handler]
+    public void LibraryMethod(string data) { }
+}
+
+// In the main application (references MyLibrary):
+[FacadeOf(typeof(HandlerAttribute), MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IHandlers;
+
+public class AppHandlers
+{
+    [Handler]
+    public void AppMethod(string data) { }
+}
+
+// Generated facade includes both:
+// - LibraryMethod() from MyLibrary
+// - AppMethod() from the main application
+```
+
 ## Quick Reference
 
 ### Key Files to Understand
@@ -1242,12 +1395,13 @@ public static class StaticHandlers
 3. `Builders/FacadeBuilderOrchestrator.cs` - Top-level builder
 4. `Discovery/FacadeInterfaceDiscovery.cs` - Discovers `[FacadeOf]` interfaces
 5. `Discovery/FacadeMethodDiscovery.cs` - Discovers methods with attributes
-6. `Matching/FacadeMethodMatcher.cs` - Matches methods to facades
-7. `Grouping/MethodSignatureGrouper.cs` - Groups methods by signature for aggregation
-8. `AggregatedMethodGroup.cs` - Represents method groups for aggregation
-9. `UsageValidator.cs` - Orchestrates validation
-10. `Validation/` - Specialized method validators implementing `IMethodValidator`
-11. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
+6. `Discovery/ReferencedAssemblyDiscovery.cs` - Discovers methods from referenced assemblies (cross-assembly discovery)
+7. `Matching/FacadeMethodMatcher.cs` - Matches methods to facades
+8. `Grouping/MethodSignatureGrouper.cs` - Groups methods by signature for aggregation
+9. `AggregatedMethodGroup.cs` - Represents method groups for aggregation
+10. `UsageValidator.cs` - Orchestrates validation
+11. `Validation/` - Specialized method validators implementing `IMethodValidator`
+12. `Builders/Strategies/ServiceResolutionStrategyFactory.cs` - Selects resolution strategy
 
 **For Understanding Generated Code:**
 1. `Builders/Interface/InterfaceBuilder.cs` - Generates partial interface
@@ -1282,6 +1436,11 @@ public static class StaticHandlers
 **Debug generation:**
 → Set `<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>` in consumer `.csproj`
 → Check `obj/Debug/netX.0/generated/` folder
+
+**Test cross-assembly discovery:**
+→ Use `AddReferencedAssemblyFromSourceAsync()` in test to compile and add a referenced assembly
+→ Set `MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies` or `TransitiveAssemblies` in the facade source
+→ See `CrossAssemblyDiscoveryTests.cs` for examples
 
 **Support new return type:**
 → Add case to `ReturnTypeKind` enum

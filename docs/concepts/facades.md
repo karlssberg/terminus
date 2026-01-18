@@ -44,7 +44,7 @@ public class AppFacade : IAppFacade
 
 ```csharp
 // Just define the interface
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -88,7 +88,7 @@ At runtime:
 ### Basic Syntax
 
 ```csharp
-[FacadeOf(typeof(YourCustomAttribute))]
+[FacadeOf<YourCustomAttribute>]
 public partial interface IYourFacade
 {
 }
@@ -104,7 +104,7 @@ Key requirements:
 You can aggregate methods marked with different attributes into a single facade:
 
 ```csharp
-[FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute))]
+[FacadeOf<CommandAttribute, QueryAttribute>]
 public partial interface IAppFacade
 {
 }
@@ -121,6 +121,19 @@ public class UserService
 // Both methods appear in IAppFacade
 ```
 
+### Cross-Assembly Discovery
+
+Enable discovery of methods from referenced assemblies:
+
+```csharp
+[FacadeOf<HandlerAttribute>(MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+public partial interface IAppFacade
+{
+}
+```
+
+This enables multi-project architectures where handlers in library projects are automatically discovered and included in the facade. See [Cross-Assembly Discovery](cross-assembly-discovery.md) for details.
+
 ## Naming and Organization
 
 ### Implementation Class Names
@@ -128,7 +141,7 @@ public class UserService
 Generated implementation classes follow the pattern: `{InterfaceName}_Generated`
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }
 
 // Generates: IAppFacade_Generated
@@ -141,7 +154,7 @@ Generated files follow the pattern: `{Namespace}_{InterfaceName}_Generated.g.cs`
 ```csharp
 namespace MyApp.Services;
 
-[FacadeOf(typeof(HandlerAttribute))]
+[FacadeOf<HandlerAttribute>]
 public partial interface IAppFacade { }
 
 // Generates: MyApp_Services_IAppFacade_Generated.g.cs
@@ -230,5 +243,6 @@ Easy to mock or replace individual services without affecting the facade contrac
 ## Next Steps
 
 - Learn about [Custom Attributes](attributes.md) for method discovery
+- Explore [Cross-Assembly Discovery](cross-assembly-discovery.md) for multi-project facades
 - Understand [Service Resolution](service-resolution.md) strategies
 - Explore [Async Support](async-support.md) for asynchronous operations

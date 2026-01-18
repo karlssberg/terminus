@@ -17,13 +17,11 @@ services.AddTerminusFacades();
 var serviceProvider = services.BuildServiceProvider();
 
 // 3. Resolve and use the facade
-var facade = serviceProvider.GetRequiredService<IAppFacade>();
+var facade = serviceProvider.GetRequiredService<IMyAppFacade>();
 
 facade.SayHello("Developer");
 Console.WriteLine(facade.GetWeather());
 Console.WriteLine(facade.GetLatestNews());
-
-// --- Definitions ---
 
 // Define an attribute to mark methods for inclusion in the facade.
 [AttributeUsage(AttributeTargets.Method)]
@@ -31,8 +29,8 @@ public class FacadeMethodAttribute : Attribute;
 
 // Mark the interface with [FacadeOf] to trigger source generation.
 // Terminus will find all methods marked with [FacadeMethod] and implement them here.
-[FacadeOf(typeof(FacadeMethodAttribute))]
-public partial interface IAppFacade;
+[FacadeOf<FacadeMethodAttribute>]
+public partial interface IMyAppFacade;
 
 public class GreetingService
 {

@@ -25,6 +25,20 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
     public string? AsyncQueryName => ResolveNamedArgument<string?>("AsyncQueryName");
     public string? AsyncStreamName => ResolveNamedArgument<string?>("AsyncStreamName");
     public int AggregationMode => ResolveNamedArgument<int>("AggregationMode");
+    public MethodDiscoveryMode MethodDiscovery
+    {
+        get
+        {
+            // Try new MethodDiscovery property first (enum value)
+            var methodDiscovery = ResolveNamedArgument<int?>("MethodDiscovery");
+            if (methodDiscovery.HasValue)
+                return (MethodDiscoveryMode)methodDiscovery.Value;
+
+            // Fall back to legacy IncludeReferencedAssemblies boolean property
+            var includeReferenced = ResolveNamedArgument<bool>("IncludeReferencedAssemblies");
+            return includeReferenced ? MethodDiscoveryMode.TransitiveAssemblies : MethodDiscoveryMode.None;
+        }
+    }
 
     public Location? GetNamedArgumentLocation(string name)
     {
