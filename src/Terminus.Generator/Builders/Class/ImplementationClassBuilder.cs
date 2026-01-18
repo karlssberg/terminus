@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Attributes;
 using Terminus.Generator.Builders.Documentation;
 using Terminus.Generator.Builders.Method;
+using Terminus.Generator.Builders.Property;
 using Terminus.Generator.Builders.Strategies;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -20,7 +21,8 @@ internal static class ImplementationClassBuilder
     /// </summary>
     public static ClassDeclarationSyntax Build(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<AggregatedMethodGroup> methodGroups)
+        ImmutableArray<AggregatedMethodGroup> methodGroups,
+        ImmutableArray<CandidatePropertyInfo> properties = default)
     {
         var interfaceName = facadeInfo.InterfaceSymbol
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -28,7 +30,7 @@ internal static class ImplementationClassBuilder
 
         // Flatten all methods from groups for documentation and analysis
         var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
-        var documentation = DocumentationBuilder.BuildImplementationDocumentation(allMethods);
+        var documentation = DocumentationBuilder.BuildImplementationDocumentation(allMethods, properties);
 
         var classDeclaration = ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
@@ -39,18 +41,20 @@ internal static class ImplementationClassBuilder
             classDeclaration = classDeclaration.WithLeadingTrivia((IEnumerable<SyntaxTrivia>)documentation);
         }
 
-        // Determine if we need IServiceProvider based on whether we have instance methods
+        // Determine if we need IServiceProvider based on whether we have instance members (methods or properties)
         var hasInstanceMethods = allMethods.Any(m => !m.MethodSymbol.IsStatic);
+        var hasInstanceProperties = !properties.IsDefault && properties.Any(p => !p.PropertySymbol.IsStatic);
+        var hasInstanceMembers = hasInstanceMethods || hasInstanceProperties;
 
         // Add [FacadeImplementation] attribute
         classDeclaration = AddFacadeImplementationAttribute(
             classDeclaration,
             interfaceName,
             facadeInfo.Features.IsScoped,
-            hasInstanceMethods);
+            hasInstanceMembers);
 
-        // Add disposal interfaces for scoped facades with instance methods
-        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+        // Add disposal interfaces for scoped facades with instance members
+        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
         {
             classDeclaration = classDeclaration.AddBaseListTypes(
                 SimpleBaseType(ParseTypeName("global::System.IDisposable")),
@@ -61,13 +65,13 @@ internal static class ImplementationClassBuilder
         var members = new List<MemberDeclarationSyntax>();
 
         // Add fields
-        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
             members.AddRange(FieldBuilder.BuildScopedFields());
         else if (!facadeInfo.Features.IsScoped)
             members.AddRange(FieldBuilder.BuildNonScopedFields());
 
         // Add constructor
-        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
             members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
         else if (!facadeInfo.Features.IsScoped)
             members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
@@ -75,8 +79,15 @@ internal static class ImplementationClassBuilder
         // Add implementation methods
         members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
 
+        // Add implementation properties (sorted by name for consistent output)
+        if (!properties.IsDefault && !properties.IsEmpty)
+        {
+            var sortedProperties = properties.OrderBy(p => p.PropertySymbol.Name).ToList();
+            members.AddRange(sortedProperties.Select(prop => PropertyBuilder.BuildImplementationProperty(facadeInfo, prop)));
+        }
+
         // Add disposal methods for scoped facades
-        if (facadeInfo.Features.IsScoped && hasInstanceMethods)
+        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
         {
             members.AddRange(DisposalBuilder.BuildDisposalMethods());
         }
@@ -88,7 +99,7 @@ internal static class ImplementationClassBuilder
         ClassDeclarationSyntax classDeclaration,
         string interfaceName,
         bool isScoped,
-        bool hasInstanceMethods)
+        bool hasInstanceMembers)
     {
         var attributeLists = new List<AttributeListSyntax>();
 
@@ -96,8 +107,8 @@ internal static class ImplementationClassBuilder
         attributeLists.Add(GeneratedCodeAttributeBuilder.Build());
 
         // For non-scoped facades, always add [FacadeImplementation] attribute
-        // For scoped facades, only add if there are instance methods (static-only facades don't need it)
-        if (!isScoped || hasInstanceMethods)
+        // For scoped facades, only add if there are instance members (static-only facades don't need it)
+        if (!isScoped || hasInstanceMembers)
         {
             var facadeImplAttribute = Attribute(
                 ParseName("global::Terminus.FacadeImplementation"),

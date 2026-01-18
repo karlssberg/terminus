@@ -8,16 +8,19 @@ namespace Terminus.Generator.Builders;
 /// </summary>
 internal sealed record FacadeGenerationContext(
     FacadeInterfaceInfo Facade,
-    ImmutableArray<AggregatedMethodGroup> MethodGroups)
+    ImmutableArray<AggregatedMethodGroup> MethodGroups,
+    ImmutableArray<CandidatePropertyInfo> Properties)
 {
     /// <summary>
     /// Creates a new facade generation context.
     /// </summary>
     public static FacadeGenerationContext Create(
         FacadeInterfaceInfo facade,
-        ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos)
+        ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos,
+        ImmutableArray<CandidatePropertyInfo> facadePropertyInfos = default)
     {
         var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, facadeMethodMethodInfos);
-        return new FacadeGenerationContext(facade, methodGroups);
+        var properties = facadePropertyInfos.IsDefault ? ImmutableArray<CandidatePropertyInfo>.Empty : facadePropertyInfos;
+        return new FacadeGenerationContext(facade, methodGroups, properties);
     }
 }

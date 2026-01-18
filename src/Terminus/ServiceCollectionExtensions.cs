@@ -98,6 +98,10 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddTerminusFacade<TInterface>(params Assembly[] assemblies)
             where TInterface : class
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, typeof(TInterface), null, assemblies);
         }
 
@@ -117,6 +121,10 @@ public static class ServiceCollectionExtensions
             params Assembly[] assemblies)
             where TInterface : class
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, typeof(TInterface), lifetime, assemblies);
         }
 
@@ -141,6 +149,10 @@ public static class ServiceCollectionExtensions
             Type interfaceType,
             params Assembly[] assemblies)
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, interfaceType, null, assemblies);
         }
 
@@ -161,6 +173,10 @@ public static class ServiceCollectionExtensions
             ServiceLifetime lifetime,
             params Assembly[] assemblies)
         {
+            if (assemblies.Length == 0)
+            {
+                assemblies = [Assembly.GetCallingAssembly()];
+            }
             return AddTerminusFacadeCore(services, interfaceType, lifetime, assemblies);
         }
     }
@@ -170,11 +186,6 @@ public static class ServiceCollectionExtensions
         ServiceLifetime? lifetime,
         params Assembly[] assemblies)
     {
-        if (assemblies.Length == 0)
-        {
-            assemblies = [Assembly.GetCallingAssembly()];
-        }
-
         foreach (var assembly in assemblies)
         {
             var facadeImplementations = FindFacadeImplementations(assembly);
@@ -199,11 +210,6 @@ public static class ServiceCollectionExtensions
         ServiceLifetime? lifetime,
         params Assembly[] assemblies)
     {
-        if (assemblies.Length == 0)
-        {
-            assemblies = [Assembly.GetCallingAssembly()];
-        }
-
         foreach (var assembly in assemblies)
         {
             var facadeImplementations = FindFacadeImplementations(assembly);

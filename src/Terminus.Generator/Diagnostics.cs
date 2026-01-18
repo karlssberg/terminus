@@ -43,4 +43,14 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0004.md",
         description: "Custom method names specified in FacadeOfAttribute properties (CommandName, QueryName, AsyncCommandName, AsyncQueryName, AsyncStreamName) must be valid C# identifiers.");
+
+    public static readonly DiagnosticDescriptor DuplicatePropertyName = new(
+        id: "TM0005",
+        title: "Duplicate property name in facade",
+        messageFormat: "Property '{0}' is declared multiple times in facade",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0005.md",
+        description: "Facade properties must have unique names. Unlike methods which can be aggregated, properties represent state and cannot be combined.");
 }

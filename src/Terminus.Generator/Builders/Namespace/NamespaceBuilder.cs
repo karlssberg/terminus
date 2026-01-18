@@ -17,12 +17,13 @@ internal static class NamespaceBuilder
     /// </summary>
     public static MemberDeclarationSyntax[] Build(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<AggregatedMethodGroup> methodGroups)
+        ImmutableArray<AggregatedMethodGroup> methodGroups,
+        ImmutableArray<CandidatePropertyInfo> properties = default)
     {
         var interfaceNamespace = facadeInfo.InterfaceSymbol.ContainingNamespace;
 
-        var interfaceDeclaration = InterfaceBuilder.Build(facadeInfo, methodGroups);
-        var classDeclaration = ImplementationClassBuilder.Build(facadeInfo, methodGroups);
+        var interfaceDeclaration = InterfaceBuilder.Build(facadeInfo, methodGroups, properties);
+        var classDeclaration = ImplementationClassBuilder.Build(facadeInfo, methodGroups, properties);
 
         if (interfaceNamespace.IsGlobalNamespace)
         {

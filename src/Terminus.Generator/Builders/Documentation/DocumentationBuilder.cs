@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
@@ -13,23 +12,37 @@ internal static class DocumentationBuilder
     /// <summary>
     /// Builds XML documentation for the facade interface, listing all types being delegated to.
     /// </summary>
-    public static SyntaxTriviaList BuildInterfaceDocumentation(ImmutableArray<CandidateMethodInfo> methods)
+    public static SyntaxTriviaList BuildInterfaceDocumentation(
+        ImmutableArray<CandidateMethodInfo> methods,
+        ImmutableArray<CandidatePropertyInfo> properties = default)
     {
-        return BuildTypeDocumentation("Facade interface", methods);
+        return BuildTypeDocumentation("Facade interface", methods, properties);
     }
 
     /// <summary>
     /// Builds XML documentation for the facade implementation class, listing all types being delegated to.
     /// </summary>
-    public static SyntaxTriviaList BuildImplementationDocumentation(ImmutableArray<CandidateMethodInfo> methods)
+    public static SyntaxTriviaList BuildImplementationDocumentation(
+        ImmutableArray<CandidateMethodInfo> methods,
+        ImmutableArray<CandidatePropertyInfo> properties = default)
     {
-        return BuildTypeDocumentation("Facade implementation class", methods);
+        return BuildTypeDocumentation("Facade implementation class", methods, properties);
     }
 
-    private static SyntaxTriviaList BuildTypeDocumentation(string description, ImmutableArray<CandidateMethodInfo> methods)
+    private static SyntaxTriviaList BuildTypeDocumentation(
+        string description,
+        ImmutableArray<CandidateMethodInfo> methods,
+        ImmutableArray<CandidatePropertyInfo> properties = default)
     {
-        var containingTypes = methods
-            .Select(m => m.MethodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat))
+        var methodTypes = methods
+            .Select(m => m.MethodSymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+        
+        var propertyTypes = properties.IsDefault
+            ? Enumerable.Empty<string>()
+            : properties.Select(p => p.PropertySymbol.ContainingType.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat));
+
+        var containingTypes = methodTypes
+            .Concat(propertyTypes)
             .Distinct()
             .OrderBy(t => t)
             .ToList();
@@ -160,6 +173,36 @@ internal static class DocumentationBuilder
         triviaList.Add(CarriageReturnLineFeed);
 
         return TriviaList(triviaList.ToArray());
+    }
+
+    /// <summary>
+    /// Builds XML documentation for a facade property, including delegation info.
+    /// </summary>
+    public static SyntaxTriviaList BuildPropertyDocumentation(
+        FacadeInterfaceInfo facadeInfo,
+        CandidatePropertyInfo propertyInfo)
+    {
+        var crefPropertySignature = BuildPropertyCrefSignature(propertyInfo.PropertySymbol);
+
+        return TriviaList(
+            Comment("/// <summary>"),
+            CarriageReturnLineFeed,
+            Comment("/// Delegates to:<br/>"),
+            CarriageReturnLineFeed,
+            Comment($"/// <see cref=\"{crefPropertySignature}\"/>"),
+            CarriageReturnLineFeed,
+            Comment("/// </summary>"),
+            CarriageReturnLineFeed);
+    }
+
+    /// <summary>
+    /// Builds a cref-compatible property reference for XML documentation.
+    /// </summary>
+    private static string BuildPropertyCrefSignature(IPropertySymbol property)
+    {
+        var containingType = property.ContainingType
+            .ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat);
+        return $"{containingType}.{property.Name}";
     }
 
     /// <summary>

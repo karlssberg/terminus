@@ -6,7 +6,7 @@ namespace Terminus.Generator;
 
 /// <summary>
 /// Roslyn source generator that discovers and generates facade implementations.
-/// Coordinates discovery of [FacadeOf] interfaces and attributed methods.
+/// Coordinates discovery of [FacadeOf] interfaces and attributed methods and properties.
 /// </summary>
 [Generator]
 public class FacadeGenerator : IIncrementalGenerator
@@ -49,9 +49,34 @@ public class FacadeGenerator : IIncrementalGenerator
             .Combine(discoveredTypeMethods)
             .Select(static (data, _) => data.Left.AddRange(data.Right));
 
-        // Combine facades with all candidate methods and compilation for cross-assembly discovery
+        // Discover properties that have attributes
+        var discoveredProperties = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => FacadePropertyDiscovery.IsCandidateProperty(node),
+                transform: static (ctx, ct) => FacadePropertyDiscovery.DiscoverProperties(ctx, ct))
+            .Where(static p => p is { IsEmpty: false })
+            .SelectMany((p, _) => p!.Value)
+            .Collect();
+
+        // Discover properties from types (classes/structs/records) that have attributes
+        var discoveredTypeProperties = context.SyntaxProvider
+            .CreateSyntaxProvider(
+                predicate: static (node, _) => FacadeTypeDiscovery.IsCandidateType(node),
+                transform: static (ctx, ct) => FacadeTypeDiscovery.DiscoverTypeProperties(ctx, ct))
+            .Where(static p => p is { IsEmpty: false })
+            .SelectMany((p, _) => p!.Value)
+            .Collect();
+
+        // Combine property-level and type-level property discoveries
+        var allCandidateProperties = discoveredProperties
+            .Combine(discoveredTypeProperties)
+            .Select(static (data, _) => data.Left.AddRange(data.Right));
+
+        // Combine facades with all candidate methods, properties, and compilation
         var combined = discoveredFacades
             .Combine(allCandidateMethods)
+            .Combine(allCandidateProperties)
+            .Select(static (data, _) => (Facades: data.Left.Left, CandidateMethods: data.Left.Right, CandidateProperties: data.Right))
             .Combine(context.CompilationProvider);
 
         context.RegisterSourceOutput(combined, FacadeGenerationPipeline.Execute);

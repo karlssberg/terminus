@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Terminus.Generator.Builders;
 using Terminus.Generator.Discovery;
 using Terminus.Generator.Matching;
+using Terminus.Generator.Validation;
 
 namespace Terminus.Generator.Pipeline;
 
@@ -16,17 +17,17 @@ internal static class FacadeGenerationPipeline
     /// </summary>
     public static void Execute(
         SourceProductionContext context,
-        ((ImmutableArray<FacadeInterfaceInfo> Facades, ImmutableArray<CandidateMethodInfo> CandidateMethods) Data, Compilation Compilation) combined)
+        ((ImmutableArray<FacadeInterfaceInfo> Facades, ImmutableArray<CandidateMethodInfo> CandidateMethods, ImmutableArray<CandidatePropertyInfo> CandidateProperties) Data, Compilation Compilation) combined)
     {
-        var (facades, candidateMethods) = combined.Data;
+        var (facades, candidateMethods, candidateProperties) = combined.Data;
         var compilation = combined.Compilation;
 
-        if (candidateMethods.IsEmpty && facades.IsEmpty)
+        if (candidateMethods.IsEmpty && candidateProperties.IsEmpty && facades.IsEmpty)
             return;
 
         foreach (var facade in facades)
         {
-            ProcessFacade(context, facade, candidateMethods, compilation);
+            ProcessFacade(context, facade, candidateMethods, candidateProperties, compilation);
         }
     }
 
@@ -34,6 +35,7 @@ internal static class FacadeGenerationPipeline
         SourceProductionContext context,
         FacadeInterfaceInfo facade,
         ImmutableArray<CandidateMethodInfo> candidateMethods,
+        ImmutableArray<CandidatePropertyInfo> candidateProperties,
         Compilation compilation)
     {
         // Step 0: Discover methods from referenced assemblies based on discovery mode
@@ -56,15 +58,24 @@ internal static class FacadeGenerationPipeline
             .Select(group => group.First())
             .ToImmutableArray();
 
+        // Step 1b: Match properties to this facade
+        var matchedProperties = FacadePropertyMatcher.MatchPropertiesToFacade(facade, candidateProperties)
+            .GroupBy(p => p.PropertySymbol, SymbolEqualityComparer.Default)
+            .Select(group => group.First())
+            .ToImmutableArray();
+
         // Step 2: Validate the matched methods
-        var hasErrors = UsageValidator.Validate(context, facade, matchedMethods);
+        var hasMethodErrors = UsageValidator.Validate(context, facade, matchedMethods);
+
+        // Step 2b: Validate the matched properties (check for duplicate names)
+        var hasPropertyErrors = DuplicatePropertyValidator.Validate(context, matchedProperties);
 
         // Skip code generation if there were errors
-        if (hasErrors)
+        if (hasMethodErrors || hasPropertyErrors)
             return;
 
         // Step 3: Generate the facade implementation
-        var generationContext = FacadeGenerationContext.Create(facade, matchedMethods);
+        var generationContext = FacadeGenerationContext.Create(facade, matchedMethods, matchedProperties);
         
         var source = FacadeBuilderOrchestrator
             .Generate(generationContext)

@@ -67,4 +67,54 @@ internal sealed class FacadeTypeDiscovery
 
         return result.Count > 0 ? result.ToImmutable() : null;
     }
+
+    /// <summary>
+    /// Performs semantic analysis to discover all public properties in types with attributes.
+    /// Returns one CandidatePropertyInfo per public property, for each attribute on the type.
+    /// </summary>
+    public static ImmutableArray<CandidatePropertyInfo>? DiscoverTypeProperties(
+        GeneratorSyntaxContext context,
+        CancellationToken ct)
+    {
+        var typeDeclarationSyntax = (TypeDeclarationSyntax)context.Node;
+        var symbol = context.SemanticModel.GetDeclaredSymbol(typeDeclarationSyntax, ct);
+
+        if (symbol is not INamedTypeSymbol typeSymbol)
+            return null;
+
+        var attributes = typeSymbol.GetAttributes();
+        if (attributes.IsEmpty)
+            return null;
+
+        // Get all public properties declared on this type (not inherited, not indexers)
+        var publicProperties = typeSymbol
+            .GetMembers()
+            .OfType<IPropertySymbol>()
+            .Where(p =>
+                !p.IsIndexer &&
+                (p.GetMethod?.DeclaredAccessibility == Accessibility.Public ||
+                 p.SetMethod?.DeclaredAccessibility == Accessibility.Public))
+            .ToImmutableArray();
+
+        if (publicProperties.IsEmpty)
+            return null;
+
+        // For each attribute on the type, create CandidatePropertyInfo for each public property
+        var result = ImmutableArray.CreateBuilder<CandidatePropertyInfo>();
+
+        foreach (var attribute in attributes)
+        {
+            if (attribute.AttributeClass == null)
+                continue;
+
+            foreach (var property in publicProperties)
+            {
+                var documentationXml = property.GetDocumentationCommentXml(cancellationToken: ct);
+
+                result.Add(new CandidatePropertyInfo(property, attribute, documentationXml));
+            }
+        }
+
+        return result.Count > 0 ? result.ToImmutable() : null;
+    }
 }
