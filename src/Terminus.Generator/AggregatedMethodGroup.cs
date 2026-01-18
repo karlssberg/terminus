@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 
 namespace Terminus.Generator;
 
@@ -9,7 +10,12 @@ internal sealed record AggregatedMethodGroup(
     /// <summary>
     /// All methods in this group (min 1, typically >1 when aggregating).
     /// </summary>
-    ImmutableArray<CandidateMethodInfo> Methods)
+    ImmutableArray<CandidateMethodInfo> Methods,
+    /// <summary>
+    /// The common base attribute type for all methods in this group.
+    /// Used when generating tuple return types with IncludeAttributeMetadata = true.
+    /// </summary>
+    INamedTypeSymbol? CommonAttributeType = null)
 {
     /// <summary>
     /// Gets whether this group contains multiple methods that need aggregation.

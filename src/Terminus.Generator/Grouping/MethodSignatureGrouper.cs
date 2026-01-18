@@ -15,16 +15,104 @@ internal static class MethodSignatureGrouper
     /// </summary>
     public static ImmutableArray<AggregatedMethodGroup> GroupBySignature(
         FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<CandidateMethodInfo> methods)
+        ImmutableArray<CandidateMethodInfo> methods,
+        Compilation compilation)
     {
+        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
+
         var groups = methods
             .GroupBy(
                 method => GetGroupingKey(facadeInfo, method),
                 GroupingKeyEqualityComparer.Instance)
-            .Select(group => new AggregatedMethodGroup(group.ToImmutableArray()))
+            .Select(group =>
+            {
+                var methodsList = group.ToImmutableArray();
+
+                // Compute common attribute type only when needed
+                INamedTypeSymbol? commonAttributeType = null;
+                if (includeMetadata && methodsList.Length > 1)
+                {
+                    commonAttributeType = FindCommonBaseAttributeType(methodsList, compilation);
+                }
+
+                return new AggregatedMethodGroup(methodsList, commonAttributeType);
+            })
             .ToImmutableArray();
 
         return groups;
+    }
+
+    /// <summary>
+    /// Finds the lowest common ancestor (LCA) attribute type among all methods in the group.
+    /// </summary>
+    private static INamedTypeSymbol? FindCommonBaseAttributeType(
+        ImmutableArray<CandidateMethodInfo> methods,
+        Compilation compilation)
+    {
+        var attributeTypes = methods
+            .Select(m => m.AttributeData.AttributeClass)
+            .Where(a => a != null)
+            .Cast<INamedTypeSymbol>()
+            .Distinct(SymbolEqualityComparer.Default)
+            .Cast<INamedTypeSymbol>()
+            .ToList();
+
+        if (attributeTypes.Count == 0)
+            return null;
+
+        if (attributeTypes.Count == 1)
+            return attributeTypes[0];
+
+        // Get all base types for the first attribute
+        var commonBases = new HashSet<ISymbol>(
+            GetBaseTypeHierarchy(attributeTypes[0]),
+            SymbolEqualityComparer.Default);
+
+        // Intersect with base types of remaining attributes
+        foreach (var type in attributeTypes.Skip(1))
+        {
+            var bases = new HashSet<ISymbol>(
+                GetBaseTypeHierarchy(type),
+                SymbolEqualityComparer.Default);
+            commonBases.IntersectWith(bases);
+        }
+
+        // Return the most derived common base (closest to leaves)
+        // by ordering by depth from System.Attribute
+        return commonBases
+            .Cast<INamedTypeSymbol>()
+            .OrderByDescending(GetDepthFromAttribute)
+            .FirstOrDefault();
+    }
+
+    private static IEnumerable<INamedTypeSymbol> GetBaseTypeHierarchy(INamedTypeSymbol type)
+    {
+        var current = type;
+        while (current != null)
+        {
+            yield return current;
+
+            // Stop at System.Attribute - don't include Object in the hierarchy
+            if (current.Name == "Attribute" &&
+                current.ContainingNamespace?.ToDisplayString() == "System")
+            {
+                yield break;
+            }
+
+            current = current.BaseType;
+        }
+    }
+
+    private static int GetDepthFromAttribute(INamedTypeSymbol type)
+    {
+        var depth = 0;
+        var current = type;
+        while (current != null && current.Name != "Attribute")
+        {
+            depth++;
+            current = current.BaseType;
+        }
+        return depth;
     }
 
     private static GroupingKey GetGroupingKey(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)

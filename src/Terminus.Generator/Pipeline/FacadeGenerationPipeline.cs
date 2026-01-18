@@ -76,7 +76,7 @@ internal static class FacadeGenerationPipeline
             return;
 
         // Step 3: Group methods by signature for aggregation
-        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, matchedMethods);
+        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, matchedMethods, compilation);
 
         // Step 3b: Validate that aggregated methods have compatible return types
         var hasAggregationErrors = AggregationReturnTypeValidator.Validate(context, facade, methodGroups);

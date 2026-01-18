@@ -21,7 +21,7 @@ internal sealed class MethodSignatureBuilder
         AggregatedMethodGroup methodGroup)
     {
         var methodInfo = methodGroup.PrimaryMethod;
-        var returnTypeSyntax = BuildReturnType(methodInfo, methodGroup.RequiresAggregation);
+        var returnTypeSyntax = BuildReturnType(facadeInfo, methodGroup);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
         var typeParameterList = BuildTypeParameterList(methodInfo);
@@ -44,7 +44,7 @@ internal sealed class MethodSignatureBuilder
         AggregatedMethodGroup methodGroup)
     {
         var methodInfo = methodGroup.PrimaryMethod;
-        var returnTypeSyntax = BuildReturnType(methodInfo, methodGroup.RequiresAggregation);
+        var returnTypeSyntax = BuildReturnType(facadeInfo, methodGroup);
         var methodName = MethodNamingStrategy.GetMethodName(facadeInfo, methodInfo);
         var parameterList = BuildParameterList(methodInfo);
         var typeParameterList = BuildTypeParameterList(methodInfo);
@@ -85,8 +85,13 @@ internal sealed class MethodSignatureBuilder
                                          or ReturnTypeKind.ValueTaskWithResult;
     }
 
-    private static TypeSyntax BuildReturnType(CandidateMethodInfo methodInfo, bool requiresAggregation)
+    private static TypeSyntax BuildReturnType(FacadeInterfaceInfo facadeInfo, AggregatedMethodGroup methodGroup)
     {
+        var methodInfo = methodGroup.PrimaryMethod;
+        var requiresAggregation = methodGroup.RequiresAggregation;
+        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
+        var commonAttributeType = methodGroup.CommonAttributeType;
+
         // For non-aggregated methods, use original return type
         if (!requiresAggregation)
         {
@@ -98,9 +103,9 @@ internal sealed class MethodSignatureBuilder
 
         // For aggregated methods, transform return types:
         // - void stays void (all handlers execute, no return)
-        // - T becomes IEnumerable<T>
-        // - Task<T> becomes IAsyncEnumerable<T>
-        // - ValueTask<T> becomes IAsyncEnumerable<T>
+        // - T becomes IEnumerable<T> or IEnumerable<(TAttribute, T)> when includeMetadata
+        // - Task<T> becomes IAsyncEnumerable<T> or IAsyncEnumerable<(TAttribute, T)> when includeMetadata
+        // - ValueTask<T> becomes IAsyncEnumerable<T> or IAsyncEnumerable<(TAttribute, T)> when includeMetadata
         if (methodInfo.MethodSymbol.ReturnsVoid)
         {
             return PredefinedType(Token(SyntaxKind.VoidKeyword));
@@ -110,18 +115,42 @@ internal sealed class MethodSignatureBuilder
 
         return methodInfo.ReturnTypeKind switch
         {
-            // T → IEnumerable<T>
+            // T → IEnumerable<T> or IEnumerable<(TAttribute Attribute, T Result)>
+            ReturnTypeKind.Result when includeMetadata && commonAttributeType != null =>
+                BuildTupleEnumerableType(commonAttributeType, returnType),
+
             ReturnTypeKind.Result => ParseTypeName(
                 $"global::System.Collections.Generic.IEnumerable<{returnType.ToDisplayString(FullyQualifiedFormat)}>"),
 
-            // Task<T> → IAsyncEnumerable<T>
-            // ValueTask<T> → IAsyncEnumerable<T>
+            // Task<T> or ValueTask<T> → IAsyncEnumerable<T> or IAsyncEnumerable<(TAttribute Attribute, T Result)>
+            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult
+                when includeMetadata && commonAttributeType != null =>
+                BuildTupleAsyncEnumerableType(commonAttributeType, ((INamedTypeSymbol)returnType).TypeArguments[0]),
+
             ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult => ParseTypeName(
                 $"global::System.Collections.Generic.IAsyncEnumerable<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(FullyQualifiedFormat)}>"),
 
             // Task, ValueTask, void - keep as is
             _ => ParseTypeName(returnType.ToDisplayString(FullyQualifiedFormat))
         };
+    }
+
+    private static TypeSyntax BuildTupleEnumerableType(INamedTypeSymbol attributeType, ITypeSymbol resultType)
+    {
+        var attributeTypeName = attributeType.ToDisplayString(FullyQualifiedFormat);
+        var resultTypeName = resultType.ToDisplayString(FullyQualifiedFormat);
+
+        return ParseTypeName(
+            $"global::System.Collections.Generic.IEnumerable<({attributeTypeName} Attribute, {resultTypeName} Result)>");
+    }
+
+    private static TypeSyntax BuildTupleAsyncEnumerableType(INamedTypeSymbol attributeType, ITypeSymbol resultType)
+    {
+        var attributeTypeName = attributeType.ToDisplayString(FullyQualifiedFormat);
+        var resultTypeName = resultType.ToDisplayString(FullyQualifiedFormat);
+
+        return ParseTypeName(
+            $"global::System.Collections.Generic.IAsyncEnumerable<({attributeTypeName} Attribute, {resultTypeName} Result)>");
     }
 
     private static ParameterListSyntax BuildParameterList(CandidateMethodInfo methodInfo)

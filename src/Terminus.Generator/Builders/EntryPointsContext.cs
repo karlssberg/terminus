@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
 using Terminus.Generator.Grouping;
 
 namespace Terminus.Generator.Builders;
@@ -17,9 +18,10 @@ internal sealed record FacadeGenerationContext(
     public static FacadeGenerationContext Create(
         FacadeInterfaceInfo facade,
         ImmutableArray<CandidateMethodInfo> facadeMethodMethodInfos,
+        Compilation compilation,
         ImmutableArray<CandidatePropertyInfo> facadePropertyInfos = default)
     {
-        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, facadeMethodMethodInfos);
+        var methodGroups = MethodSignatureGrouper.GroupBySignature(facade, facadeMethodMethodInfos, compilation);
         var properties = facadePropertyInfos.IsDefault ? ImmutableArray<CandidatePropertyInfo>.Empty : facadePropertyInfos;
         return new FacadeGenerationContext(facade, methodGroups, properties);
     }

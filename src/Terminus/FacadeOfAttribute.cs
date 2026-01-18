@@ -64,11 +64,18 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     public FacadeAggregationMode AggregationMode { get; set; } = FacadeAggregationMode.None;
 
     /// <summary>
-    /// <summary>
     /// Gets or sets which assemblies should be scanned when discovering facade methods.
     /// Default is <see cref="MethodDiscoveryMode.None"/> (only methods in the current compilation are discovered).
     /// </summary>
     public MethodDiscoveryMode MethodDiscovery { get; set; } = MethodDiscoveryMode.None;
+
+    /// <summary>
+    /// Gets or sets whether to include attribute metadata in aggregated method results.
+    /// When true, aggregated methods return tuples containing both the attribute instance
+    /// and the result. Only applies to result-returning methods (T, Task&lt;T&gt;, ValueTask&lt;T&gt;).
+    /// Default is false.
+    /// </summary>
+    public bool IncludeAttributeMetadata { get; set; }
 
     private static Type[] BuildFacadeMethodAttributesArray(
         Type facadeMethodAttribute,

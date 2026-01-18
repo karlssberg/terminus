@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terminus.Generator.Builders.Strategies;
@@ -71,10 +72,11 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
     {
         var primaryMethod = methodGroup.PrimaryMethod;
         var returnTypeKind = primaryMethod.ReturnTypeKind;
+        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
 
         switch (returnTypeKind)
         {
-            // For void methods, just execute all handlers in sequence
+            // For void methods, just execute all handlers in sequence (no metadata for void)
             case ReturnTypeKind.Void:
             {
                 foreach (var statement in methodGroup.Methods.Select(method =>
@@ -84,27 +86,58 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 }
                 yield break;
             }
-            // For result methods (T), yield return each result
+            // For result methods (T), yield return each result (with optional metadata tuple)
             case ReturnTypeKind.Result:
             {
-                foreach (var statement in methodGroup.Methods.Select(method =>
-                    YieldStatement(SyntaxKind.YieldReturnStatement, _invocationBuilder.BuildInvocation(facadeInfo, method))))
+                foreach (var method in methodGroup.Methods)
                 {
-                    yield return statement;
+                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
+
+                    if (includeMetadata)
+                    {
+                        var attributeExpression = BuildAttributeInstantiation(method);
+                        var tupleExpression = TupleExpression(
+                            SeparatedList(new[]
+                            {
+                                Argument(attributeExpression),
+                                Argument(invocation)
+                            }));
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
+                    }
+                    else
+                    {
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
+                    }
                 }
                 yield break;
             }
-            // For async result methods (Task<T>, ValueTask<T>), yield return await each result
+            // For async result methods (Task<T>, ValueTask<T>), yield return await each result (with optional metadata tuple)
             case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
             {
-                foreach (var statement in methodGroup.Methods.Select(method =>
-                    YieldStatement(SyntaxKind.YieldReturnStatement, AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, method)))))
+                foreach (var method in methodGroup.Methods)
                 {
-                    yield return statement;
+                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
+                    var awaitedInvocation = AwaitExpression(invocation);
+
+                    if (includeMetadata)
+                    {
+                        var attributeExpression = BuildAttributeInstantiation(method);
+                        var tupleExpression = TupleExpression(
+                            SeparatedList(new[]
+                            {
+                                Argument(attributeExpression),
+                                Argument(awaitedInvocation)
+                            }));
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
+                    }
+                    else
+                    {
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
+                    }
                 }
                 yield break;
             }
-            // For Task/ValueTask without results, await all
+            // For Task/ValueTask without results, await all (no metadata for void-returning tasks)
             case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
             {
                 foreach (var statement in methodGroup.Methods.Select(method =>
@@ -125,6 +158,80 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 yield break;
             }
         }
+    }
+
+    /// <summary>
+    /// Builds an expression that instantiates the attribute with its original arguments.
+    /// </summary>
+    private static ExpressionSyntax BuildAttributeInstantiation(CandidateMethodInfo method)
+    {
+        var attributeData = method.AttributeData;
+        var attributeClass = attributeData.AttributeClass;
+
+        if (attributeClass == null)
+            return LiteralExpression(SyntaxKind.NullLiteralExpression);
+
+        var attributeTypeName = attributeClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+        // Build constructor arguments
+        var constructorArgs = attributeData.ConstructorArguments
+            .Select(FormatTypedConstant)
+            .ToList();
+
+        // Build named arguments (property initializers)
+        var namedArgs = attributeData.NamedArguments
+            .Select(kvp => $"{kvp.Key} = {FormatTypedConstant(kvp.Value)}")
+            .ToList();
+
+        if (constructorArgs.Count == 0 && namedArgs.Count == 0)
+        {
+            // Simple: new AttributeType()
+            return ParseExpression($"new {attributeTypeName}()");
+        }
+
+        if (namedArgs.Count == 0)
+        {
+            // Constructor args only: new AttributeType(arg1, arg2)
+            return ParseExpression($"new {attributeTypeName}({string.Join(", ", constructorArgs)})");
+        }
+
+        if (constructorArgs.Count == 0)
+        {
+            // Named args only (object initializer): new AttributeType { Prop1 = val1, Prop2 = val2 }
+            return ParseExpression($"new {attributeTypeName} {{ {string.Join(", ", namedArgs)} }}");
+        }
+
+        // Both constructor and named args: new AttributeType(arg1) { Prop1 = val1 }
+        return ParseExpression($"new {attributeTypeName}({string.Join(", ", constructorArgs)}) {{ {string.Join(", ", namedArgs)} }}");
+    }
+
+    private static string FormatTypedConstant(TypedConstant constant)
+    {
+        return constant.Kind switch
+        {
+            TypedConstantKind.Primitive => FormatPrimitive(constant.Value),
+            TypedConstantKind.Enum => $"({constant.Type!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}){constant.Value}",
+            TypedConstantKind.Type => $"typeof({((ITypeSymbol)constant.Value!).ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)})",
+            TypedConstantKind.Array => $"new[] {{ {string.Join(", ", constant.Values.Select(FormatTypedConstant))} }}",
+            _ => constant.Value?.ToString() ?? "null"
+        };
+    }
+
+    private static string FormatPrimitive(object? value)
+    {
+        return value switch
+        {
+            null => "null",
+            string s => $"\"{s.Replace("\\", "\\\\").Replace("\"", "\\\"")}\"",
+            bool b => b ? "true" : "false",
+            char c => $"'{c}'",
+            float f => $"{f}f",
+            double d => $"{d}d",
+            decimal m => $"{m}m",
+            long l => $"{l}L",
+            ulong ul => $"{ul}UL",
+            _ => value.ToString()!
+        };
     }
 
     private static StatementSyntax BuildAsyncEnumerableProxyStatement(
