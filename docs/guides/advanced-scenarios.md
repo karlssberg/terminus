@@ -2,12 +2,12 @@
 
 This guide covers advanced usage patterns for Terminus including scoped facades, custom naming, and complex architectures.
 
-## Scoped Facades
+## Scope Management
 
-Use `Scoped = true` when methods need to share state (like DbContext):
+Use `CreateScope = true` when methods need to share state (like DbContext):
 
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IOrderFacade
 {
 }
@@ -210,7 +210,7 @@ public class UserService
 Combine scoped facades with explicit commits:
 
 ```csharp
-[FacadeOf<TransactionAttribute>(Scoped = true)]
+[FacadeOf<TransactionAttribute>(CreateScope = true)]
 public partial interface IUnitOfWork
 {
 }
@@ -476,7 +476,7 @@ var user = await mediator.CreateUser("John");
 For scoped facades with `IAsyncEnumerable<T>`:
 
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IDataFacade { }
 
 public class DataService

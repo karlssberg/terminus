@@ -6,7 +6,7 @@ Service resolution is how Terminus obtains instances of your services to invoke 
 
 When a facade method is called, Terminus needs to obtain an instance of the service containing the implementation method. The strategy used depends on:
 1. Whether the method is **static** or **instance**
-2. Whether the facade is configured with **`Scoped = true`**
+2. Whether the facade is configured with **`CreateScope = true`**
 
 ## Resolution Strategies
 
@@ -46,14 +46,14 @@ void IAppFacade.Log(string message)
 - Service doesn't need to be registered in DI container
 - Useful for utility methods and pure functions
 
-### 2. Non-Scoped Service Resolution
+### 2. Default Service Resolution (No Scope)
 
-**Used for:** Instance methods on non-scoped facades (`Scoped = false` or default)
+**Used for:** Instance methods on facades without scope management (`CreateScope = false` or default)
 
 **Behavior:** Resolves service from root `IServiceProvider` on every invocation
 
 ```csharp
-[FacadeOf<HandlerAttribute>]  // Scoped = false (default)
+[FacadeOf<HandlerAttribute>]  // CreateScope = false (default)
 public partial interface IAppFacade
 {
 }
@@ -92,14 +92,14 @@ services.AddTransient<WeatherService>();
 services.AddTerminusFacades();  // Registers facade as Transient
 ```
 
-### 3. Scoped Service Resolution
+### 3. Scoped Service Resolution (CreateScope = true)
 
-**Used for:** Instance methods on scoped facades (`Scoped = true`)
+**Used for:** Instance methods on facades with scope management (`CreateScope = true`)
 
 **Behavior:** Creates a DI scope lazily on first use, reuses it for the facade's lifetime, disposes on facade disposal
 
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IAppFacade
 {
 }
@@ -192,7 +192,7 @@ public sealed class IAppFacade_Generated : global::MyApp.IAppFacade, IDisposable
 ```csharp
 services.AddScoped<DbContext>();
 services.AddScoped<OrderService>();
-services.AddTerminusFacades();  // Registers scoped facades as Scoped lifetime
+services.AddTerminusFacades();  // Registers facades with scope management as Scoped lifetime
 ```
 
 **Usage with disposal:**
@@ -224,7 +224,7 @@ public static class ValidationHelpers
 }
 ```
 
-### Use Non-Scoped Resolution When:
+### Use Default Resolution (No Scope) When:
 - Services are stateless
 - Each method call should use a fresh service instance (Transient)
 - Methods don't share state
@@ -248,7 +248,7 @@ public class NewsService
 }
 ```
 
-### Use Scoped Resolution When:
+### Use Scoped Resolution (CreateScope = true) When:
 - Methods need to share state (e.g., DbContext, Unit of Work)
 - You want all method calls within a single facade instance to use the same service instances
 - Working with scoped services (database contexts, per-request services)
@@ -256,7 +256,7 @@ public class NewsService
 
 **Example:**
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IOrderFacade { }
 
 public class OrderService
@@ -282,7 +282,7 @@ public class OrderService
 The `AddTerminusFacades()` extension method automatically registers facades with appropriate lifetimes:
 
 - **Non-disposable facades** (non-scoped) → `Transient`
-- **Disposable facades** (scoped) → `Scoped`
+- **Disposable facades** (CreateScope = true) → `Scoped`
 
 You can override this:
 ```csharp
@@ -338,7 +338,7 @@ public partial interface IAppFacade { }
 **For transactional operations:**
 ```csharp
 // Use scoped to reuse DbContext
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IOrderFacade { }
 ```
 
@@ -361,7 +361,7 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> PlaceOrder([FromBody] Order order)
     {
-        // Scoped facade automatically disposed at end of request
+        // Facade with CreateScope=true automatically disposed at end of request
         await _facade.PlaceOrderAsync(order);
         return Ok();
     }
@@ -371,7 +371,7 @@ public class OrdersController : ControllerBase
 ### Unit of Work Pattern
 
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IUnitOfWork { }
 
 await using var unitOfWork = provider.GetRequiredService<IUnitOfWork>();

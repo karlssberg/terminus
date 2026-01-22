@@ -171,8 +171,8 @@ public sealed class FacadeOfAttribute : Attribute
     // Constructor: specify one or more attribute types
     public FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeMethodAttributes);
 
-    // Whether to create scoped instances (default: false)
-    public bool Scoped { get; set; }
+    // Whether to create and manage a service scope (default: false)
+    public bool CreateScope { get; set; }
 
     // Custom method names based on return types
     public string? CommandName { get; set; }        // void methods
@@ -322,7 +322,7 @@ public static class Utilities
 ```
 
 **2. Non-Scoped Service Resolution**
-- Used for: Instance methods on non-scoped facades (`Scoped = false` or default)
+- Used for: Instance methods on non-scoped facades (`CreateScope = false` or default)
 - Behavior: Resolves service from root `IServiceProvider` per invocation
 - Example:
 ```csharp
@@ -338,11 +338,11 @@ public class MyService
 ```
 
 **3. Scoped Service Resolution**
-- Used for: Instance methods on scoped facades (`Scoped = true`)
+- Used for: Instance methods on scoped facades (`CreateScope = true`)
 - Behavior: Creates scope lazily, reuses for facade lifetime, disposes on disposal
 - Example:
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf(typeof(HandlerAttribute), CreateScope = true)]
 public partial interface IHandlers;
 
 public class MyService
@@ -358,7 +358,7 @@ public class MyService
 // - Async methods: _asyncScope.Value.ServiceProvider.GetRequiredService<MyService>()
 ```
 
-**Scoped facades implement `IDisposable` and `IAsyncDisposable`:**
+**Facades with `CreateScope = true` implement `IDisposable` and `IAsyncDisposable`:**
 ```csharp
 public sealed class IHandlers_Generated : IHandlers, IDisposable, IAsyncDisposable
 {
@@ -454,10 +454,10 @@ void IFacade.Process(string data, CancellationToken ct)
 
 ### Async Enumerable Support
 
-For `IAsyncEnumerable<T>` return types on scoped facades, Terminus generates a proxy iterator:
+For `IAsyncEnumerable<T>` return types on facades with `CreateScope = true`, Terminus generates a proxy iterator:
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf(typeof(HandlerAttribute), CreateScope = true)]
 public partial interface IHandlers;
 
 public class MyService
@@ -1158,7 +1158,7 @@ await test.RunAsync();
 - Static vs instance methods
 - Methods with no parameters
 - Methods with various return types (void, T, Task, Task<T>, IAsyncEnumerable<T>)
-- Scoped vs non-scoped facades
+- Facades with CreateScope = true vs false
 - Custom naming (CommandName, QueryName, etc.)
 - Method aggregation with multiple handlers sharing signatures
 - Selective aggregation with AggregationMode flags
@@ -1362,10 +1362,10 @@ app.MapGet("/process", (IHandlers handlers, string data) =>
 });
 ```
 
-### Scoped Facade with Async Methods
+### Facade with Scope Management and Async Methods
 
 ```csharp
-[FacadeOf(typeof(HandlerAttribute), Scoped = true)]
+[FacadeOf(typeof(HandlerAttribute), CreateScope = true)]
 public partial interface IHandlers;
 
 public class MyHandlers

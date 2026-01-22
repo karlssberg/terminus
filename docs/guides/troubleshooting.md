@@ -326,9 +326,9 @@ public partial interface IAppFacade { }  // OK
 
 **Solutions:**
 
-1. **Use scoped facades** for multiple related calls:
+1. **Use scope management** for multiple related calls:
    ```csharp
-   [FacadeOf<HandlerAttribute>(Scoped = true)]
+   [FacadeOf<HandlerAttribute>(CreateScope = true)]
    public partial interface IAppFacade { }
    ```
 

@@ -361,12 +361,12 @@ public class SmsNotifier
 // Both handlers execute when Notify() is called
 ```
 
-### With Scoped Facades
+### With Scope Management
 
-Cross-assembly methods work with scoped service resolution:
+Cross-assembly methods work with scope management:
 
 ```csharp
-[FacadeOf<HandlerAttribute>( Lifetime = FacadeLifetime.Scoped, MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
+[FacadeOf<HandlerAttribute>(CreateScope = true, MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
 public partial interface IScopedHandlers { }
 ```
 

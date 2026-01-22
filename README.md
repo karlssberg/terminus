@@ -106,10 +106,10 @@ public partial interface IAppFacade;
 ```
 
 ### Service Lifetimes & Scoping
-By default, the generated facade implementation is registered as **Transient**. If you need the facade to resolve services from a specific DI scope (useful in web applications or unit-of-work patterns), set the `Scoped` property to `true`.
+By default, services are resolved per method invocation from the root `IServiceProvider`. If you need the facade to create and manage its own service scope (useful in web applications or unit-of-work patterns), set the `CreateScope` property to `true`.
 
 ```csharp
-[FacadeOf(typeof(MyMarker), Scoped = true)]
+[FacadeOf(typeof(MyMarker), CreateScope = true)]
 public partial interface IScopedFacade;
 ```
 

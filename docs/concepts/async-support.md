@@ -151,12 +151,12 @@ async ValueTask<string?> IAppFacade.GetCachedAsync(string key)
 
 Terminus supports `IAsyncEnumerable<T>` for streaming results asynchronously.
 
-### Non-Scoped Facades
+### Facades Without Scope Management
 
-For non-scoped facades, the async enumerable is returned directly:
+For facades without scope management, the async enumerable is returned directly:
 
 ```csharp
-[FacadeOf<HandlerAttribute>]  // Scoped = false (default)
+[FacadeOf<HandlerAttribute>]  // CreateScope = false (default)
 public partial interface IAppFacade { }
 
 public class DataService
@@ -181,12 +181,12 @@ IAsyncEnumerable<Item> IAppFacade.GetItemsAsync()
 }
 ```
 
-### Scoped Facades
+### Facades With Scope Management (CreateScope = true)
 
-For scoped facades, Terminus generates a proxy iterator to ensure the scope lifetime:
+For facades with scope management, Terminus generates a proxy iterator to ensure the scope lifetime:
 
 ```csharp
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IAppFacade { }
 
 public class DataService
@@ -378,11 +378,11 @@ public Order CreateOrder(Order order)
 }
 ```
 
-### 4. Use Scoped Facades for DbContext
+### 4. Use CreateScope = true for DbContext
 
 ```csharp
 // ✅ Good - Scoped facade for DbContext
-[FacadeOf<HandlerAttribute>(Scoped = true)]
+[FacadeOf<HandlerAttribute>(CreateScope = true)]
 public partial interface IOrderFacade { }
 
 public class OrderService
