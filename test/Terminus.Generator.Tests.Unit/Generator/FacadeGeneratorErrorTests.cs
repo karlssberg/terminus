@@ -15,7 +15,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -86,7 +86,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
             
                 public class FacadeMethodAttribute : Attribute;
@@ -125,7 +125,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true, CommandName="Execute")]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true, CommandName="Execute")]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;

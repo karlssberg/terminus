@@ -217,7 +217,7 @@ public class PropertyGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped = true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope = true)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;

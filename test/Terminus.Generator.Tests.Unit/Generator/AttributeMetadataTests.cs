@@ -1,3 +1,4 @@
+#pragma warning disable CS0162 // Unreachable code detected
 namespace Terminus.Generator.Tests.Unit.Generator;
 
 /// <summary>

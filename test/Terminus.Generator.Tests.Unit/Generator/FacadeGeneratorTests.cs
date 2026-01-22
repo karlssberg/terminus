@@ -13,7 +13,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -154,7 +154,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -306,7 +306,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=false)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=false)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -429,7 +429,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(MyFacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(MyFacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
                 
                 public class MyFacadeMethodAttribute : Attribute;
@@ -582,7 +582,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -1004,7 +1004,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Scoped=true, AsyncStreamName="StreamAsync")]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true, AsyncStreamName="StreamAsync")]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -1485,7 +1485,7 @@ public class FacadeGeneratorTests : SourceGeneratorTestBase<FacadeGenerator>
                 [FacadeOf<HandlerAttribute>(
                     CommandName = "Execute",
                     QueryName = "Query",
-                    Lifetime = FacadeLifetime.Scoped)]
+                    CreateScope = true)]
                 public partial interface IFacade;
 
                 public class HandlerAttribute : Attribute;

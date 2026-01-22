@@ -142,7 +142,7 @@ public class FacadeGeneratorGenericReturnTypeTests : SourceGeneratorTestBase<Fac
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), Lifetime = FacadeLifetime.Scoped)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope = true)]
                 public partial interface IScopedFacade;
                 
                 public class FacadeMethodAttribute : Attribute;

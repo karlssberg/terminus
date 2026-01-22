@@ -30,7 +30,7 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(ITestFacade).Assembly;
 
         // Act
-        services.AddTerminusFacades(assembly);
+        services.AddTerminusFacades(assembly!);
         var provider = services.BuildServiceProvider();
 
         // Assert
@@ -92,7 +92,7 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(ITestFacade).Assembly;
 
         // Act
-        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly);
+        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly!);
 
         // Assert
         var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ITestFacade));
@@ -108,7 +108,7 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(ITestFacade).Assembly;
 
         // Act
-        services.AddTerminusFacades(ServiceLifetime.Scoped, assembly);
+        services.AddTerminusFacades(ServiceLifetime.Scoped, assembly!);
 
         // Assert
         var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ITestFacade));
@@ -124,7 +124,7 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(IScopedFacade).Assembly;
 
         // Act
-        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly);
+        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly!);
 
         // Assert
         var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IScopedFacade));
@@ -142,7 +142,7 @@ public class ServiceCollectionExtensionsTests
         var assembly2 = typeof(IAnotherFacade).Assembly;
 
         // Act
-        services.AddTerminusFacades(assembly1, assembly2);
+        services.AddTerminusFacades(assembly1!, assembly2!);
 
         // Assert - verify registrations from assemblies
         Assert.Contains(services, d => d.ServiceType == typeof(ITestFacade));
@@ -157,8 +157,8 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(ITestFacade).Assembly;
 
         // Act - register twice with different lifetimes
-        services.AddTerminusFacades(ServiceLifetime.Transient, assembly);
-        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly);
+        services.AddTerminusFacades(ServiceLifetime.Transient, assembly!);
+        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly!);
 
         // Assert - last one (Singleton) should be last in collection
         var descriptors = services.Where(d => d.ServiceType == typeof(ITestFacade)).ToList();
@@ -225,7 +225,7 @@ public class ServiceCollectionExtensionsTests
         // Arrange
         var services = new ServiceCollection();
         var assembly = typeof(ITestFacade).Assembly;
-        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly);
+        services.AddTerminusFacades(ServiceLifetime.Singleton, assembly!);
         var provider = services.BuildServiceProvider();
 
         // Act
@@ -286,7 +286,7 @@ public class ServiceCollectionExtensionsTests
         var assembly = typeof(ITestFacade).Assembly;
 
         // Act
-        services.AddTerminusFacade<ITestFacade>(assembly);
+        services.AddTerminusFacade<ITestFacade>(assembly!);
         var provider = services.BuildServiceProvider();
 
         // Assert

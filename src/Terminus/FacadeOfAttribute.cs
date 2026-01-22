@@ -17,20 +17,13 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     public Type[] FacadeMethodAttributes { get; set; } = BuildFacadeMethodAttributesArray(facadeMethodAttribute, facadeMethodAttributes);
 
     /// <summary>
-    /// Gets or sets the lifetime behavior for the generated facade.
+    /// Gets or sets whether the generated facade should create and manage its own service scope.
+    /// When true, a service scope is created lazily on first method invocation and reused for the lifetime of the facade.
+    /// The scope is disposed when the facade is disposed. Generated facades with this option implement
+    /// <see cref="System.IDisposable"/> and <see cref="System.IAsyncDisposable"/>.
+    /// Default is false, meaning services are resolved per method invocation from the root IServiceProvider.
     /// </summary>
-    public FacadeLifetime Lifetime { get; set; } = FacadeLifetime.Transient;
-
-    /// <summary>
-    /// Gets or sets whether the facade should be registered with a scoped lifetime.
-    /// When true, a new instance of the facade is created per scope (e.g., per web request).
-    /// </summary>
-    [Obsolete("Use Lifetime property instead. This property will be removed in a future version.")]
-    public bool Scoped
-    {
-        get => Lifetime == FacadeLifetime.Scoped;
-        set => Lifetime = value ? FacadeLifetime.Scoped : FacadeLifetime.Transient;
-    }
+    public bool CreateScope { get; set; }
 
     /// <summary>
     /// Gets or sets the name of the synchronous command method in the generated facade (i.e. for methods that have a void return).

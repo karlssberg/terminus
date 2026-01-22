@@ -5,19 +5,7 @@ namespace Terminus.Generator;
 
 internal class GenerationFeatures(AttributeData aggregatorAttrData)
 {
-    public bool IsScoped
-    {
-        get
-        {
-            // Try new Lifetime property first (enum value 1 = Scoped)
-            var lifetime = ResolveNamedArgument<int?>("Lifetime");
-            if (lifetime.HasValue)
-                return lifetime.Value == 1; // FacadeLifetime.Scoped
-
-            // Fall back to legacy Scoped boolean property
-            return ResolveNamedArgument<bool>("Scoped");
-        }
-    }
+    public bool IsScoped => ResolveNamedArgument<bool>("CreateScope");
 
     public string? CommandName => ResolveNamedArgument<string?>("CommandName");
     public string? QueryName => ResolveNamedArgument<string?>("QueryName");

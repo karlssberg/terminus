@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
         /// services.AddTerminusFacades(typeof(IMyFacade).Assembly, typeof(IOtherFacade).Assembly);
         /// </code>
         /// </example>
-        public IServiceCollection AddTerminusFacades(params Assembly[] assemblies)
+        public IServiceCollection AddTerminusFacades(params Assembly[]? assemblies)
         {
             return AddTerminusFacadesCore(services, lifetime: null, assemblies);
         }
@@ -73,7 +73,7 @@ public static class ServiceCollectionExtensions
         /// </code>
         /// </example>
         public IServiceCollection AddTerminusFacades(ServiceLifetime lifetime,
-            params Assembly[] assemblies)
+            params Assembly[]? assemblies)
         {
             return AddTerminusFacadesCore(services, lifetime, assemblies);
         }
@@ -95,10 +95,10 @@ public static class ServiceCollectionExtensions
         /// services.AddTerminusFacade&lt;IMyFacade&gt;(typeof(IMyFacade).Assembly);
         /// </code>
         /// </example>
-        public IServiceCollection AddTerminusFacade<TInterface>(params Assembly[] assemblies)
+        public IServiceCollection AddTerminusFacade<TInterface>(params Assembly[]? assemblies)
             where TInterface : class
         {
-            if (assemblies.Length == 0)
+            if (assemblies == null || assemblies.Length == 0)
             {
                 assemblies = [Assembly.GetCallingAssembly()];
             }
@@ -118,10 +118,10 @@ public static class ServiceCollectionExtensions
         /// </code>
         /// </example>
         public IServiceCollection AddTerminusFacade<TInterface>(ServiceLifetime lifetime,
-            params Assembly[] assemblies)
+            params Assembly[]? assemblies)
             where TInterface : class
         {
-            if (assemblies.Length == 0)
+            if (assemblies == null || assemblies.Length == 0)
             {
                 assemblies = [Assembly.GetCallingAssembly()];
             }
@@ -147,9 +147,9 @@ public static class ServiceCollectionExtensions
         /// </example>
         public IServiceCollection AddTerminusFacade(
             Type interfaceType,
-            params Assembly[] assemblies)
+            params Assembly[]? assemblies)
         {
-            if (assemblies.Length == 0)
+            if (assemblies == null || assemblies.Length == 0)
             {
                 assemblies = [Assembly.GetCallingAssembly()];
             }
@@ -171,9 +171,9 @@ public static class ServiceCollectionExtensions
         public IServiceCollection AddTerminusFacade(
             Type interfaceType,
             ServiceLifetime lifetime,
-            params Assembly[] assemblies)
+            params Assembly[]? assemblies)
         {
-            if (assemblies.Length == 0)
+            if (assemblies == null || assemblies.Length == 0)
             {
                 assemblies = [Assembly.GetCallingAssembly()];
             }
@@ -184,10 +184,14 @@ public static class ServiceCollectionExtensions
     private static IServiceCollection AddTerminusFacadesCore(
         IServiceCollection services,
         ServiceLifetime? lifetime,
-        params Assembly[] assemblies)
+        params Assembly[]? assemblies)
     {
+        if (assemblies == null) return services;
+
         foreach (var assembly in assemblies)
         {
+            if (assembly == null) continue;
+
             var facadeImplementations = FindFacadeImplementations(assembly);
 
             foreach (var (implementationType, interfaceType) in facadeImplementations)
@@ -208,10 +212,14 @@ public static class ServiceCollectionExtensions
         IServiceCollection services,
         Type interfaceType,
         ServiceLifetime? lifetime,
-        params Assembly[] assemblies)
+        params Assembly[]? assemblies)
     {
+        if (assemblies == null) return services;
+
         foreach (var assembly in assemblies)
         {
+            if (assembly == null) continue;
+
             var facadeImplementations = FindFacadeImplementations(assembly);
 
             var matchingImpl = facadeImplementations

@@ -8,11 +8,11 @@ public class TestFacadeMethodAttribute : Attribute;
 public partial interface ITestFacade;
 
 // Test facade with IDisposable - should be Scoped
-[FacadeOf(typeof(TestFacadeMethodAttribute), Lifetime = FacadeLifetime.Scoped)]
+[FacadeOf(typeof(TestFacadeMethodAttribute), CreateScope = true)]
 public partial interface IScopedFacade;
 
 // Test facade with IAsyncDisposable - should also be Scoped
-[FacadeOf(typeof(TestFacadeMethodAttribute), Lifetime = FacadeLifetime.Scoped)]
+[FacadeOf(typeof(TestFacadeMethodAttribute), CreateScope = true)]
 public partial interface IAsyncScopedFacade;
 
 // Another test facade for multi-facade tests
