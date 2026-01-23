@@ -56,6 +56,7 @@ Console.WriteLine(facade.GetWeather());
 - **Async support**: Full support for `Task`, `ValueTask`, `Task<T>`, `ValueTask<T>`, and `IAsyncEnumerable<T>`
 - **Generic method support**: Full support for generic methods with type parameters and constraints
 - **Custom method naming**: Configure different method names based on return types (Command, Query, etc.)
+- **Interceptor pipeline**: Add cross-cutting concerns like logging, caching, and validation via interceptors
 - **Dependency injection integration**: Seamless integration with Microsoft.Extensions.DependencyInjection
 
 ## 📖 Documentation

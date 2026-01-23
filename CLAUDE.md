@@ -189,6 +189,9 @@ public sealed class FacadeOfAttribute : Attribute
 
     // Include attribute metadata in aggregated results (default: false)
     public bool IncludeAttributeMetadata { get; set; }
+
+    // Interceptor types to apply to all facade methods (default: null)
+    public Type[]? Interceptors { get; set; }
 }
 ```
 
@@ -906,6 +909,224 @@ Cross-assembly discovery walks `IAssemblySymbol.GlobalNamespace` to find types w
 - **TransitiveAssemblies**: Uses `Compilation.References` to get all available assemblies including transitive dependencies
 
 Since `SymbolEqualityComparer` doesn't work across different compilations, attribute matching uses fully-qualified name comparison via `ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)`.
+
+### Interceptors
+
+Terminus supports facade method interceptors, enabling cross-cutting concerns like logging, caching, validation, and metrics to be applied to all facade method invocations.
+
+#### Core Interfaces
+
+**IFacadeInterceptor**
+
+The main interface for creating interceptors:
+
+```csharp
+public interface IFacadeInterceptor
+{
+    TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next);
+
+    ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next);
+
+    IAsyncEnumerable<TItem> InterceptStream<TItem>(
+        FacadeInvocationContext context,
+        FacadeStreamInvocationDelegate<TItem> next);
+}
+```
+
+**FacadeInterceptor**
+
+A base class with pass-through default implementations:
+
+```csharp
+public abstract class FacadeInterceptor : IFacadeInterceptor
+{
+    public virtual TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next)
+    {
+        return next();
+    }
+
+    public virtual ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next)
+    {
+        return next();
+    }
+
+    public virtual async IAsyncEnumerable<TItem> InterceptStream<TItem>(
+        FacadeInvocationContext context,
+        FacadeStreamInvocationDelegate<TItem> next)
+    {
+        await foreach (var item in next())
+        {
+            yield return item;
+        }
+    }
+}
+```
+
+**FacadeInvocationContext**
+
+Provides context about the method invocation:
+
+```csharp
+public sealed class FacadeInvocationContext
+{
+    public IServiceProvider ServiceProvider { get; }
+    public MethodInfo Method { get; }
+    public object?[] Arguments { get; }
+    public Type TargetType { get; }
+    public Attribute MethodAttribute { get; }
+    public IDictionary<string, object?> Properties { get; }
+    public ReturnTypeKind ReturnTypeKind { get; }
+}
+```
+
+#### Configuring Interceptors
+
+Add interceptors to a facade using the `Interceptors` property:
+
+```csharp
+// Define interceptors
+public class LoggingInterceptor : FacadeInterceptor
+{
+    private readonly ILogger _logger;
+
+    public LoggingInterceptor(ILogger<LoggingInterceptor> logger) => _logger = logger;
+
+    public override TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next) where TResult : default
+    {
+        _logger.LogInformation("Calling {Method}", context.Method.Name);
+        var result = next();
+        _logger.LogInformation("Completed {Method}", context.Method.Name);
+        return result;
+    }
+
+    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+    {
+        _logger.LogInformation("Calling {Method} async", context.Method.Name);
+        var result = await next();
+        _logger.LogInformation("Completed {Method} async", context.Method.Name);
+        return result;
+    }
+}
+
+public class CachingInterceptor : FacadeInterceptor;
+
+// Configure facade with interceptors
+[FacadeOf(typeof(HandlerAttribute), Interceptors = new[] { typeof(LoggingInterceptor), typeof(CachingInterceptor) })]
+public partial interface IHandlers;
+```
+
+#### How Interceptors Work
+
+When interceptors are configured:
+
+1. **Interceptor Array Field**: Generated facade includes `_interceptors` array field
+2. **Constructor Resolution**: Interceptors are resolved from `IServiceProvider` in constructor
+3. **Pipeline Methods**: Helper methods generated for building the interceptor chain:
+   - `ExecuteWithInterceptors<TResult>()` for sync methods (void/result)
+   - `ExecuteWithInterceptorsAsync<TResult>()` for async methods (Task/ValueTask)
+   - `ExecuteWithInterceptorsStream<TItem>()` for IAsyncEnumerable methods
+4. **Context Creation**: Each method call creates a `FacadeInvocationContext` with method metadata
+5. **Chain Execution**: Interceptors execute in order, each calling `next()` to continue the chain
+
+#### Generated Code Example
+
+```csharp
+// Source
+[FacadeOf(typeof(HandlerAttribute), Interceptors = new[] { typeof(LoggingInterceptor) })]
+public partial interface IHandlers;
+
+public class UserHandlers
+{
+    [Handler]
+    public string GetUser(int id) => $"User {id}";
+}
+
+// Generated (simplified)
+public sealed class IHandlers_Generated : IHandlers
+{
+    private readonly IServiceProvider _serviceProvider;
+    private readonly IFacadeInterceptor[] _interceptors;
+
+    public IHandlers_Generated(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+        _interceptors = new IFacadeInterceptor[]
+        {
+            serviceProvider.GetRequiredService<LoggingInterceptor>()
+        };
+    }
+
+    string IHandlers.GetUser(int id)
+    {
+        var context = new FacadeInvocationContext(
+            _serviceProvider,
+            typeof(IHandlers).GetMethod("GetUser")!,
+            new object?[] { id },
+            typeof(UserHandlers),
+            new HandlerAttribute(),
+            new Dictionary<string, object?>(),
+            ReturnTypeKind.Result);
+
+        return ExecuteWithInterceptors<string>(
+            context,
+            () => _serviceProvider.GetRequiredService<UserHandlers>().GetUser(id))!;
+    }
+
+    private TResult? ExecuteWithInterceptors<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> target)
+    {
+        var index = 0;
+        FacadeInvocationDelegate<TResult> BuildPipeline()
+        {
+            if (index >= _interceptors.Length)
+                return target;
+            var currentIndex = index++;
+            var next = BuildPipeline();
+            return () => _interceptors[currentIndex].Intercept(context, next);
+        }
+        return BuildPipeline()();
+    }
+}
+```
+
+#### When to Use Interceptors
+
+**Good Use Cases:**
+- **Logging**: Log method calls, parameters, and results
+- **Caching**: Cache results based on parameters
+- **Validation**: Validate parameters before execution
+- **Metrics**: Track execution time and success/failure rates
+- **Error handling**: Wrap exceptions with additional context
+- **Authorization**: Check permissions before method execution
+
+**Considerations:**
+- Interceptors add runtime overhead (context creation, delegate allocation)
+- Interceptors are resolved once at facade construction
+- Interceptor order matters: first in array executes first (outermost)
+- Properties dictionary enables passing data between interceptors
+
+#### Registering Interceptors
+
+Register interceptors with the DI container:
+
+```csharp
+services.AddSingleton<LoggingInterceptor>();
+services.AddScoped<CachingInterceptor>();
+services.AddTerminusFacades();
+```
 
 ## Architecture Deep Dive
 

@@ -526,4 +526,5 @@ public class Handlers
 - [MediatR Alternative Example](../examples/meditr-alternative.md) - Building a type-safe mediator
 - [Service Resolution](service-resolution.md) - Understanding how services are resolved
 - [Async Support](async-support.md) - Working with async patterns
+- [Interceptors](interceptors.md) - Adding cross-cutting concerns
 - [Advanced Scenarios](../guides/advanced-scenarios.md) - Complex usage patterns

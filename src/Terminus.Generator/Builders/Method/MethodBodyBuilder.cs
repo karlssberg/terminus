@@ -21,6 +21,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         AggregatedMethodGroup methodGroup)
     {
         var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
+        var hasInterceptors = facadeInfo.Features.HasInterceptors;
 
         // Handle metadata mode with lazy execution (works for single or multiple methods)
         if (includeMetadata)
@@ -33,6 +34,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         }
 
         // For aggregated methods (without metadata), generate yield return statements
+        // Note: Interceptors are not supported with aggregation
         if (methodGroup.RequiresAggregation)
         {
             foreach (var statement in BuildAggregatedMethodBody(facadeInfo, methodGroup))
@@ -42,7 +44,17 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             yield break;
         }
 
-        // For single methods (without metadata), use existing logic
+        // For single methods with interceptors, wrap in interceptor pipeline
+        if (hasInterceptors)
+        {
+            foreach (var statement in BuildInterceptorWrappedMethodBody(facadeInfo, methodGroup.PrimaryMethod))
+            {
+                yield return statement;
+            }
+            yield break;
+        }
+
+        // For single methods (without metadata and without interceptors), use existing logic
         var methodInfo = methodGroup.PrimaryMethod;
 
         // Handle CancellationToken.ThrowIfCancellationRequested() first for static scoped methods
@@ -76,6 +88,139 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 BuildAsyncEnumerableProxyStatement(facadeInfo, methodInfo),
             _ => ReturnStatement(invocationExpression)
         };
+    }
+
+    /// <summary>
+    /// Builds method body for methods with interceptors.
+    /// </summary>
+    private IEnumerable<StatementSyntax> BuildInterceptorWrappedMethodBody(
+        FacadeInterfaceInfo facadeInfo,
+        CandidateMethodInfo methodInfo)
+    {
+        var interfaceName = facadeInfo.InterfaceSymbol
+            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var containingTypeName = methodInfo.MethodSymbol.ContainingType
+            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        var attributeTypeName = methodInfo.AttributeData.AttributeClass?
+            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Attribute";
+
+        var methodName = methodInfo.MethodSymbol.Name;
+        var parameters = methodInfo.MethodSymbol.Parameters;
+        var argumentsArray = parameters.Length > 0
+            ? string.Join(", ", parameters.Select(p => p.Name.EscapeIdentifier()))
+            : "";
+
+        var returnTypeKindName = methodInfo.ReturnTypeKind switch
+        {
+            ReturnTypeKind.Void => "Void",
+            ReturnTypeKind.Result => "Result",
+            ReturnTypeKind.Task => "Task",
+            ReturnTypeKind.ValueTask => "Task",
+            ReturnTypeKind.TaskWithResult => "TaskWithResult",
+            ReturnTypeKind.ValueTaskWithResult => "TaskWithResult",
+            ReturnTypeKind.AsyncEnumerable => "AsyncEnumerable",
+            _ => "Void"
+        };
+
+        // Build the context creation statement
+        var contextStatement = ParseStatement(
+            $$"""
+            var context = new global::Terminus.FacadeInvocationContext(
+                _serviceProvider,
+                typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
+                new object?[] { {{argumentsArray}} },
+                typeof({{containingTypeName}}),
+                new {{attributeTypeName}}(),
+                new global::System.Collections.Generic.Dictionary<string, object?>(),
+                global::Terminus.ReturnTypeKind.{{returnTypeKindName}});
+            """);
+        yield return contextStatement;
+
+        // Build the invocation and wrapping based on return type
+        var invocation = _invocationBuilder.BuildInvocation(facadeInfo, methodInfo, includeConfigureAwait: false);
+
+        switch (methodInfo.ReturnTypeKind)
+        {
+            case ReturnTypeKind.Void:
+            {
+                yield return ParseStatement(
+                    $$"""
+                    ExecuteWithInterceptors<object>(
+                        context,
+                        () =>
+                        {
+                            {{invocation.ToFullString()}};
+                            return default;
+                        });
+                    """);
+                break;
+            }
+            case ReturnTypeKind.Result:
+            {
+                var returnType = methodInfo.MethodSymbol.ReturnType
+                    .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                yield return ParseStatement(
+                    $$"""
+                    return ExecuteWithInterceptors<{{returnType}}>(
+                        context,
+                        () => {{invocation.ToFullString()}})!;
+                    """);
+                break;
+            }
+            case ReturnTypeKind.Task:
+            {
+                yield return ParseStatement(
+                    $$"""
+                    await ExecuteWithInterceptorsAsync<object>(
+                        context,
+                        async () =>
+                        {
+                            await {{invocation.ToFullString()}}.ConfigureAwait(false);
+                            return default;
+                        }).ConfigureAwait(false);
+                    """);
+                break;
+            }
+            case ReturnTypeKind.ValueTask:
+            {
+                yield return ParseStatement(
+                    $$"""
+                    await ExecuteWithInterceptorsAsync<object>(
+                        context,
+                        async () =>
+                        {
+                            await {{invocation.ToFullString()}}.ConfigureAwait(false);
+                            return default;
+                        }).ConfigureAwait(false);
+                    """);
+                break;
+            }
+            case ReturnTypeKind.TaskWithResult:
+            case ReturnTypeKind.ValueTaskWithResult:
+            {
+                var returnType = ((INamedTypeSymbol)methodInfo.MethodSymbol.ReturnType).TypeArguments[0]
+                    .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                yield return ParseStatement(
+                    $$"""
+                    return (await ExecuteWithInterceptorsAsync<{{returnType}}>(
+                        context,
+                        async () => await {{invocation.ToFullString()}}.ConfigureAwait(false)).ConfigureAwait(false))!;
+                    """);
+                break;
+            }
+            case ReturnTypeKind.AsyncEnumerable:
+            {
+                var returnType = ((INamedTypeSymbol)methodInfo.MethodSymbol.ReturnType).TypeArguments[0]
+                    .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+                yield return ParseStatement(
+                    $$"""
+                    return ExecuteWithInterceptorsStream<{{returnType}}>(
+                        context,
+                        () => {{invocation.ToFullString()}});
+                    """);
+                break;
+            }
+        }
     }
 
     /// <summary>

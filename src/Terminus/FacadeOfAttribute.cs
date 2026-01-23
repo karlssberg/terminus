@@ -72,6 +72,17 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     /// </summary>
     public bool IncludeAttributeMetadata { get; set; }
 
+    /// <summary>
+    /// Gets or sets the interceptor types to apply to all facade methods.
+    /// Interceptors execute in the order specified, forming a chain where each
+    /// interceptor can invoke the next or short-circuit execution.
+    /// </summary>
+    /// <remarks>
+    /// Interceptor types must implement <see cref="IFacadeInterceptor"/> and will be
+    /// resolved from the service provider during facade construction.
+    /// </remarks>
+    public Type[]? Interceptors { get; set; }
+
     private static Type[] BuildFacadeMethodAttributesArray(
         Type facadeMethodAttribute,
         Type[] facadeMethodAttributes)

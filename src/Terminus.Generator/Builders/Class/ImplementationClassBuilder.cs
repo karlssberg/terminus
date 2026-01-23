@@ -46,6 +46,10 @@ internal static class ImplementationClassBuilder
         var hasInstanceProperties = !properties.IsDefault && properties.Any(p => !p.PropertySymbol.IsStatic);
         var hasInstanceMembers = hasInstanceMethods || hasInstanceProperties;
 
+        // Check for interceptors
+        var hasInterceptors = facadeInfo.Features.HasInterceptors;
+        var interceptorTypes = facadeInfo.Features.InterceptorTypes;
+
         // Add [FacadeImplementation] attribute
         classDeclaration = AddFacadeImplementationAttribute(
             classDeclaration,
@@ -70,11 +74,25 @@ internal static class ImplementationClassBuilder
         else if (!facadeInfo.Features.IsScoped)
             members.AddRange(FieldBuilder.BuildNonScopedFields());
 
+        // Add interceptors field if needed
+        if (hasInterceptors)
+            members.Add(FieldBuilder.BuildInterceptorsField());
+
         // Add constructor
-        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-            members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
-        else if (!facadeInfo.Features.IsScoped)
-            members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
+        if (hasInterceptors)
+        {
+            if (facadeInfo.Features.IsScoped && hasInstanceMembers)
+                members.Add(ConstructorBuilder.BuildScopedConstructorWithInterceptors(implementationClassName, interceptorTypes));
+            else if (!facadeInfo.Features.IsScoped)
+                members.Add(ConstructorBuilder.BuildNonScopedConstructorWithInterceptors(implementationClassName, interceptorTypes));
+        }
+        else
+        {
+            if (facadeInfo.Features.IsScoped && hasInstanceMembers)
+                members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
+            else if (!facadeInfo.Features.IsScoped)
+                members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
+        }
 
         // Add implementation methods
         members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
@@ -90,6 +108,12 @@ internal static class ImplementationClassBuilder
         if (facadeInfo.Features.IsScoped && hasInstanceMembers)
         {
             members.AddRange(DisposalBuilder.BuildDisposalMethods());
+        }
+
+        // Add interceptor pipeline methods if needed
+        if (hasInterceptors)
+        {
+            members.AddRange(BuildInterceptorPipelineMethods(methodGroups));
         }
 
         return classDeclaration.WithMembers(List(members));
@@ -134,5 +158,29 @@ internal static class ImplementationClassBuilder
             var methodBuilder = new MethodBuilder(strategy);
             return methodBuilder.BuildImplementationMethod(facadeInfo, group);
         });
+    }
+
+    private static IEnumerable<MemberDeclarationSyntax> BuildInterceptorPipelineMethods(
+        ImmutableArray<AggregatedMethodGroup> methodGroups)
+    {
+        var allMethods = methodGroups.SelectMany(g => g.Methods).ToList();
+
+        // Determine which pipeline methods are needed based on return types
+        var needsSync = allMethods.Any(m =>
+            m.ReturnTypeKind is ReturnTypeKind.Void or ReturnTypeKind.Result);
+        var needsAsync = allMethods.Any(m =>
+            m.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.ValueTask or
+            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult);
+        var needsStream = allMethods.Any(m =>
+            m.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable);
+
+        if (needsSync)
+            yield return InterceptorPipelineBuilder.BuildSyncPipelineMethod();
+
+        if (needsAsync)
+            yield return InterceptorPipelineBuilder.BuildAsyncPipelineMethod();
+
+        if (needsStream)
+            yield return InterceptorPipelineBuilder.BuildStreamPipelineMethod();
     }
 }

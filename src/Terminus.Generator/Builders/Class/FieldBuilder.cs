@@ -26,4 +26,12 @@ internal static class FieldBuilder
         yield return ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope> _syncScope;")!;
         yield return ParseMemberDeclaration("private readonly global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope> _asyncScope;")!;
     }
+
+    /// <summary>
+    /// Builds the interceptors field when interceptors are configured.
+    /// </summary>
+    public static MemberDeclarationSyntax BuildInterceptorsField()
+    {
+        return ParseMemberDeclaration("private readonly global::Terminus.IFacadeInterceptor[] _interceptors;")!;
+    }
 }

@@ -135,5 +135,33 @@ Terminus natively supports asynchronous programming patterns:
 - **Async Methods:** Methods returning `Task`, `ValueTask`, `Task<T>`, or `ValueTask<T>` are generated with correct `await` logic.
 - **Async Streams:** Methods returning `IAsyncEnumerable<T>` are correctly forwarded, allowing you to stream data through the facade.
 
+### Interceptors
+Terminus supports interceptor chains for cross-cutting concerns like logging, caching, validation, or metrics. Interceptors wrap all facade method invocations and execute in a pipeline.
+
+```csharp
+// 1. Create an interceptor
+public class LoggingInterceptor : FacadeInterceptor
+{
+    public override TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next) where TResult : default
+    {
+        Console.WriteLine($"Calling {context.Method.Name}");
+        var result = next();
+        Console.WriteLine($"Completed {context.Method.Name}");
+        return result;
+    }
+}
+
+// 2. Register interceptors on the facade
+[FacadeOf(typeof(MyFacadeAttribute), Interceptors = [typeof(LoggingInterceptor)])]
+public partial interface IAppFacade;
+
+// 3. Register interceptors in DI
+services.AddSingleton<LoggingInterceptor>();
+```
+
+Interceptors support sync, async, and streaming methods with dedicated override methods. See the [Advanced Scenarios](docs/guides/advanced-scenarios.md) guide for detailed interceptor patterns.
+
 ## 📜 License
 MIT

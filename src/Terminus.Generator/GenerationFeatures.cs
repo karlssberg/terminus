@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -14,6 +15,11 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
     public string? AsyncStreamName => ResolveNamedArgument<string?>("AsyncStreamName");
     public int AggregationMode => ResolveNamedArgument<int>("AggregationMode");
     public bool IncludeAttributeMetadata => ResolveNamedArgument<bool>("IncludeAttributeMetadata");
+
+    public ImmutableArray<INamedTypeSymbol> InterceptorTypes => ResolveInterceptorTypes();
+
+    public bool HasInterceptors => !InterceptorTypes.IsDefaultOrEmpty;
+
     public MethodDiscoveryMode MethodDiscovery
     {
         get
@@ -139,5 +145,22 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
         }
 
         return (T?)arg.Value.Value;
+    }
+
+    private ImmutableArray<INamedTypeSymbol> ResolveInterceptorTypes()
+    {
+        var arg = aggregatorAttrData.NamedArguments
+            .FirstOrDefault(a => a.Key == "Interceptors");
+
+        if (arg.Value.IsNull || arg.Value.Kind != TypedConstantKind.Array)
+            return ImmutableArray<INamedTypeSymbol>.Empty;
+
+        return
+        [
+            ..arg.Value.Values
+                .Where(v => v.Kind == TypedConstantKind.Type && v.Value != null)
+                .Select(v => v.Value)
+                .OfType<INamedTypeSymbol>()
+        ];
     }
 }

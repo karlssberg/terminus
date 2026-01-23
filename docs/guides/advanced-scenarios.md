@@ -503,6 +503,256 @@ await foreach (var user in facade.StreamUsersAsync())
 // Scope kept alive during enumeration, disposed after
 ```
 
+## Interceptors
+
+Interceptors enable cross-cutting concerns like logging, caching, validation, or metrics by wrapping facade method invocations in a configurable pipeline.
+
+### Creating an Interceptor
+
+Implement `IFacadeInterceptor` or extend `FacadeInterceptor` for convenience:
+
+```csharp
+public class LoggingInterceptor : FacadeInterceptor
+{
+    private readonly ILogger<LoggingInterceptor> _logger;
+
+    public LoggingInterceptor(ILogger<LoggingInterceptor> logger)
+    {
+        _logger = logger;
+    }
+
+    public override TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next) where TResult : default
+    {
+        _logger.LogInformation("Calling {Method} with {ArgCount} arguments",
+            context.Method.Name, context.Arguments.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            var result = next();
+            _logger.LogInformation("{Method} completed in {Elapsed}ms",
+                context.Method.Name, stopwatch.ElapsedMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Method} failed after {Elapsed}ms",
+                context.Method.Name, stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+    }
+
+    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+    {
+        _logger.LogInformation("Calling async {Method}", context.Method.Name);
+
+        var stopwatch = Stopwatch.StartNew();
+        try
+        {
+            var result = await next().ConfigureAwait(false);
+            _logger.LogInformation("{Method} completed in {Elapsed}ms",
+                context.Method.Name, stopwatch.ElapsedMilliseconds);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Method} failed after {Elapsed}ms",
+                context.Method.Name, stopwatch.ElapsedMilliseconds);
+            throw;
+        }
+    }
+}
+```
+
+### Registering Interceptors
+
+Interceptors are specified on the facade interface and resolved from DI:
+
+```csharp
+[FacadeOf<HandlerAttribute>(Interceptors = [typeof(LoggingInterceptor), typeof(ValidationInterceptor)])]
+public partial interface IAppFacade { }
+
+// Register interceptors in DI
+services.AddSingleton<LoggingInterceptor>();
+services.AddSingleton<ValidationInterceptor>();
+```
+
+Interceptors execute in the order they are specified (first to last).
+
+### Interceptor Pipeline
+
+The interceptor chain wraps the target method invocation:
+
+```
+Request → Interceptor1 → Interceptor2 → ... → Target Method
+                                                    ↓
+Response ← Interceptor1 ← Interceptor2 ← ... ← Target Method
+```
+
+Each interceptor can:
+- Inspect/modify arguments via `context.Arguments`
+- Access method metadata via `context.Method`
+- Access the service provider via `context.ServiceProvider`
+- Store data in `context.Properties` for downstream interceptors
+- Short-circuit the pipeline by not calling `next()`
+- Handle exceptions from downstream interceptors
+
+### Caching Interceptor Example
+
+```csharp
+public class CachingInterceptor : FacadeInterceptor
+{
+    private readonly IMemoryCache _cache;
+
+    public CachingInterceptor(IMemoryCache cache) => _cache = cache;
+
+    public override TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next) where TResult : default
+    {
+        // Only cache query methods (non-void return types)
+        if (context.ReturnTypeKind == ReturnTypeKind.Void)
+            return next();
+
+        var cacheKey = $"{context.Method.Name}:{string.Join(",", context.Arguments)}";
+
+        if (_cache.TryGetValue(cacheKey, out TResult? cached))
+            return cached;
+
+        var result = next();
+        _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+        return result;
+    }
+
+    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+    {
+        var cacheKey = $"{context.Method.Name}:{string.Join(",", context.Arguments)}";
+
+        if (_cache.TryGetValue(cacheKey, out TResult? cached))
+            return cached;
+
+        var result = await next().ConfigureAwait(false);
+        _cache.Set(cacheKey, result, TimeSpan.FromMinutes(5));
+        return result;
+    }
+}
+```
+
+### Validation Interceptor Example
+
+```csharp
+public class ValidationInterceptor : FacadeInterceptor
+{
+    public override TResult? Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next) where TResult : default
+    {
+        ValidateArguments(context);
+        return next();
+    }
+
+    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+    {
+        ValidateArguments(context);
+        return await next().ConfigureAwait(false);
+    }
+
+    private static void ValidateArguments(FacadeInvocationContext context)
+    {
+        var parameters = context.Method.GetParameters();
+        for (int i = 0; i < context.Arguments.Length; i++)
+        {
+            var param = parameters[i];
+            var arg = context.Arguments[i];
+
+            // Check for null on non-nullable reference types
+            if (arg == null && !IsNullable(param.ParameterType))
+            {
+                throw new ArgumentNullException(param.Name,
+                    $"Parameter '{param.Name}' cannot be null");
+            }
+        }
+    }
+
+    private static bool IsNullable(Type type)
+    {
+        return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
+    }
+}
+```
+
+### Streaming Interceptor
+
+For `IAsyncEnumerable<T>` methods, override `InterceptStream`:
+
+```csharp
+public class StreamLoggingInterceptor : FacadeInterceptor
+{
+    private readonly ILogger _logger;
+
+    public override IAsyncEnumerable<TItem> InterceptStream<TItem>(
+        FacadeInvocationContext context,
+        FacadeStreamInvocationDelegate<TItem> next)
+    {
+        _logger.LogInformation("Starting stream {Method}", context.Method.Name);
+        return WrapStream(context, next());
+    }
+
+    private async IAsyncEnumerable<TItem> WrapStream<TItem>(
+        FacadeInvocationContext context,
+        IAsyncEnumerable<TItem> source)
+    {
+        var count = 0;
+        await foreach (var item in source)
+        {
+            count++;
+            yield return item;
+        }
+        _logger.LogInformation("Stream {Method} yielded {Count} items",
+            context.Method.Name, count);
+    }
+}
+```
+
+### FacadeInvocationContext Properties
+
+The `FacadeInvocationContext` provides rich metadata about the invocation:
+
+| Property | Type | Description |
+| :--- | :--- | :--- |
+| `ServiceProvider` | `IServiceProvider` | The service provider for resolving dependencies |
+| `Method` | `MethodInfo` | Reflection info for the facade method |
+| `Arguments` | `object?[]` | The arguments passed to the method |
+| `TargetType` | `Type` | The type containing the implementation method |
+| `MethodAttribute` | `Attribute` | The facade attribute instance on the method |
+| `Properties` | `IDictionary<string, object?>` | Mutable dictionary for passing data between interceptors |
+| `ReturnTypeKind` | `ReturnTypeKind` | The kind of return type (Void, Result, Task, TaskWithResult, AsyncEnumerable) |
+
+### Combining Interceptors
+
+Order interceptors by concern (outer to inner):
+
+```csharp
+[FacadeOf<HandlerAttribute>(Interceptors = [
+    typeof(ExceptionHandlingInterceptor),  // Outermost - catches all exceptions
+    typeof(LoggingInterceptor),            // Logs entry/exit
+    typeof(ValidationInterceptor),         // Validates before execution
+    typeof(CachingInterceptor),            // Caches results
+    typeof(RetryInterceptor)               // Innermost - retries on failure
+])]
+public partial interface IRobustFacade { }
+```
+
+**Learn more:** [Interceptors Concept](../concepts/interceptors.md)
+
 ## Web API Integration
 
 Use facades in controllers:
