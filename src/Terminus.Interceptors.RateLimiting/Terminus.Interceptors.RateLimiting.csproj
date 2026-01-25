@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;netstandard2.0;net10.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>1.0.0</Version>
+    <Authors>Terminus Contributors</Authors>
+    <Description>Rate limiting interceptor for Terminus facades enabling request throttling and quota enforcement.</Description>
+    <PackageTags>terminus;interceptor;rate-limiting;throttling;quota</PackageTags>
+    <PackageProjectUrl>https://github.com/your-org/terminus</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Terminus\Terminus.csproj" />
+    <ProjectReference Include="..\Terminus.Interceptors.Abstractions\Terminus.Interceptors.Abstractions.csproj" />
+  </ItemGroup>
+
+</Project>

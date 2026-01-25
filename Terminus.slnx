@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Examples/">
+    <Project Path="examples/Terminus.Example.FeatureFlags/Terminus.Example.FeatureFlags.csproj" />
     <Project Path="examples\Terminus.Example.Basic\Terminus.Example.Basic.csproj" />
-    <Project Path="examples\Terminus.Example.Interceptors\Terminus.Example.Interceptors.csproj" />
     <Project Path="examples\Terminus.Example.MediatrAlternative\Terminus.Example.MediatrAlternative.csproj" />
     <Project Path="examples\Terminus.Example.StranglerFig\Terminus.Example.StranglerFig.csproj" />
   </Folder>
@@ -16,6 +16,11 @@
   </Folder>
   <Project Path="src\Terminus.Generator\Terminus.Generator.csproj" />
   <Project Path="src\Terminus.Interceptors.Abstractions\Terminus.Interceptors.Abstractions.csproj" />
-  <Project Path="src\Terminus.Interceptors\Terminus.Interceptors.csproj" />
+  <Project Path="src\Terminus.Interceptors.Caching\Terminus.Interceptors.Caching.csproj" />
+  <Project Path="src\Terminus.Interceptors.FeatureFlags\Terminus.Interceptors.FeatureFlags.csproj" />
+  <Project Path="src\Terminus.Interceptors.Logging\Terminus.Interceptors.Logging.csproj" />
+  <Project Path="src\Terminus.Interceptors.Metrics\Terminus.Interceptors.Metrics.csproj" />
+  <Project Path="src\Terminus.Interceptors.RateLimiting\Terminus.Interceptors.RateLimiting.csproj" />
+  <Project Path="src\Terminus.Interceptors.Validation\Terminus.Interceptors.Validation.csproj" />
   <Project Path="src\Terminus\Terminus.csproj" />
 </Solution>
