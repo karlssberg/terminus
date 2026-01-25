@@ -17,7 +17,7 @@ public class AggregationTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute))]
+                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.Commands)]
                 public partial interface INotificationBus;
 
                 public class HandlerAttribute : Attribute;
@@ -122,7 +122,7 @@ public class AggregationTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute))]
+                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.Queries)]
                 public partial interface IQueryBus;
 
                 public class HandlerAttribute : Attribute;
@@ -228,7 +228,7 @@ public class AggregationTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute))]
+                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.AsyncQueries)]
                 public partial interface IAsyncQueryBus;
 
                 public class HandlerAttribute : Attribute;

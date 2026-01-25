@@ -24,7 +24,9 @@ internal static class InterceptorPipelineBuilder
                         return target;
                     var currentIndex = index++;
                     var next = BuildPipeline();
-                    return () => _interceptors[currentIndex].Intercept(context, next);
+                    if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
+                        return () => sync.Intercept(context, next);
+                    return next;
                 }
 
                 return BuildPipeline()();
@@ -48,7 +50,9 @@ internal static class InterceptorPipelineBuilder
                         return target;
                     var currentIndex = index++;
                     var next = BuildPipeline();
-                    return () => _interceptors[currentIndex].InterceptAsync(context, next);
+                    if (_interceptors[currentIndex] is global::Terminus.IAsyncFacadeInterceptor async)
+                        return () => async.InterceptAsync(context, next);
+                    return next;
                 }
 
                 return await BuildPipeline()().ConfigureAwait(false);
@@ -72,7 +76,9 @@ internal static class InterceptorPipelineBuilder
                         return target;
                     var currentIndex = index++;
                     var next = BuildPipeline();
-                    return () => _interceptors[currentIndex].InterceptStream(context, next);
+                    if (_interceptors[currentIndex] is global::Terminus.IStreamFacadeInterceptor stream)
+                        return () => stream.InterceptStream(context, next);
+                    return next;
                 }
 
                 return BuildPipeline()();

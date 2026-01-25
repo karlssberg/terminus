@@ -1,7 +1,5 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Testing;
-using Terminus.Generator.Tests.Unit.Generator.Infrastructure;
-using Xunit;
 
 namespace Terminus.Generator.Tests.Unit.Generator;
 
@@ -197,7 +195,7 @@ public class EdgeCaseTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), CommandName="Process")]
+                [FacadeOf(typeof(FacadeMethodAttribute), CommandName="Process", AggregationMode = FacadeAggregationMode.Commands)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;

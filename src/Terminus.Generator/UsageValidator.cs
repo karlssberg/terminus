@@ -29,7 +29,8 @@ internal static class UsageValidator
             new RefOrOutParameterValidator(),
             new DuplicateSignatureValidator(),
             new ConflictingNameValidator(),
-            methodPropertyConflictValidator
+            methodPropertyConflictValidator,
+            new SingleHandlerValidator()
         );
 
         // Initialize the method name validator even if there are no methods

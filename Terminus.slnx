@@ -2,6 +2,7 @@
   <Folder Name="/Examples/">
     <Project Path="examples/Terminus.Example.AttributeMetadata/Terminus.Example.AttributeMetadata.csproj" />
     <Project Path="examples\Terminus.Example.Basic\Terminus.Example.Basic.csproj" />
+    <Project Path="examples\Terminus.Example.Interceptors\Terminus.Example.Interceptors.csproj" />
     <Project Path="examples\Terminus.Example.MediatrAlternative\Terminus.Example.MediatrAlternative.csproj" />
     <Project Path="examples\Terminus.Example.StranglerFig\Terminus.Example.StranglerFig.csproj" />
   </Folder>
@@ -11,8 +12,11 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test\Terminus.Generator.Tests.Unit\Terminus.Generator.Tests.Unit.csproj" />
+    <Project Path="test\Terminus.Interceptors.Tests.Unit\Terminus.Interceptors.Tests.Unit.csproj" />
     <Project Path="test\Terminus.Tests.Unit\Terminus.Tests.Unit.csproj" />
   </Folder>
   <Project Path="src\Terminus.Generator\Terminus.Generator.csproj" />
+  <Project Path="src\Terminus.Interceptors.Abstractions\Terminus.Interceptors.Abstractions.csproj" />
+  <Project Path="src\Terminus.Interceptors\Terminus.Interceptors.csproj" />
   <Project Path="src\Terminus\Terminus.csproj" />
 </Solution>

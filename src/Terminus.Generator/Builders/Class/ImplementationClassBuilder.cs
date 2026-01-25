@@ -182,5 +182,39 @@ internal static class ImplementationClassBuilder
 
         if (needsStream)
             yield return InterceptorPipelineBuilder.BuildStreamPipelineMethod();
+
+        // Add FilterHandlers method for per-handler filtering in aggregated methods
+        yield return BuildFilterHandlersMethod();
+    }
+
+    /// <summary>
+    /// Builds the FilterHandlers helper method for per-handler filtering.
+    /// </summary>
+    private static MemberDeclarationSyntax BuildFilterHandlersMethod()
+    {
+        var methodCode =
+            """
+            private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(
+                global::Terminus.FacadeInvocationContext context)
+            {
+                global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
+
+                foreach (var interceptor in _interceptors)
+                {
+                    if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
+                    {
+                        handlers = aggregatable.FilterHandlers(
+                            context,
+                            handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList
+                                ? readOnlyList
+                                : global::System.Linq.Enumerable.ToList(handlers));
+                    }
+                }
+
+                return handlers;
+            }
+            """;
+
+        return ParseMemberDeclaration(methodCode)!;
     }
 }

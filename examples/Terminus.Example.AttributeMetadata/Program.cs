@@ -24,7 +24,7 @@ public class MyTargetAttribute(string route) : Attribute
     public string Route { get; } = route;
 }
 
-[FacadeOf<MyTargetAttribute>(IncludeAttributeMetadata = true, CreateScope = true, AsyncQueryName = "GetData")]
+[FacadeOf<MyTargetAttribute>(IncludeAttributeMetadata = true, CreateScope = true, AsyncQueryName = "GetData", AggregationMode = FacadeAggregationMode.AsyncQueries)]
 public partial interface IMyInterface;
 
 public class MyImplementationA

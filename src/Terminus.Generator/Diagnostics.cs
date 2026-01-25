@@ -73,4 +73,14 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0007.md",
         description: "Aggregated methods must have compatible return types.");
+
+    public static readonly DiagnosticDescriptor MultipleHandlersWithoutAggregation = new(
+        id: "TM0008",
+        title: "Multiple handlers with same signature when aggregation is disabled",
+        messageFormat: "Multiple handlers with signature '{0}' found when AggregationMode is None. Set an AggregationMode flag to enable aggregation for this return type.",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0008.md",
+        description: "When AggregationMode is None (default), each method signature must have exactly one handler. To allow multiple handlers with the same signature, set an appropriate AggregationMode flag.");
 }

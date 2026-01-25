@@ -46,7 +46,7 @@ internal static class ConstructorBuilder
               public {{implementationClassName}}(global::System.IServiceProvider serviceProvider)
               {
                   _serviceProvider = serviceProvider;
-                  _interceptors = new global::Terminus.IFacadeInterceptor[]
+                  _interceptors = new object[]
                   {
               {{interceptorInitialization}}
                   };
@@ -92,7 +92,7 @@ internal static class ConstructorBuilder
               {
                   _syncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.IServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>(serviceProvider).CreateScope());
                   _asyncScope = new global::System.Lazy<global::Microsoft.Extensions.DependencyInjection.AsyncServiceScope>(() => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.CreateAsyncScope(serviceProvider));
-                  _interceptors = new global::Terminus.IFacadeInterceptor[]
+                  _interceptors = new object[]
                   {
               {{interceptorInitialization}}
                   };

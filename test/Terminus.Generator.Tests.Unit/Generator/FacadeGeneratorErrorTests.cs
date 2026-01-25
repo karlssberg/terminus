@@ -15,7 +15,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true)]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true, AggregationMode = FacadeAggregationMode.Commands)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -125,7 +125,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true, CommandName="Execute")]
+                [FacadeOf(typeof(FacadeMethodAttribute), CreateScope=true, CommandName="Execute", AggregationMode = FacadeAggregationMode.Commands)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -522,7 +522,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute))]
+                [FacadeOf(typeof(FacadeMethodAttribute), AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -562,7 +562,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute))]
+                [FacadeOf(typeof(FacadeMethodAttribute), AggregationMode = FacadeAggregationMode.AsyncCommands)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;
@@ -645,7 +645,7 @@ public class FacadeGeneratorErrorTests : SourceGeneratorTestBase<FacadeGenerator
 
             namespace Demo
             {
-                [FacadeOf(typeof(FacadeMethodAttribute))]
+                [FacadeOf(typeof(FacadeMethodAttribute), AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IFacade;
 
                 public class FacadeMethodAttribute : Attribute;

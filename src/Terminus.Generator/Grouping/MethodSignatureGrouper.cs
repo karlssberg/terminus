@@ -137,11 +137,11 @@ internal static class MethodSignatureGrouper
         const int AsyncQueries = 1 << 3;  // 8
         const int AsyncStreams = 1 << 4;  // 16
 
-        // When AggregationMode is None (default), all methods with the same signature are aggregated
+        // When AggregationMode is None (default), no aggregation - single handler only
         if (mode == None)
-            return true;
+            return false;
 
-        // When AggregationMode flags are set, only aggregate methods with matching return types
+        // When AggregationMode flags are set, aggregate methods with matching return types
         return methodInfo.ReturnTypeKind switch
         {
             ReturnTypeKind.Void => (mode & Commands) != 0,

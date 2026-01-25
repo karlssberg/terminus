@@ -37,7 +37,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public QueryAttribute(string name) : base(name) { }
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handlers1
@@ -120,7 +120,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute))]
+                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -204,7 +204,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                 public class CommandAttribute : Attribute { }
                 public class QueryAttribute : Attribute { }
 
-                [FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class CommandHandler
@@ -286,7 +286,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -375,7 +375,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -463,7 +463,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public HandlerAttribute(int priority) => Priority = priority;
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -560,7 +560,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public HandlerAttribute(string name) => Name = name;
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -647,7 +647,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                 public class CommandAttribute : SyncHandlerAttribute { }
                 public class QueryAttribute : SyncHandlerAttribute { }
 
-                [FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(CommandAttribute), typeof(QueryAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface ISyncHandlers;
 
                 public class CommandHandler
@@ -734,7 +734,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public int Priority { get; set; }
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -823,7 +823,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public HandlerAttribute(HandlerType type) => Type = type;
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler1
@@ -909,7 +909,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
                     public HandlerAttribute(string name) => Name = name;
                 }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler
@@ -979,7 +979,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler
@@ -1059,7 +1059,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler
@@ -1136,7 +1136,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler
@@ -1207,7 +1207,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public class Handler
@@ -1280,7 +1280,7 @@ public class AttributeMetadataTests : SourceGeneratorTestBase<FacadeGenerator>
             {
                 public class HandlerAttribute : Attribute { }
 
-                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
+                [FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true, AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IHandlers;
 
                 public static class StaticHandler

@@ -19,6 +19,8 @@ public sealed class FacadeInvocationContext
     /// <param name="methodAttribute">The facade method attribute instance.</param>
     /// <param name="properties">A dictionary for passing data between interceptors.</param>
     /// <param name="returnTypeKind">The return type kind of the method being intercepted.</param>
+    /// <param name="handlers">The handlers that will be invoked for this method.</param>
+    /// <param name="isAggregated">Indicates whether multiple handlers are aggregated for this method.</param>
     public FacadeInvocationContext(
         IServiceProvider serviceProvider,
         MethodInfo method,
@@ -26,7 +28,9 @@ public sealed class FacadeInvocationContext
         Type targetType,
         Attribute methodAttribute,
         IDictionary<string, object?> properties,
-        ReturnTypeKind returnTypeKind)
+        ReturnTypeKind returnTypeKind,
+        IReadOnlyList<FacadeHandlerDescriptor> handlers,
+        bool isAggregated)
     {
         ServiceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         Method = method ?? throw new ArgumentNullException(nameof(method));
@@ -35,6 +39,8 @@ public sealed class FacadeInvocationContext
         MethodAttribute = methodAttribute ?? throw new ArgumentNullException(nameof(methodAttribute));
         Properties = properties ?? throw new ArgumentNullException(nameof(properties));
         ReturnTypeKind = returnTypeKind;
+        Handlers = handlers ?? throw new ArgumentNullException(nameof(handlers));
+        IsAggregated = isAggregated;
     }
 
     /// <summary>
@@ -71,4 +77,20 @@ public sealed class FacadeInvocationContext
     /// Gets the return type kind of the method being intercepted.
     /// </summary>
     public ReturnTypeKind ReturnTypeKind { get; }
+
+    /// <summary>
+    /// Gets the handlers that will be invoked for this method.
+    /// For non-aggregated methods, this contains a single handler.
+    /// For aggregated methods, this contains all matched handlers.
+    /// Interceptors implementing <see cref="IAggregatableInterceptor"/> can filter this collection
+    /// to control which handlers execute.
+    /// </summary>
+    public IReadOnlyList<FacadeHandlerDescriptor> Handlers { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether multiple handlers are aggregated for this method.
+    /// When <c>true</c>, the method has multiple handlers that will all execute.
+    /// When <c>false</c>, the method has a single handler (and aggregation is not enabled for this return type).
+    /// </summary>
+    public bool IsAggregated { get; }
 }

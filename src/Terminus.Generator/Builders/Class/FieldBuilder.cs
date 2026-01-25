@@ -32,6 +32,6 @@ internal static class FieldBuilder
     /// </summary>
     public static MemberDeclarationSyntax BuildInterceptorsField()
     {
-        return ParseMemberDeclaration("private readonly global::Terminus.IFacadeInterceptor[] _interceptors;")!;
+        return ParseMemberDeclaration("private readonly object[] _interceptors;")!;
     }
 }
