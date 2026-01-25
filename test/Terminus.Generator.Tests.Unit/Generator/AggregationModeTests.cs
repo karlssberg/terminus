@@ -18,7 +18,7 @@ public class AggregationModeTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.None)]
+                [FacadeOf<HandlerAttribute>(AggregationMode = FacadeAggregationMode.None)]
                 public partial interface IHandlers;
 
                 public class HandlerAttribute : Attribute;
@@ -134,7 +134,7 @@ public class AggregationModeTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.Commands)]
+                [FacadeOf<HandlerAttribute>(AggregationMode = FacadeAggregationMode.Commands)]
                 public partial interface ICommandBus;
 
                 public class HandlerAttribute : Attribute;
@@ -210,6 +210,7 @@ public class AggregationModeTests : SourceGeneratorTestBase<FacadeGenerator>
         await VerifyAsync(source, ("Demo_ICommandBus_Generated.g.cs", expectedInterface));
     }
 
+    // TODO: Add tests for other AggregationMode flags
     [Fact]
     public async Task Given_AggregationMode_All_Should_Be_Parsed()
     {
@@ -224,7 +225,7 @@ public class AggregationModeTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.All)]
+                [FacadeOf<HandlerAttribute>(AggregationMode = FacadeAggregationMode.All)]
                 public partial interface IUniversalBus;
 
                 public class HandlerAttribute : Attribute;
@@ -327,7 +328,7 @@ public class AggregationModeTests : SourceGeneratorTestBase<FacadeGenerator>
 
             namespace Demo
             {
-                [FacadeOf(typeof(HandlerAttribute), AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
+                [FacadeOf<HandlerAttribute>(AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncQueries)]
                 public partial interface IHybridBus;
 
                 public class HandlerAttribute : Attribute;
