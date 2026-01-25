@@ -85,6 +85,9 @@ internal static class FacadeGenerationPipeline
         if (hasAggregationErrors)
             return;
 
+        // Step 3c: Emit warnings for First strategy with multiple handlers (non-blocking)
+        FirstStrategyMultipleHandlersValidator.Validate(context, facade, methodGroups);
+
         // Step 4: Generate the facade implementation
         var generationContext = FacadeGenerationContext.CreateWithGroups(facade, methodGroups, matchedProperties);
         

@@ -71,6 +71,27 @@ public abstract class SourceGeneratorTestBase<TSourceGenerator>
         return test.RunAsync();
     }
 
+    protected static Task VerifyWithDiagnosticsAsync(
+        string source,
+        DiagnosticResult[] expectedDiagnostics,
+        params (string filename, string content)[] expectedGeneratedFiles)
+    {
+        var test = new TerminusSourceGeneratorTest<TSourceGenerator>
+        {
+            TestState = { Sources = { source } }
+        };
+
+        foreach (var (filename, content) in expectedGeneratedFiles)
+        {
+            test.TestState.GeneratedSources.Add(
+                (typeof(TSourceGenerator), filename, SourceText.From(NormalizeLineEndings(content), Encoding.UTF8)));
+        }
+
+        test.TestState.ExpectedDiagnostics.AddRange(expectedDiagnostics);
+
+        return test.RunAsync();
+    }
+
     private static string NormalizeLineEndings(string text)
     {
         return text

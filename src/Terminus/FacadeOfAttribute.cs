@@ -56,6 +56,15 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     public FacadeAggregationMode AggregationMode { get; set; } = FacadeAggregationMode.None;
 
     /// <summary>
+    /// Gets or sets the strategy for handling return types of aggregated methods.
+    /// Default is <see cref="AggregationReturnTypeStrategy.Collection"/> which returns
+    /// IEnumerable&lt;T&gt; or IAsyncEnumerable&lt;T&gt; for all handler results.
+    /// When set to <see cref="AggregationReturnTypeStrategy.First"/>, only the first handler
+    /// is executed and its result is returned directly.
+    /// </summary>
+    public AggregationReturnTypeStrategy AggregationReturnTypeStrategy { get; set; } = AggregationReturnTypeStrategy.Collection;
+
+    /// <summary>
     /// Gets or sets which assemblies should be scanned when discovering facade methods.
     /// Default is <see cref="MethodDiscoveryMode.None"/> (only methods in the current compilation are discovered).
     /// </summary>

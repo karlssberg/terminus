@@ -75,8 +75,12 @@ internal sealed class MethodSignatureBuilder
         if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Features.IsScoped)
             return true;
 
-        // For aggregated methods with async results, we generate IAsyncEnumerable which needs async
-        if (requiresAggregation && (methodInfo.ReturnTypeKind is ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult))
+        // For aggregated methods with async results using Collection strategy, we generate IAsyncEnumerable which needs async
+        // When using First strategy, we don't need async iterator, just regular async method
+        // AggregationReturnTypeStrategy enum values: Collection = 0, First = 1
+        const int FirstStrategy = 1;
+        var isFirstStrategy = facadeInfo.Features.AggregationReturnTypeStrategy == FirstStrategy;
+        if (requiresAggregation && !isFirstStrategy && (methodInfo.ReturnTypeKind is ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult))
             return true;
 
         return methodInfo.ReturnTypeKind is ReturnTypeKind.Task
@@ -99,7 +103,18 @@ internal sealed class MethodSignatureBuilder
                     .ToDisplayString(FullyQualifiedFormat));
         }
 
-        // For aggregated methods (without metadata), transform return types:
+        // Check if First strategy is being used - if so, keep original return types
+        // AggregationReturnTypeStrategy enum values: Collection = 0, First = 1
+        const int FirstStrategy = 1;
+        if (facadeInfo.Features.AggregationReturnTypeStrategy == FirstStrategy)
+        {
+            return methodInfo.MethodSymbol.ReturnsVoid
+                ? PredefinedType(Token(SyntaxKind.VoidKeyword))
+                : ParseTypeName(methodInfo.MethodSymbol.ReturnType
+                    .ToDisplayString(FullyQualifiedFormat));
+        }
+
+        // For aggregated methods with Collection strategy, transform return types:
         // - void stays void (all handlers execute, no return)
         // - T becomes IEnumerable<T>
         // - Task<T> becomes IAsyncEnumerable<T>

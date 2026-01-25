@@ -83,4 +83,14 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0008.md",
         description: "When AggregationMode is None (default), each method signature must have exactly one handler. To allow multiple handlers with the same signature, set an appropriate AggregationMode flag.");
+
+    public static readonly DiagnosticDescriptor MultipleHandlersWithFirstStrategy = new(
+        id: "TM0010",
+        title: "Multiple handlers with First strategy",
+        messageFormat: "Multiple handlers detected for method '{0}' but AggregationReturnTypeStrategy is set to First. Only the first handler ('{1}') will be executed. Consider using Collection strategy or ensuring only one handler exists.",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0010.md",
+        description: "When AggregationReturnTypeStrategy is First, only the first handler in an aggregated method group will be executed. This warning alerts when multiple handlers are detected.");
 }

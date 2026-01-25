@@ -14,6 +14,7 @@ internal class GenerationFeatures(AttributeData aggregatorAttrData)
     public string? AsyncQueryName => ResolveNamedArgument<string?>("AsyncQueryName");
     public string? AsyncStreamName => ResolveNamedArgument<string?>("AsyncStreamName");
     public int AggregationMode => ResolveNamedArgument<int>("AggregationMode");
+    public int AggregationReturnTypeStrategy => ResolveNamedArgument<int>("AggregationReturnTypeStrategy");
 
     public ImmutableArray<INamedTypeSymbol> InterceptorTypes => ResolveInterceptorTypes();
 

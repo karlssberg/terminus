@@ -253,6 +253,36 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         var primaryMethod = methodGroup.PrimaryMethod;
         var returnTypeKind = primaryMethod.ReturnTypeKind;
 
+        // AggregationReturnTypeStrategy enum values: Collection = 0, First = 1
+        const int FirstStrategy = 1;
+        var isFirstStrategy = facadeInfo.Features.AggregationReturnTypeStrategy == FirstStrategy;
+
+        // For "First" strategy, execute only the first handler
+        if (isFirstStrategy)
+        {
+            var firstMethod = methodGroup.Methods[0];
+
+            switch (returnTypeKind)
+            {
+                case ReturnTypeKind.Void:
+                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield break;
+                case ReturnTypeKind.Result:
+                    yield return ReturnStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield break;
+                case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
+                    yield return ReturnStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod)));
+                    yield break;
+                case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
+                    yield return ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod)));
+                    yield break;
+                default:
+                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield break;
+            }
+        }
+
+        // Existing "Collection" strategy logic below (unchanged)
         switch (returnTypeKind)
         {
             // For void methods, just execute all handlers in sequence
