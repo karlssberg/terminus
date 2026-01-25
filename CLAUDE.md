@@ -187,9 +187,6 @@ public sealed class FacadeOfAttribute : Attribute
     // Cross-assembly discovery (default: None)
     public MethodDiscoveryMode MethodDiscovery { get; set; }
 
-    // Include attribute metadata in aggregated results (default: false)
-    public bool IncludeAttributeMetadata { get; set; }
-
     // Interceptor types to apply to all facade methods (default: null)
     public Type[]? Interceptors { get; set; }
 }
@@ -607,110 +604,15 @@ await foreach (var user in asyncQueryBus.SearchAsync("john"))
 
 When methods are aggregated, return types are transformed to accommodate multiple results:
 
-| Original Return Type | Aggregated Return Type | With `IncludeAttributeMetadata` |
-|---------------------|----------------------|--------------------------------|
-| `void` | `void` | `void` (no change) |
-| `T` | `IEnumerable<T>` | `IEnumerable<(TAttribute Attribute, T Result)>` |
-| `Task` | `Task` | `Task` (no change) |
-| `ValueTask` | `Task` | `Task` (no change) |
-| `Task<T>` | `IAsyncEnumerable<T>` | `IAsyncEnumerable<(TAttribute Attribute, T Result)>` |
-| `ValueTask<T>` | `IAsyncEnumerable<T>` | `IAsyncEnumerable<(TAttribute Attribute, T Result)>` |
-| `IAsyncEnumerable<T>` | N/A | N/A (not aggregated) |
-
-**Note:** `TAttribute` is the lowest common ancestor (LCA) of all attribute types in the aggregated group, defaulting to `System.Attribute` if no common base exists.
-
-#### Attribute Metadata in Aggregated Results
-
-The `IncludeAttributeMetadata` property enables runtime access to attribute instances in aggregated method results. This is useful for:
-- Filtering results based on attribute properties
-- Ordering results by attribute metadata
-- Routing or dispatching based on attribute values
-
-**Example: Priority-based Handler Selection**
-
-```csharp
-// Define attribute with metadata
-public class HandlerAttribute : Attribute
-{
-    public int Priority { get; }
-    public HandlerAttribute(int priority = 0) => Priority = priority;
-}
-
-// Enable attribute metadata
-[FacadeOf(typeof(HandlerAttribute), IncludeAttributeMetadata = true)]
-public partial interface IHandlers;
-
-// Handlers with different priorities
-public class HighPriorityHandler
-{
-    [Handler(priority: 100)]
-    public string Process(string input) => $"High: {input}";
-}
-
-public class LowPriorityHandler
-{
-    [Handler(priority: 10)]
-    public string Process(string input) => $"Low: {input}";
-}
-
-// Generated method returns tuples with attribute instances:
-// IEnumerable<(HandlerAttribute Attribute, string Result)> Process(string input);
-
-// Usage - select highest priority result:
-var result = handlers.Process("data")
-    .OrderByDescending(x => x.Attribute.Priority)
-    .First()
-    .Result;  // "High: data"
-
-// Usage - filter by priority threshold:
-var highPriorityResults = handlers.Process("data")
-    .Where(x => x.Attribute.Priority >= 50)
-    .Select(x => x.Result);
-```
-
-**Example: Multiple Attribute Types with Common Base**
-
-```csharp
-// Base attribute
-public abstract class BaseHandlerAttribute : Attribute
-{
-    public abstract string Category { get; }
-}
-
-// Derived attributes
-public class EmailHandlerAttribute : BaseHandlerAttribute
-{
-    public override string Category => "Email";
-}
-
-public class SmsHandlerAttribute : BaseHandlerAttribute
-{
-    public override string Category => "SMS";
-}
-
-[FacadeOf(typeof(EmailHandlerAttribute), typeof(SmsHandlerAttribute),
-    IncludeAttributeMetadata = true)]
-public partial interface INotificationHandlers;
-
-// Generated return type uses LCA (BaseHandlerAttribute):
-// IEnumerable<(BaseHandlerAttribute Attribute, NotificationResult Result)> Send(Message msg);
-
-// Usage - group by category:
-var resultsByCategory = handlers.Send(message)
-    .GroupBy(x => x.Attribute.Category)
-    .ToDictionary(g => g.Key, g => g.Select(x => x.Result).ToList());
-```
-
-**When to Use Attribute Metadata:**
-- **Runtime filtering**: Select results based on attribute properties
-- **Priority ordering**: Order handlers by priority or weight
-- **Categorization**: Group results by attribute metadata
-- **Conditional execution**: Process results differently based on attributes
-
-**When NOT to Use:**
-- Simple aggregation without filtering needs
-- Void/Task methods (no result to pair with attribute)
-- Performance-critical paths (adds tuple allocation overhead)
+| Original Return Type | Aggregated Return Type |
+|---------------------|----------------------|
+| `void` | `void` |
+| `T` | `IEnumerable<T>` |
+| `Task` | `Task` |
+| `ValueTask` | `Task` |
+| `Task<T>` | `IAsyncEnumerable<T>` |
+| `ValueTask<T>` | `IAsyncEnumerable<T>` |
+| `IAsyncEnumerable<T>` | N/A (not aggregated) |
 
 #### Selective Aggregation with AggregationMode
 

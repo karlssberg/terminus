@@ -62,16 +62,6 @@ public class FacadeOfAttribute(Type facadeMethodAttribute, params Type[] facadeM
     public MethodDiscoveryMode MethodDiscovery { get; set; } = MethodDiscoveryMode.None;
 
     /// <summary>
-    /// Gets or sets whether to include attribute metadata with lazy execution in facade methods.
-    /// When true, facade methods return IEnumerable of tuples containing the attribute instance
-    /// and a delegate (Func or Action) that can be invoked to execute the handler.
-    /// This enables filtering handlers based on attribute properties before execution.
-    /// Works with single methods and aggregated methods alike.
-    /// Default is false.
-    /// </summary>
-    public bool IncludeAttributeMetadata { get; set; }
-
-    /// <summary>
     /// Gets or sets the interceptor types to apply to all facade methods.
     /// Interceptors execute in the order specified, forming a chain where each
     /// interceptor can invoke the next or short-circuit execution.

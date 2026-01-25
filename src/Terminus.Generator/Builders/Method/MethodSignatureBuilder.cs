@@ -70,10 +70,6 @@ internal sealed class MethodSignatureBuilder
 
     private static bool ShouldUseAsyncKeyword(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool requiresAggregation)
     {
-        // When metadata mode is active, no async keyword needed (returns IEnumerable synchronously with lazy delegates)
-        if (facadeInfo.Features.IncludeAttributeMetadata)
-            return false;
-
         // Add async modifier when returning Task/ValueTask/Task<T>/ValueTask<T> or when generating an async iterator
         // for IAsyncEnumerable in a scoped facade (we create an async scope and yield items).
         if (methodInfo.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable && facadeInfo.Features.IsScoped)
@@ -93,16 +89,8 @@ internal sealed class MethodSignatureBuilder
     {
         var methodInfo = methodGroup.PrimaryMethod;
         var requiresAggregation = methodGroup.RequiresAggregation;
-        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
-        var commonAttributeType = methodGroup.CommonAttributeType;
 
-        // Handle metadata mode with lazy execution - works for single or multiple methods
-        if (includeMetadata && commonAttributeType != null)
-        {
-            return BuildLazyMetadataReturnType(methodInfo, commonAttributeType);
-        }
-
-        // For non-aggregated methods (without metadata), use original return type
+        // For non-aggregated methods, use original return type
         if (!requiresAggregation)
         {
             return methodInfo.MethodSymbol.ReturnsVoid
@@ -136,56 +124,6 @@ internal sealed class MethodSignatureBuilder
             // Task, ValueTask, void - keep as is
             _ => ParseTypeName(returnType.ToDisplayString(FullyQualifiedFormat))
         };
-    }
-
-    /// <summary>
-    /// Builds return type for metadata mode: IEnumerable&lt;(TAttribute Attribute, Func/Action Handler)&gt;
-    /// </summary>
-    private static TypeSyntax BuildLazyMetadataReturnType(CandidateMethodInfo methodInfo, INamedTypeSymbol attributeType)
-    {
-        var attributeTypeName = attributeType.ToDisplayString(FullyQualifiedFormat);
-        var returnType = methodInfo.MethodSymbol.ReturnType;
-
-        var delegateType = methodInfo.ReturnTypeKind switch
-        {
-            ReturnTypeKind.Void =>
-                "global::System.Action",
-            ReturnTypeKind.Result =>
-                $"global::System.Func<{returnType.ToDisplayString(FullyQualifiedFormat)}>",
-            ReturnTypeKind.Task =>
-                "global::System.Func<global::System.Threading.Tasks.Task>",
-            ReturnTypeKind.ValueTask =>
-                "global::System.Func<global::System.Threading.Tasks.ValueTask>",
-            ReturnTypeKind.TaskWithResult =>
-                $"global::System.Func<global::System.Threading.Tasks.Task<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(FullyQualifiedFormat)}>>",
-            ReturnTypeKind.ValueTaskWithResult =>
-                $"global::System.Func<global::System.Threading.Tasks.ValueTask<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(FullyQualifiedFormat)}>>",
-            ReturnTypeKind.AsyncEnumerable =>
-                $"global::System.Func<{returnType.ToDisplayString(FullyQualifiedFormat)}>",
-            _ =>
-                $"global::System.Func<{returnType.ToDisplayString(FullyQualifiedFormat)}>"
-        };
-
-        return ParseTypeName(
-            $"global::System.Collections.Generic.IEnumerable<({attributeTypeName} Attribute, {delegateType} Handler)>");
-    }
-
-    private static TypeSyntax BuildTupleEnumerableType(INamedTypeSymbol attributeType, ITypeSymbol resultType)
-    {
-        var attributeTypeName = attributeType.ToDisplayString(FullyQualifiedFormat);
-        var resultTypeName = resultType.ToDisplayString(FullyQualifiedFormat);
-
-        return ParseTypeName(
-            $"global::System.Collections.Generic.IEnumerable<({attributeTypeName} Attribute, {resultTypeName} Result)>");
-    }
-
-    private static TypeSyntax BuildTupleAsyncEnumerableType(INamedTypeSymbol attributeType, ITypeSymbol resultType)
-    {
-        var attributeTypeName = attributeType.ToDisplayString(FullyQualifiedFormat);
-        var resultTypeName = resultType.ToDisplayString(FullyQualifiedFormat);
-
-        return ParseTypeName(
-            $"global::System.Collections.Generic.IAsyncEnumerable<({attributeTypeName} Attribute, {resultTypeName} Result)>");
     }
 
     private static ParameterListSyntax BuildParameterList(CandidateMethodInfo methodInfo)

@@ -571,7 +571,6 @@ Interceptors run on every invocation. Keep them lightweight:
 
 ## Limitations
 
-- **Method aggregation**: Interceptors do not apply to aggregated method groups with `IncludeAttributeMetadata = true`
 - **Static methods**: Interceptors apply to both static and instance methods
 - **Scoped facades**: Interceptors are resolved from the root service provider, not the scope
 

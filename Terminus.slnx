@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/Examples/">
-    <Project Path="examples/Terminus.Example.AttributeMetadata/Terminus.Example.AttributeMetadata.csproj" />
     <Project Path="examples\Terminus.Example.Basic\Terminus.Example.Basic.csproj" />
     <Project Path="examples\Terminus.Example.Interceptors\Terminus.Example.Interceptors.csproj" />
     <Project Path="examples\Terminus.Example.MediatrAlternative\Terminus.Example.MediatrAlternative.csproj" />

@@ -20,18 +20,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         FacadeInterfaceInfo facadeInfo,
         AggregatedMethodGroup methodGroup)
     {
-        var includeMetadata = facadeInfo.Features.IncludeAttributeMetadata;
         var hasInterceptors = facadeInfo.Features.HasInterceptors;
-
-        // Handle metadata mode with lazy execution (works for single or multiple methods)
-        if (includeMetadata)
-        {
-            foreach (var statement in BuildLazyMetadataMethodBody(facadeInfo, methodGroup))
-            {
-                yield return statement;
-            }
-            yield break;
-        }
 
         // For aggregated methods with interceptors, wrap in interceptor pipeline with per-handler filtering
         if (methodGroup.RequiresAggregation && hasInterceptors)
@@ -248,57 +237,6 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 break;
             }
         }
-    }
-
-    /// <summary>
-    /// Builds method body for lazy metadata mode: yield return (attribute, delegate) tuples.
-    /// </summary>
-    private IEnumerable<StatementSyntax> BuildLazyMetadataMethodBody(
-        FacadeInterfaceInfo facadeInfo,
-        AggregatedMethodGroup methodGroup)
-    {
-        foreach (var method in methodGroup.Methods)
-        {
-            var attributeExpression = BuildAttributeInstantiation(method);
-            var delegateExpression = BuildDelegateExpression(facadeInfo, method);
-
-            var tupleExpression = TupleExpression(
-                SeparatedList(new[]
-                {
-                    Argument(attributeExpression),
-                    Argument(delegateExpression)
-                }));
-
-            yield return YieldStatement(SyntaxKind.YieldReturnStatement, tupleExpression);
-        }
-    }
-
-    /// <summary>
-    /// Builds a delegate expression (Func or Action lambda) wrapping the method invocation.
-    /// </summary>
-    private ExpressionSyntax BuildDelegateExpression(
-        FacadeInterfaceInfo facadeInfo,
-        CandidateMethodInfo method)
-    {
-        // For lazy execution in metadata mode, we don't want ConfigureAwait(false)
-        // The delegate returns Task/ValueTask directly without awaiting
-        var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method, includeConfigureAwait: false);
-        var returnTypeKind = method.ReturnTypeKind;
-
-        // For void, use Action lambda with block body: () => { invocation; }
-        if (returnTypeKind == ReturnTypeKind.Void)
-        {
-            return ParenthesizedLambdaExpression()
-                .WithParameterList(ParameterList())
-                .WithBlock(Block(ExpressionStatement(invocation)))
-                .NormalizeWhitespace();
-        }
-
-        // For all other types, use Func lambda with expression body: () => invocation
-        return ParenthesizedLambdaExpression()
-            .WithParameterList(ParameterList())
-            .WithExpressionBody(invocation)
-            .NormalizeWhitespace();
     }
 
     private IEnumerable<StatementSyntax> BuildAggregatedMethodBody(
