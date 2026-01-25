@@ -124,7 +124,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             .AddPackages([new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "1.1.1")]);
 #endif
         // Add reference to Terminus assembly so tests can use FacadeOfAttribute
-        TestState.AdditionalReferences.Add(typeof(Terminus.FacadeOfAttribute).Assembly);
+        TestState.AdditionalReferences.Add(typeof(FacadeOfAttribute).Assembly);
 
         // Common test inputs
         TestState.Sources.Add(("IsExternalInit.cs", IsExternalInitSource));
@@ -153,7 +153,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
         var references = referenceAssemblies.ToList();
         
         // Add Terminus reference
-        references.Add(MetadataReference.CreateFromFile(typeof(Terminus.FacadeOfAttribute).Assembly.Location));
+        references.Add(MetadataReference.CreateFromFile(typeof(FacadeOfAttribute).Assembly.Location));
 
         var syntaxTree = CSharpSyntaxTree.ParseText(source);
         var compilation = CSharpCompilation.Create(

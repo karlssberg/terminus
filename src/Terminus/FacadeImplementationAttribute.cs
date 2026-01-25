@@ -8,7 +8,7 @@ namespace Terminus;
 /// </summary>
 /// <param name="facadeInterfaceType">The type of the facade interface this class implements.</param>
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-public class FacadeImplementationAttribute(Type facadeInterfaceType) : System.Attribute
+public class FacadeImplementationAttribute(Type facadeInterfaceType) : Attribute
 {
     /// <summary>
     /// Gets the type of the facade interface implemented by this class.

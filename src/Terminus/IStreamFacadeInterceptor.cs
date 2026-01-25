@@ -6,9 +6,14 @@ namespace Terminus;
 /// Intercepts streaming facade method invocations (IAsyncEnumerable&lt;T&gt; returning methods).
 /// </summary>
 /// <remarks>
-/// Implement this interface when you only need to intercept streaming methods.
-/// For full interception including sync and async, implement <see cref="IFacadeInterceptor"/>
-/// or inherit from <see cref="FacadeInterceptor"/>.
+/// <para>
+/// Implement this interface when you need to intercept streaming methods.
+/// For sync and async methods, implement the respective interceptor interfaces.
+/// </para>
+/// <para>
+/// The <paramref name="next"/> delegate accepts an optional handlers parameter for filtering.
+/// Call <c>next()</c> to pass through all handlers, or <c>next(filteredHandlers)</c> to filter.
+/// </para>
 /// </remarks>
 public interface IStreamFacadeInterceptor
 {
@@ -17,7 +22,10 @@ public interface IStreamFacadeInterceptor
     /// </summary>
     /// <typeparam name="TItem">The type of items in the stream.</typeparam>
     /// <param name="context">The invocation context containing method metadata and arguments.</param>
-    /// <param name="next">Delegate to invoke the next interceptor or target method stream.</param>
+    /// <param name="next">
+    /// Delegate to invoke the next interceptor or target method stream.
+    /// Call with no arguments for pass-through, or with filtered handlers list.
+    /// </param>
     /// <returns>An async enumerable of items.</returns>
     IAsyncEnumerable<TItem> InterceptStream<TItem>(
         FacadeInvocationContext context,

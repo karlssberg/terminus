@@ -18,167 +18,247 @@ public class FeatureFlagInterceptorTests
         _interceptor = new FeatureFlagInterceptor(_featureFlagService);
     }
 
-    #region FilterHandlers Tests - Not Aggregated (Single Handler)
+    #region Single Handler (Not Aggregated) Tests
 
     [Fact]
-    public void FilterHandlers_WhenNotAggregated_AndFeatureEnabled_ReturnsHandler()
+    public void Intercept_WhenNotAggregated_AndFeatureEnabled_CallsNext()
     {
         // Arrange
-        var handler = CreateHandler("MyFeature");
+        var handler = CreateVoidHandler("MyFeature");
         var context = CreateContext(isAggregated: false, handlers: [handler]);
+        var nextCalled = false;
 
         _featureFlagService.IsEnabled("MyFeature").Returns(true);
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            nextCalled = true;
+        });
 
         // Assert
-        Assert.Single(result);
-        Assert.Same(handler, result[0]);
+        Assert.True(nextCalled);
     }
 
     [Fact]
-    public void FilterHandlers_WhenNotAggregated_AndFeatureDisabled_ThrowsFeatureDisabledException()
+    public void Intercept_WhenNotAggregated_AndFeatureDisabled_ThrowsFeatureDisabledException()
     {
         // Arrange
-        var handler = CreateHandler("MyFeature");
+        var handler = CreateVoidHandler("MyFeature");
         var context = CreateContext(isAggregated: false, handlers: [handler]);
 
         _featureFlagService.IsEnabled("MyFeature").Returns(false);
 
         // Act & Assert
         var exception = Assert.Throws<FeatureDisabledException>(() =>
-            _interceptor.FilterHandlers(context, context.Handlers).ToList());
+            _interceptor.Intercept(context, _ => { }));
         Assert.Equal("MyFeature", exception.FeatureName);
     }
 
     [Fact]
-    public void FilterHandlers_WhenNotAggregated_AndNoFeatureName_ReturnsHandler()
+    public void Intercept_WhenNotAggregated_AndNoFeatureName_CallsNext()
     {
         // Arrange - handler has no feature name
-        var handler = CreateHandler(featureName: null);
+        var handler = CreateVoidHandlerWithNoFeature();
         var context = CreateContext(isAggregated: false, handlers: [handler]);
+        var nextCalled = false;
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            nextCalled = true;
+        });
 
         // Assert
-        Assert.Single(result);
-        Assert.Same(handler, result[0]);
+        Assert.True(nextCalled);
+    }
+
+    [Fact]
+    public void InterceptResult_WhenNotAggregated_AndFeatureEnabled_ReturnsResult()
+    {
+        // Arrange
+        var handler = CreateSyncHandler<string>("MyFeature");
+        var context = CreateContext(isAggregated: false, handlers: [handler]);
+
+        _featureFlagService.IsEnabled("MyFeature").Returns(true);
+
+        // Act
+        var result = _interceptor.Intercept(context, handlers => "success");
+
+        // Assert
+        Assert.Equal("success", result);
+    }
+
+    [Fact]
+    public void InterceptResult_WhenNotAggregated_AndFeatureDisabled_ThrowsFeatureDisabledException()
+    {
+        // Arrange
+        var handler = CreateSyncHandler<string>("MyFeature");
+        var context = CreateContext(isAggregated: false, handlers: [handler]);
+
+        _featureFlagService.IsEnabled("MyFeature").Returns(false);
+
+        // Act & Assert
+        var exception = Assert.Throws<FeatureDisabledException>(() =>
+            _interceptor.Intercept<string>(context, _ => "success"));
+        Assert.Equal("MyFeature", exception.FeatureName);
     }
 
     #endregion
 
-    #region FilterHandlers Tests - Aggregated (Multiple Handlers)
+    #region Aggregated (Multiple Handlers) Tests
 
     [Fact]
-    public void FilterHandlers_WhenAggregated_FiltersDisabledHandlers()
+    public void Intercept_WhenAggregated_FiltersDisabledHandlers()
     {
         // Arrange
-        var handler1 = CreateHandler("Feature1");
-        var handler2 = CreateHandler("Feature2");
-        var handler3 = CreateHandler("Feature3");
+        var handler1 = CreateVoidHandler("Feature1");
+        var handler2 = CreateVoidHandler("Feature2");
+        var handler3 = CreateVoidHandler("Feature3");
         var context = CreateContext(isAggregated: true, handlers: [handler1, handler2, handler3]);
+        IReadOnlyList<FacadeHandlerDescriptor>? passedHandlers = null;
 
         _featureFlagService.IsEnabled("Feature1").Returns(true);
         _featureFlagService.IsEnabled("Feature2").Returns(false);
         _featureFlagService.IsEnabled("Feature3").Returns(true);
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            passedHandlers = handlers;
+        });
 
         // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Same(handler1, result[0]);
-        Assert.Same(handler3, result[1]);
+        Assert.NotNull(passedHandlers);
+        Assert.Equal(2, passedHandlers.Count);
+        Assert.Same(handler1, passedHandlers[0]);
+        Assert.Same(handler3, passedHandlers[1]);
     }
 
     [Fact]
-    public void FilterHandlers_WhenAggregated_AndAllDisabled_ReturnsEmpty()
+    public void Intercept_WhenAggregated_AndAllDisabled_PassesEmptyList()
     {
         // Arrange
-        var handler1 = CreateHandler("Feature1");
-        var handler2 = CreateHandler("Feature2");
+        var handler1 = CreateVoidHandler("Feature1");
+        var handler2 = CreateVoidHandler("Feature2");
         var context = CreateContext(isAggregated: true, handlers: [handler1, handler2]);
+        IReadOnlyList<FacadeHandlerDescriptor>? passedHandlers = null;
 
         _featureFlagService.IsEnabled("Feature1").Returns(false);
         _featureFlagService.IsEnabled("Feature2").Returns(false);
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            passedHandlers = handlers;
+        });
 
         // Assert
-        Assert.Empty(result);
+        Assert.NotNull(passedHandlers);
+        Assert.Empty(passedHandlers);
     }
 
     [Fact]
-    public void FilterHandlers_WhenAggregated_AndAllEnabled_ReturnsAll()
+    public void Intercept_WhenAggregated_AndAllEnabled_PassesAllHandlers()
     {
         // Arrange
-        var handler1 = CreateHandler("Feature1");
-        var handler2 = CreateHandler("Feature2");
+        var handler1 = CreateVoidHandler("Feature1");
+        var handler2 = CreateVoidHandler("Feature2");
         var context = CreateContext(isAggregated: true, handlers: [handler1, handler2]);
+        IReadOnlyList<FacadeHandlerDescriptor>? passedHandlers = null;
 
         _featureFlagService.IsEnabled("Feature1").Returns(true);
         _featureFlagService.IsEnabled("Feature2").Returns(true);
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            passedHandlers = handlers;
+        });
 
         // Assert
-        Assert.Equal(2, result.Count);
+        Assert.NotNull(passedHandlers);
+        Assert.Equal(2, passedHandlers.Count);
     }
 
     [Fact]
-    public void FilterHandlers_WhenAggregated_AndNoFeatureNames_ReturnsAll()
+    public void Intercept_WhenAggregated_AndNoFeatureNames_PassesAllHandlers()
     {
         // Arrange - handlers have no feature names
-        var handler1 = CreateHandler(featureName: null);
-        var handler2 = CreateHandler(featureName: null);
+        var handler1 = CreateVoidHandlerWithNoFeature();
+        var handler2 = CreateVoidHandlerWithNoFeature();
         var context = CreateContext(isAggregated: true, handlers: [handler1, handler2]);
+        IReadOnlyList<FacadeHandlerDescriptor>? passedHandlers = null;
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            passedHandlers = handlers;
+        });
 
         // Assert
-        Assert.Equal(2, result.Count);
+        Assert.NotNull(passedHandlers);
+        Assert.Equal(2, passedHandlers.Count);
     }
 
     [Fact]
-    public void FilterHandlers_WhenAggregated_MixedFeatureNamesAndNoNames_FiltersCorrectly()
+    public void Intercept_WhenAggregated_MixedFeatureNamesAndNoNames_FiltersCorrectly()
     {
         // Arrange
-        var handler1 = CreateHandler("Feature1");  // Will be disabled
-        var handler2 = CreateHandler(null);        // No feature name - always included
-        var handler3 = CreateHandler("Feature3");  // Will be enabled
+        var handler1 = CreateVoidHandler("Feature1");  // Will be disabled
+        var handler2 = CreateVoidHandlerWithNoFeature();  // No feature name - always included
+        var handler3 = CreateVoidHandler("Feature3");  // Will be enabled
         var context = CreateContext(isAggregated: true, handlers: [handler1, handler2, handler3]);
+        IReadOnlyList<FacadeHandlerDescriptor>? passedHandlers = null;
 
         _featureFlagService.IsEnabled("Feature1").Returns(false);
         _featureFlagService.IsEnabled("Feature3").Returns(true);
 
         // Act
-        var result = _interceptor.FilterHandlers(context, context.Handlers).ToList();
+        _interceptor.Intercept(context, handlers =>
+        {
+            passedHandlers = handlers;
+        });
 
         // Assert
-        Assert.Equal(2, result.Count);
-        Assert.Same(handler2, result[0]); // No feature name
-        Assert.Same(handler3, result[1]); // Feature enabled
+        Assert.NotNull(passedHandlers);
+        Assert.Equal(2, passedHandlers.Count);
+        Assert.Same(handler2, passedHandlers[0]); // No feature name
+        Assert.Same(handler3, passedHandlers[1]); // Feature enabled
     }
 
     #endregion
 
     #region Helper Methods
 
-    private static FacadeHandlerDescriptor CreateHandler(string? featureName)
+    private static FacadeVoidHandlerDescriptor CreateVoidHandler(string featureName)
     {
-        var attribute = featureName != null
-            ? new TestFeatureAttribute(featureName)
-            : (Attribute)new TestNoFeatureAttribute();
-
-        return new FacadeHandlerDescriptor(
+        var attribute = new TestFeatureAttribute(featureName);
+        return new FacadeVoidHandlerDescriptor(
             targetType: typeof(TestHandler),
             methodAttribute: attribute,
-            isStatic: false);
+            isStatic: false,
+            invoke: () => { });
+    }
+
+    private static FacadeVoidHandlerDescriptor CreateVoidHandlerWithNoFeature()
+    {
+        var attribute = new TestNoFeatureAttribute();
+        return new FacadeVoidHandlerDescriptor(
+            targetType: typeof(TestHandler),
+            methodAttribute: attribute,
+            isStatic: false,
+            invoke: () => { });
+    }
+
+    private static FacadeSyncHandlerDescriptor<T> CreateSyncHandler<T>(string featureName)
+    {
+        var attribute = new TestFeatureAttribute(featureName);
+        return new FacadeSyncHandlerDescriptor<T>(
+            targetType: typeof(TestHandler),
+            methodAttribute: attribute,
+            isStatic: false,
+            invoke: () => default!);
     }
 
     private static FacadeInvocationContext CreateContext(

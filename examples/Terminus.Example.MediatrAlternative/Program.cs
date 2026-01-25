@@ -33,7 +33,7 @@ Console.WriteLine("\n[Client] Calling GetWeatherQuery...");
 var weather = mediator.Send(new GetWeatherQuery("London"));
 Console.WriteLine($"Result: {weather}");
 
-// --- Infrastructure ---
+/***********************************************************/
 
 // Define an attribute to mark handler methods.
 [AttributeUsage(AttributeTargets.Method)]

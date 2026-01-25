@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Terminus.Tests.Unit;
@@ -17,7 +14,7 @@ public class InterceptorInterfaceSegregationTests
     {
         var handlers = new FacadeHandlerDescriptor[]
         {
-            new(typeof(SampleHandler), new SampleAttribute(), isStatic: false)
+            new FacadeVoidHandlerDescriptor(typeof(SampleHandler), new SampleAttribute(), isStatic: false, () => { })
         };
 
         _context = new FacadeInvocationContext(
@@ -32,25 +29,26 @@ public class InterceptorInterfaceSegregationTests
             isAggregated: false);
     }
 
-    #region ISyncFacadeInterceptor Tests
+    #region ISyncFacadeInterceptor Tests (Result Methods)
 
     [Fact]
-    public void SyncOnlyInterceptor_ImplementsISyncFacadeInterceptor()
+    public void SyncResultOnlyInterceptor_ImplementsISyncFacadeInterceptor()
     {
         // Arrange
-        var interceptor = new SyncOnlyInterceptor();
+        var interceptor = new SyncResultOnlyInterceptor();
 
         // Assert
         Assert.IsAssignableFrom<ISyncFacadeInterceptor>(interceptor);
+        Assert.False(interceptor is ISyncVoidFacadeInterceptor);
         Assert.False(interceptor is IAsyncFacadeInterceptor);
         Assert.False(interceptor is IStreamFacadeInterceptor);
     }
 
     [Fact]
-    public void SyncOnlyInterceptor_IsInvokedForSyncMethods()
+    public void SyncResultOnlyInterceptor_IsInvokedForSyncResultMethods()
     {
         // Arrange
-        var interceptor = new SyncOnlyInterceptor();
+        var interceptor = new SyncResultOnlyInterceptor();
         var interceptors = new object[] { interceptor };
         var targetCalled = false;
 
@@ -58,23 +56,23 @@ public class InterceptorInterfaceSegregationTests
         var result = ExecuteWithInterceptors<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
                 return "result";
             });
 
         // Assert
-        Assert.True(interceptor.WasCalled, "sync-only interceptor should be called for sync methods");
+        Assert.True(interceptor.WasCalled, "sync result interceptor should be called for sync result methods");
         Assert.True(targetCalled, "target should be called");
         Assert.Equal("result", result);
     }
 
     [Fact]
-    public async Task SyncOnlyInterceptor_IsSkippedForAsyncMethods()
+    public async Task SyncResultOnlyInterceptor_IsSkippedForAsyncMethods()
     {
         // Arrange
-        var interceptor = new SyncOnlyInterceptor();
+        var interceptor = new SyncResultOnlyInterceptor();
         var interceptors = new object[] { interceptor };
         var targetCalled = false;
 
@@ -82,23 +80,23 @@ public class InterceptorInterfaceSegregationTests
         var result = await ExecuteWithInterceptorsAsync<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
-                return new ValueTask<string?>("result");
+                return new ValueTask<string>("result");
             });
 
         // Assert
-        Assert.False(interceptor.WasCalled, "sync-only interceptor should be skipped for async methods");
+        Assert.False(interceptor.WasCalled, "sync result interceptor should be skipped for async methods");
         Assert.True(targetCalled, "target should still be called");
         Assert.Equal("result", result);
     }
 
     [Fact]
-    public async Task SyncOnlyInterceptor_IsSkippedForStreamMethods()
+    public async Task SyncResultOnlyInterceptor_IsSkippedForStreamMethods()
     {
         // Arrange
-        var interceptor = new SyncOnlyInterceptor();
+        var interceptor = new SyncResultOnlyInterceptor();
         var interceptors = new object[] { interceptor };
         var items = new List<int>();
 
@@ -106,14 +104,52 @@ public class InterceptorInterfaceSegregationTests
         await foreach (var item in ExecuteWithInterceptorsStream<int>(
             interceptors,
             _context,
-            () => GetStream(1, 2, 3)))
+            _ => GetStream(1, 2, 3)))
         {
             items.Add(item);
         }
 
         // Assert
-        Assert.False(interceptor.WasCalled, "sync-only interceptor should be skipped for stream methods");
+        Assert.False(interceptor.WasCalled, "sync result interceptor should be skipped for stream methods");
         Assert.Equal(new[] { 1, 2, 3 }, items);
+    }
+
+    #endregion
+
+    #region ISyncVoidFacadeInterceptor Tests
+
+    [Fact]
+    public void SyncVoidOnlyInterceptor_ImplementsISyncVoidFacadeInterceptor()
+    {
+        // Arrange
+        var interceptor = new SyncVoidOnlyInterceptor();
+
+        // Assert
+        Assert.IsAssignableFrom<ISyncVoidFacadeInterceptor>(interceptor);
+        Assert.False(interceptor is ISyncFacadeInterceptor);
+        Assert.False(interceptor is IAsyncFacadeInterceptor);
+    }
+
+    [Fact]
+    public void SyncVoidOnlyInterceptor_IsInvokedForSyncVoidMethods()
+    {
+        // Arrange
+        var interceptor = new SyncVoidOnlyInterceptor();
+        var interceptors = new object[] { interceptor };
+        var targetCalled = false;
+
+        // Act - simulate the generated pipeline pattern
+        ExecuteWithVoidInterceptors(
+            interceptors,
+            _context,
+            _ =>
+            {
+                targetCalled = true;
+            });
+
+        // Assert
+        Assert.True(interceptor.WasCalled, "sync void interceptor should be called for sync void methods");
+        Assert.True(targetCalled, "target should be called");
     }
 
     #endregion
@@ -144,7 +180,7 @@ public class InterceptorInterfaceSegregationTests
         var result = ExecuteWithInterceptors<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
                 return "result";
@@ -168,10 +204,10 @@ public class InterceptorInterfaceSegregationTests
         var result = await ExecuteWithInterceptorsAsync<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
-                return new ValueTask<string?>("result");
+                return new ValueTask<string>("result");
             });
 
         // Assert
@@ -208,7 +244,7 @@ public class InterceptorInterfaceSegregationTests
         var result = ExecuteWithInterceptors<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
                 return "result";
@@ -232,7 +268,7 @@ public class InterceptorInterfaceSegregationTests
         await foreach (var item in ExecuteWithInterceptorsStream<int>(
             interceptors,
             _context,
-            () => GetStream(1, 2, 3)))
+            _ => GetStream(1, 2, 3)))
         {
             items.Add(item);
         }
@@ -253,14 +289,16 @@ public class InterceptorInterfaceSegregationTests
         var interceptor = new FullInterceptor();
 
         // Assert
+        Assert.IsAssignableFrom<ISyncVoidFacadeInterceptor>(interceptor);
         Assert.IsAssignableFrom<ISyncFacadeInterceptor>(interceptor);
+        Assert.IsAssignableFrom<IAsyncVoidFacadeInterceptor>(interceptor);
         Assert.IsAssignableFrom<IAsyncFacadeInterceptor>(interceptor);
         Assert.IsAssignableFrom<IStreamFacadeInterceptor>(interceptor);
         Assert.IsAssignableFrom<IFacadeInterceptor>(interceptor);
     }
 
     [Fact]
-    public void FullInterceptor_IsInvokedForSyncMethods()
+    public void FullInterceptor_IsInvokedForSyncResultMethods()
     {
         // Arrange
         var interceptor = new FullInterceptor();
@@ -271,14 +309,36 @@ public class InterceptorInterfaceSegregationTests
         ExecuteWithInterceptors<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
                 return "result";
             });
 
         // Assert
-        Assert.True(interceptor.SyncCalled, "full interceptor should be called for sync methods");
+        Assert.True(interceptor.SyncResultCalled, "full interceptor should be called for sync result methods");
+        Assert.True(targetCalled);
+    }
+
+    [Fact]
+    public void FullInterceptor_IsInvokedForSyncVoidMethods()
+    {
+        // Arrange
+        var interceptor = new FullInterceptor();
+        var interceptors = new object[] { interceptor };
+        var targetCalled = false;
+
+        // Act
+        ExecuteWithVoidInterceptors(
+            interceptors,
+            _context,
+            _ =>
+            {
+                targetCalled = true;
+            });
+
+        // Assert
+        Assert.True(interceptor.SyncVoidCalled, "full interceptor should be called for sync void methods");
         Assert.True(targetCalled);
     }
 
@@ -294,14 +354,14 @@ public class InterceptorInterfaceSegregationTests
         await ExecuteWithInterceptorsAsync<string>(
             interceptors,
             _context,
-            () =>
+            _ =>
             {
                 targetCalled = true;
-                return new ValueTask<string?>("result");
+                return new ValueTask<string>("result");
             });
 
         // Assert
-        Assert.True(interceptor.AsyncCalled, "full interceptor should be called for async methods");
+        Assert.True(interceptor.AsyncResultCalled, "full interceptor should be called for async methods");
         Assert.True(targetCalled);
     }
 
@@ -317,7 +377,7 @@ public class InterceptorInterfaceSegregationTests
         await foreach (var item in ExecuteWithInterceptorsStream<int>(
             interceptors,
             _context,
-            () => GetStream(1, 2, 3)))
+            _ => GetStream(1, 2, 3)))
         {
             items.Add(item);
         }
@@ -335,70 +395,70 @@ public class InterceptorInterfaceSegregationTests
     public void MixedInterceptors_OnlySyncInterceptorsInvokedForSyncMethods()
     {
         // Arrange
-        var syncInterceptor = new SyncOnlyInterceptor();
+        var syncResultInterceptor = new SyncResultOnlyInterceptor();
         var asyncInterceptor = new AsyncOnlyInterceptor();
         var streamInterceptor = new StreamOnlyInterceptor();
         var fullInterceptor = new FullInterceptor();
-        var interceptors = new object[] { syncInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
+        var interceptors = new object[] { syncResultInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
 
         // Act
         ExecuteWithInterceptors<string>(
             interceptors,
             _context,
-            () => "result");
+            _ => "result");
 
         // Assert
-        Assert.True(syncInterceptor.WasCalled, "sync-only interceptor should be called");
+        Assert.True(syncResultInterceptor.WasCalled, "sync result interceptor should be called");
         Assert.False(asyncInterceptor.WasCalled, "async-only interceptor should be skipped");
         Assert.False(streamInterceptor.WasCalled, "stream-only interceptor should be skipped");
-        Assert.True(fullInterceptor.SyncCalled, "full interceptor should be called");
+        Assert.True(fullInterceptor.SyncResultCalled, "full interceptor should be called");
     }
 
     [Fact]
     public async Task MixedInterceptors_OnlyAsyncInterceptorsInvokedForAsyncMethods()
     {
         // Arrange
-        var syncInterceptor = new SyncOnlyInterceptor();
+        var syncResultInterceptor = new SyncResultOnlyInterceptor();
         var asyncInterceptor = new AsyncOnlyInterceptor();
         var streamInterceptor = new StreamOnlyInterceptor();
         var fullInterceptor = new FullInterceptor();
-        var interceptors = new object[] { syncInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
+        var interceptors = new object[] { syncResultInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
 
         // Act
         await ExecuteWithInterceptorsAsync<string>(
             interceptors,
             _context,
-            () => new ValueTask<string?>("result"));
+            _ => new ValueTask<string>("result"));
 
         // Assert
-        Assert.False(syncInterceptor.WasCalled, "sync-only interceptor should be skipped");
+        Assert.False(syncResultInterceptor.WasCalled, "sync result interceptor should be skipped");
         Assert.True(asyncInterceptor.WasCalled, "async-only interceptor should be called");
         Assert.False(streamInterceptor.WasCalled, "stream-only interceptor should be skipped");
-        Assert.True(fullInterceptor.AsyncCalled, "full interceptor should be called");
+        Assert.True(fullInterceptor.AsyncResultCalled, "full interceptor should be called");
     }
 
     [Fact]
     public async Task MixedInterceptors_OnlyStreamInterceptorsInvokedForStreamMethods()
     {
         // Arrange
-        var syncInterceptor = new SyncOnlyInterceptor();
+        var syncResultInterceptor = new SyncResultOnlyInterceptor();
         var asyncInterceptor = new AsyncOnlyInterceptor();
         var streamInterceptor = new StreamOnlyInterceptor();
         var fullInterceptor = new FullInterceptor();
-        var interceptors = new object[] { syncInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
+        var interceptors = new object[] { syncResultInterceptor, asyncInterceptor, streamInterceptor, fullInterceptor };
         var items = new List<int>();
 
         // Act
         await foreach (var item in ExecuteWithInterceptorsStream<int>(
             interceptors,
             _context,
-            () => GetStream(1, 2, 3)))
+            _ => GetStream(1, 2, 3)))
         {
             items.Add(item);
         }
 
         // Assert
-        Assert.False(syncInterceptor.WasCalled, "sync-only interceptor should be skipped");
+        Assert.False(syncResultInterceptor.WasCalled, "sync result interceptor should be skipped");
         Assert.False(asyncInterceptor.WasCalled, "async-only interceptor should be skipped");
         Assert.True(streamInterceptor.WasCalled, "stream-only interceptor should be called");
         Assert.True(fullInterceptor.StreamCalled, "full interceptor should be called");
@@ -409,9 +469,36 @@ public class InterceptorInterfaceSegregationTests
     #region Pipeline Methods (Simulating Generated Code)
 
     /// <summary>
+    /// Simulates the generated ExecuteWithVoidInterceptors method with ISP-compliant interface checks.
+    /// </summary>
+    private static void ExecuteWithVoidInterceptors(
+        object[] interceptors,
+        FacadeInvocationContext context,
+        FacadeVoidInvocationDelegate target)
+    {
+        var index = 0;
+
+        FacadeVoidInvocationDelegate BuildPipeline()
+        {
+            if (index >= interceptors.Length)
+                return target;
+
+            var currentIndex = index++;
+            var next = BuildPipeline();
+
+            if (interceptors[currentIndex] is ISyncVoidFacadeInterceptor syncVoid)
+                return handlers => syncVoid.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
+
+            return next;
+        }
+
+        BuildPipeline()(null);
+    }
+
+    /// <summary>
     /// Simulates the generated ExecuteWithInterceptors method with ISP-compliant interface checks.
     /// </summary>
-    private static TResult? ExecuteWithInterceptors<TResult>(
+    private static TResult ExecuteWithInterceptors<TResult>(
         object[] interceptors,
         FacadeInvocationContext context,
         FacadeInvocationDelegate<TResult> target)
@@ -427,18 +514,18 @@ public class InterceptorInterfaceSegregationTests
             var next = BuildPipeline();
 
             if (interceptors[currentIndex] is ISyncFacadeInterceptor sync)
-                return () => sync.Intercept(context, next);
+                return handlers => sync.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
 
             return next;
         }
 
-        return BuildPipeline()();
+        return BuildPipeline()(null);
     }
 
     /// <summary>
     /// Simulates the generated ExecuteWithInterceptorsAsync method with ISP-compliant interface checks.
     /// </summary>
-    private static async ValueTask<TResult?> ExecuteWithInterceptorsAsync<TResult>(
+    private static async ValueTask<TResult> ExecuteWithInterceptorsAsync<TResult>(
         object[] interceptors,
         FacadeInvocationContext context,
         FacadeAsyncInvocationDelegate<TResult> target)
@@ -454,12 +541,12 @@ public class InterceptorInterfaceSegregationTests
             var next = BuildPipeline();
 
             if (interceptors[currentIndex] is IAsyncFacadeInterceptor async)
-                return () => async.InterceptAsync(context, next);
+                return handlers => async.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
 
             return next;
         }
 
-        return await BuildPipeline()().ConfigureAwait(false);
+        return await BuildPipeline()(null).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -481,12 +568,12 @@ public class InterceptorInterfaceSegregationTests
             var next = BuildPipeline();
 
             if (interceptors[currentIndex] is IStreamFacadeInterceptor stream)
-                return () => stream.InterceptStream(context, next);
+                return handlers => stream.InterceptStream(context, nextHandlers => next(nextHandlers ?? handlers));
 
             return next;
         }
 
-        return BuildPipeline()();
+        return BuildPipeline()(null);
     }
 
     #endregion
@@ -527,13 +614,27 @@ public class InterceptorInterfaceSegregationTests
     }
 
     /// <summary>
-    /// Interceptor that only implements ISyncFacadeInterceptor.
+    /// Interceptor that only implements ISyncVoidFacadeInterceptor.
     /// </summary>
-    private class SyncOnlyInterceptor : ISyncFacadeInterceptor
+    private class SyncVoidOnlyInterceptor : ISyncVoidFacadeInterceptor
     {
         public bool WasCalled { get; private set; }
 
-        public TResult? Intercept<TResult>(FacadeInvocationContext context, FacadeInvocationDelegate<TResult> next)
+        public void Intercept(FacadeInvocationContext context, FacadeVoidInvocationDelegate next)
+        {
+            WasCalled = true;
+            next();
+        }
+    }
+
+    /// <summary>
+    /// Interceptor that only implements ISyncFacadeInterceptor (for result methods).
+    /// </summary>
+    private class SyncResultOnlyInterceptor : ISyncFacadeInterceptor
+    {
+        public bool WasCalled { get; private set; }
+
+        public TResult Intercept<TResult>(FacadeInvocationContext context, FacadeInvocationDelegate<TResult> next)
         {
             WasCalled = true;
             return next();
@@ -547,7 +648,7 @@ public class InterceptorInterfaceSegregationTests
     {
         public bool WasCalled { get; private set; }
 
-        public ValueTask<TResult?> InterceptAsync<TResult>(FacadeInvocationContext context, FacadeAsyncInvocationDelegate<TResult> next)
+        public ValueTask<TResult> InterceptAsync<TResult>(FacadeInvocationContext context, FacadeAsyncInvocationDelegate<TResult> next)
         {
             WasCalled = true;
             return next();
@@ -572,23 +673,37 @@ public class InterceptorInterfaceSegregationTests
     }
 
     /// <summary>
-    /// Interceptor that implements the full IFacadeInterceptor interface (all three).
+    /// Interceptor that implements the full IFacadeInterceptor interface (all five).
     /// </summary>
     private class FullInterceptor : IFacadeInterceptor
     {
-        public bool SyncCalled { get; private set; }
-        public bool AsyncCalled { get; private set; }
+        public bool SyncVoidCalled { get; private set; }
+        public bool SyncResultCalled { get; private set; }
+        public bool AsyncVoidCalled { get; private set; }
+        public bool AsyncResultCalled { get; private set; }
         public bool StreamCalled { get; private set; }
 
-        public TResult? Intercept<TResult>(FacadeInvocationContext context, FacadeInvocationDelegate<TResult> next)
+        public void Intercept(FacadeInvocationContext context, FacadeVoidInvocationDelegate next)
         {
-            SyncCalled = true;
+            SyncVoidCalled = true;
+            next();
+        }
+
+        public TResult Intercept<TResult>(FacadeInvocationContext context, FacadeInvocationDelegate<TResult> next)
+        {
+            SyncResultCalled = true;
             return next();
         }
 
-        public ValueTask<TResult?> InterceptAsync<TResult>(FacadeInvocationContext context, FacadeAsyncInvocationDelegate<TResult> next)
+        public Task InterceptAsync(FacadeInvocationContext context, FacadeAsyncVoidInvocationDelegate next)
         {
-            AsyncCalled = true;
+            AsyncVoidCalled = true;
+            return next();
+        }
+
+        public ValueTask<TResult> InterceptAsync<TResult>(FacadeInvocationContext context, FacadeAsyncInvocationDelegate<TResult> next)
+        {
+            AsyncResultCalled = true;
             return next();
         }
 

@@ -99,8 +99,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var containingTypeName = methodInfo.MethodSymbol.ContainingType
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        var attributeTypeName = methodInfo.AttributeData.AttributeClass?
-            .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? "global::System.Attribute";
+        var attributeInstantiation = BuildAttributeInstantiation(methodInfo);
 
         var methodName = methodInfo.MethodSymbol.Name;
         var parameters = methodInfo.MethodSymbol.Parameters;
@@ -108,66 +107,30 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             ? string.Join(", ", parameters.Select(p => p.Name.EscapeIdentifier()))
             : "";
 
-        var returnTypeKindName = methodInfo.ReturnTypeKind switch
-        {
-            ReturnTypeKind.Void => "Void",
-            ReturnTypeKind.Result => "Result",
-            ReturnTypeKind.Task => "Task",
-            ReturnTypeKind.ValueTask => "Task",
-            ReturnTypeKind.TaskWithResult => "TaskWithResult",
-            ReturnTypeKind.ValueTaskWithResult => "TaskWithResult",
-            ReturnTypeKind.AsyncEnumerable => "AsyncEnumerable",
-            _ => "Void"
-        };
-
+        var returnTypeKindName = GetReturnTypeKindName(methodInfo.ReturnTypeKind);
         var isStatic = methodInfo.MethodSymbol.IsStatic;
-        var attributeInstantiation = BuildAttributeInstantiation(methodInfo);
 
-        // Build handler descriptor array (single element for non-aggregated methods)
-        var handlerDescriptorStatement = ParseStatement(
-            $$"""
-            var handlers = new global::Terminus.FacadeHandlerDescriptor[]
-            {
-                new global::Terminus.FacadeHandlerDescriptor(
-                    typeof({{containingTypeName}}),
-                    {{attributeInstantiation.ToFullString()}},
-                    isStatic: {{isStatic.ToString().ToLowerInvariant()}})
-            };
-            """);
-        yield return handlerDescriptorStatement;
-
-        // Build the context creation statement
-        var contextStatement = ParseStatement(
-            $$"""
-            var context = new global::Terminus.FacadeInvocationContext(
-                _serviceProvider,
-                typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
-                new object?[] { {{argumentsArray}} },
-                typeof({{containingTypeName}}),
-                {{attributeInstantiation.ToFullString()}},
-                new global::System.Collections.Generic.Dictionary<string, object?>(),
-                global::Terminus.ReturnTypeKind.{{returnTypeKindName}},
-                handlers,
-                isAggregated: false);
-            """);
-        yield return contextStatement;
-
-        // Build the invocation and wrapping based on return type
+        // Build the invocation expression
         var invocation = _invocationBuilder.BuildInvocation(facadeInfo, methodInfo, includeConfigureAwait: false);
+        var invocationCode = invocation.ToFullString();
 
+        // Generate code based on return type
         switch (methodInfo.ReturnTypeKind)
         {
             case ReturnTypeKind.Void:
             {
+                // Void handler descriptor with Action invoke
                 yield return ParseStatement(
                     $$"""
-                    ExecuteWithInterceptors<object>(
-                        context,
-                        () =>
-                        {
-                            {{invocation.ToFullString()}};
-                            return default;
-                        });
+                    var handlers = new global::Terminus.FacadeVoidHandlerDescriptor[]
+                    {
+                        new global::Terminus.FacadeVoidHandlerDescriptor(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
+                    };
+                    """);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return ParseStatement(
+                    """
+                    ExecuteWithVoidInterceptors(context, handlers => ((global::Terminus.FacadeVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).Invoke());
                     """);
                 break;
             }
@@ -177,37 +140,33 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                     .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                 yield return ParseStatement(
                     $$"""
-                    return ExecuteWithInterceptors<{{returnType}}>(
-                        context,
-                        () => {{invocation.ToFullString()}})!;
+                    var handlers = new global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>[]
+                    {
+                        new global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
+                    };
+                    """);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return ParseStatement(
+                    $$"""
+                    return ExecuteWithInterceptors<{{returnType}}>(context, handlers => ((global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>)(handlers ?? context.Handlers)[0]).Invoke());
                     """);
                 break;
             }
             case ReturnTypeKind.Task:
-            {
-                yield return ParseStatement(
-                    $$"""
-                    await ExecuteWithInterceptorsAsync<object>(
-                        context,
-                        async () =>
-                        {
-                            await {{invocation.ToFullString()}}.ConfigureAwait(false);
-                            return default;
-                        }).ConfigureAwait(false);
-                    """);
-                break;
-            }
             case ReturnTypeKind.ValueTask:
             {
+                // Async void handler descriptor with Func<Task> invoke
                 yield return ParseStatement(
                     $$"""
-                    await ExecuteWithInterceptorsAsync<object>(
-                        context,
-                        async () =>
-                        {
-                            await {{invocation.ToFullString()}}.ConfigureAwait(false);
-                            return default;
-                        }).ConfigureAwait(false);
+                    var handlers = new global::Terminus.FacadeAsyncVoidHandlerDescriptor[]
+                    {
+                        new global::Terminus.FacadeAsyncVoidHandlerDescriptor(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, async () => await {{invocationCode}}.ConfigureAwait(false))
+                    };
+                    """);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return ParseStatement(
+                    """
+                    await ExecuteWithAsyncVoidInterceptors(context, async handlers => await ((global::Terminus.FacadeAsyncVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).InvokeAsync().ConfigureAwait(false)).ConfigureAwait(false);
                     """);
                 break;
             }
@@ -218,26 +177,74 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                     .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                 yield return ParseStatement(
                     $$"""
-                    return (await ExecuteWithInterceptorsAsync<{{returnType}}>(
-                        context,
-                        async () => await {{invocation.ToFullString()}}.ConfigureAwait(false)).ConfigureAwait(false))!;
+                    var handlers = new global::Terminus.FacadeAsyncHandlerDescriptor<{{returnType}}>[]
+                    {
+                        new global::Terminus.FacadeAsyncHandlerDescriptor<{{returnType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, async () => await {{invocationCode}}.ConfigureAwait(false))
+                    };
+                    """);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return ParseStatement(
+                    $$"""
+                    return await ExecuteWithInterceptorsAsync<{{returnType}}>(context, async handlers => await ((global::Terminus.FacadeAsyncHandlerDescriptor<{{returnType}}>)(handlers ?? context.Handlers)[0]).InvokeAsync()).ConfigureAwait(false);
                     """);
                 break;
             }
             case ReturnTypeKind.AsyncEnumerable:
             {
-                var returnType = ((INamedTypeSymbol)methodInfo.MethodSymbol.ReturnType).TypeArguments[0]
+                var itemType = ((INamedTypeSymbol)methodInfo.MethodSymbol.ReturnType).TypeArguments[0]
                     .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                 yield return ParseStatement(
                     $$"""
-                    return ExecuteWithInterceptorsStream<{{returnType}}>(
-                        context,
-                        () => {{invocation.ToFullString()}});
+                    var handlers = new global::Terminus.FacadeStreamHandlerDescriptor<{{itemType}}>[]
+                    {
+                        new global::Terminus.FacadeStreamHandlerDescriptor<{{itemType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
+                    };
+                    """);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return ParseStatement(
+                    $$"""
+                    return ExecuteWithInterceptorsStream<{{itemType}}>(context, handlers => ((global::Terminus.FacadeStreamHandlerDescriptor<{{itemType}}>)(handlers ?? context.Handlers)[0]).Invoke());
                     """);
                 break;
             }
         }
     }
+
+    private static StatementSyntax BuildContextCreationStatement(
+        string interfaceName,
+        string methodName,
+        string argumentsArray,
+        string containingTypeName,
+        ExpressionSyntax attributeInstantiation,
+        string returnTypeKindName)
+    {
+        return ParseStatement(
+            $$"""
+            var context = new global::Terminus.FacadeInvocationContext(
+                _serviceProvider,
+                typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
+                new object? [] { {{argumentsArray}} },
+                typeof({{containingTypeName}}),
+                {{attributeInstantiation.ToFullString()}},
+                new global::System.Collections.Generic.Dictionary<string, object?>(),
+                global::Terminus.ReturnTypeKind.{{returnTypeKindName}},
+                handlers,
+                isAggregated: false);
+            """);
+    }
+
+    private static string GetReturnTypeKindName(ReturnTypeKind returnTypeKind) =>
+        returnTypeKind switch
+        {
+            ReturnTypeKind.Void => "Void",
+            ReturnTypeKind.Result => "Result",
+            ReturnTypeKind.Task => "Task",
+            ReturnTypeKind.ValueTask => "Task",
+            ReturnTypeKind.TaskWithResult => "TaskWithResult",
+            ReturnTypeKind.ValueTaskWithResult => "TaskWithResult",
+            ReturnTypeKind.AsyncEnumerable => "AsyncEnumerable",
+            _ => "Void"
+        };
 
     private IEnumerable<StatementSyntax> BuildAggregatedMethodBody(
         FacadeInterfaceInfo facadeInfo,
@@ -318,19 +325,9 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             ? string.Join(", ", parameters.Select(p => p.Name.EscapeIdentifier()))
             : "";
 
-        var returnTypeKindName = primaryMethod.ReturnTypeKind switch
-        {
-            ReturnTypeKind.Void => "Void",
-            ReturnTypeKind.Result => "Result",
-            ReturnTypeKind.Task => "Task",
-            ReturnTypeKind.ValueTask => "Task",
-            ReturnTypeKind.TaskWithResult => "TaskWithResult",
-            ReturnTypeKind.ValueTaskWithResult => "TaskWithResult",
-            ReturnTypeKind.AsyncEnumerable => "AsyncEnumerable",
-            _ => "Void"
-        };
+        var returnTypeKindName = GetReturnTypeKindName(primaryMethod.ReturnTypeKind);
 
-        // Build handler descriptors for all methods in the group
+        // Build typed handler descriptors with invoke delegates for all methods in the group
         var handlerDescriptors = new List<string>();
         foreach (var method in methodGroup.Methods)
         {
@@ -338,22 +335,24 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             var attributeInstantiation = BuildAttributeInstantiation(method);
             var isStatic = method.MethodSymbol.IsStatic;
+            var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method, includeConfigureAwait: false).ToFullString();
+
+            var descriptorType = GetHandlerDescriptorType(primaryMethod.ReturnTypeKind, primaryMethod.MethodSymbol.ReturnType);
+            var invokeCode = GetHandlerInvokeCode(primaryMethod.ReturnTypeKind, invocation);
 
             handlerDescriptors.Add(
                 $$"""
-                new global::Terminus.FacadeHandlerDescriptor(
-                        typeof({{containingType}}),
-                        {{attributeInstantiation.ToFullString()}},
-                        isStatic: {{isStatic.ToString().ToLowerInvariant()}})
+                new {{descriptorType}}(typeof({{containingType}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, {{invokeCode}})
                 """);
         }
 
         var handlersArrayCode = string.Join(",\n        ", handlerDescriptors);
+        var handlerArrayType = GetHandlerDescriptorType(primaryMethod.ReturnTypeKind, primaryMethod.MethodSymbol.ReturnType);
 
         // Generate handler descriptors array statement
         yield return ParseStatement(
             $$"""
-            var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+            var handlers = new {{handlerArrayType}}[]
             {
                 {{handlersArrayCode}}
             };
@@ -369,7 +368,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             var context = new global::Terminus.FacadeInvocationContext(
                 _serviceProvider,
                 typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
-                new object?[] { {{argumentsArray}} },
+                new object? [] { {{argumentsArray}} },
                 typeof({{primaryContainingType}}),
                 {{primaryAttributeInstantiation.ToFullString()}},
                 new global::System.Collections.Generic.Dictionary<string, object?>(),
@@ -379,48 +378,76 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             """);
 
         // Generate interceptor-wrapped aggregation based on return type
+        foreach (var statement in BuildAggregatedInterceptorInvocation(facadeInfo, methodGroup))
+        {
+            yield return statement;
+        }
+    }
+
+    private static string GetHandlerDescriptorType(ReturnTypeKind returnTypeKind, ITypeSymbol returnType) =>
+        returnTypeKind switch
+        {
+            ReturnTypeKind.Void => "global::Terminus.FacadeVoidHandlerDescriptor",
+            ReturnTypeKind.Result => $"global::Terminus.FacadeSyncHandlerDescriptor<{returnType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}>",
+            ReturnTypeKind.Task or ReturnTypeKind.ValueTask => "global::Terminus.FacadeAsyncVoidHandlerDescriptor",
+            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult =>
+                $"global::Terminus.FacadeAsyncHandlerDescriptor<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}>",
+            ReturnTypeKind.AsyncEnumerable =>
+                $"global::Terminus.FacadeStreamHandlerDescriptor<{((INamedTypeSymbol)returnType).TypeArguments[0].ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat)}>",
+            _ => "global::Terminus.FacadeVoidHandlerDescriptor"
+        };
+
+    private static string GetHandlerInvokeCode(ReturnTypeKind returnTypeKind, string invocation) =>
+        returnTypeKind switch
+        {
+            ReturnTypeKind.Void => $"() => {invocation}",
+            ReturnTypeKind.Result => $"() => {invocation}",
+            ReturnTypeKind.Task or ReturnTypeKind.ValueTask => $"async () => await {invocation}.ConfigureAwait(false)",
+            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult => $"async () => await {invocation}.ConfigureAwait(false)",
+            ReturnTypeKind.AsyncEnumerable => $"() => {invocation}",
+            _ => $"() => {invocation}"
+        };
+
+    private IEnumerable<StatementSyntax> BuildAggregatedInterceptorInvocation(
+        FacadeInterfaceInfo facadeInfo,
+        AggregatedMethodGroup methodGroup)
+    {
+        var primaryMethod = methodGroup.PrimaryMethod;
+
         switch (primaryMethod.ReturnTypeKind)
         {
             case ReturnTypeKind.Void:
                 yield return ParseStatement(
-                    $$"""
-                    ExecuteWithInterceptors<object>(
-                        context,
-                        () =>
+                    """
+                    ExecuteWithVoidInterceptors(context, handlers =>
+                    {
+                        foreach (var handler in (handlers ?? context.Handlers).Cast<global::Terminus.FacadeVoidHandlerDescriptor>())
                         {
-                            var activeHandlers = FilterHandlers(context);
-                            foreach (var handler in activeHandlers)
-                            {
-                                {{BuildHandlerDispatchCases(facadeInfo, methodGroup, isVoid: true)}}
-                            }
-                            return default;
-                        });
+                            handler.Invoke();
+                        }
+                    });
                     """);
                 break;
 
             case ReturnTypeKind.Result:
             {
-                // For result methods, we need to yield return each result
                 var returnType = primaryMethod.MethodSymbol.ReturnType
                     .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                var dispatchCases = BuildHandlerDispatchCasesForResult(facadeInfo, methodGroup);
 
                 yield return ParseStatement(
                     $$"""
                     return ExecuteWithInterceptors<global::System.Collections.Generic.IEnumerable<{{returnType}}>>(
                         context,
-                        () => QueryInternal())!;
+                        handlers => QueryInternal(handlers));
                     """);
 
-                // Add the helper method for yielding results
                 yield return ParseStatement(
                     $$"""
-                    global::System.Collections.Generic.IEnumerable<{{returnType}}> QueryInternal()
+                    global::System.Collections.Generic.IEnumerable<{{returnType}}> QueryInternal(global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor>? filteredHandlers)
                     {
-                        var activeHandlers = FilterHandlers(context);
-                        foreach (var handler in activeHandlers)
+                        foreach (var handler in (filteredHandlers ?? context.Handlers).Cast<global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>>())
                         {
-                            {{dispatchCases}}
+                            yield return handler.Invoke();
                         }
                     }
                     """);
@@ -429,150 +456,42 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
 
             case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
                 yield return ParseStatement(
-                    $$"""
-                    await ExecuteWithInterceptorsAsync<object>(
-                        context,
-                        async () =>
+                    """
+                    await ExecuteWithAsyncVoidInterceptors(context, async handlers =>
+                    {
+                        foreach (var handler in (handlers ?? context.Handlers).Cast<global::Terminus.FacadeAsyncVoidHandlerDescriptor>())
                         {
-                            var activeHandlers = FilterHandlers(context);
-                            foreach (var handler in activeHandlers)
-                            {
-                                {{BuildHandlerDispatchCases(facadeInfo, methodGroup, isVoid: true, isAsync: true)}}
-                            }
-                            return default;
-                        }).ConfigureAwait(false);
+                            await handler.InvokeAsync().ConfigureAwait(false);
+                        }
+                    }).ConfigureAwait(false);
                     """);
                 break;
 
             case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
             {
-                // For async result methods, we need to yield return await each result
                 var asyncReturnType = ((INamedTypeSymbol)primaryMethod.MethodSymbol.ReturnType).TypeArguments[0]
                     .ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
-                var asyncDispatchCases = BuildHandlerDispatchCasesForAsyncResult(facadeInfo, methodGroup);
 
                 yield return ParseStatement(
                     $$"""
                     return ExecuteWithInterceptorsStream<{{asyncReturnType}}>(
                         context,
-                        () => QueryInternalAsync());
+                        handlers => QueryInternalAsync(handlers));
                     """);
 
-                // Add the helper method for yielding async results
                 yield return ParseStatement(
                     $$"""
-                    async global::System.Collections.Generic.IAsyncEnumerable<{{asyncReturnType}}> QueryInternalAsync()
+                    async global::System.Collections.Generic.IAsyncEnumerable<{{asyncReturnType}}> QueryInternalAsync(global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor>? filteredHandlers)
                     {
-                        var activeHandlers = FilterHandlers(context);
-                        foreach (var handler in activeHandlers)
+                        foreach (var handler in (filteredHandlers ?? context.Handlers).Cast<global::Terminus.FacadeAsyncHandlerDescriptor<{{asyncReturnType}}>>())
                         {
-                            {{asyncDispatchCases}}
+                            yield return await handler.InvokeAsync();
                         }
                     }
                     """);
                 break;
             }
         }
-    }
-
-    /// <summary>
-    /// Builds the handler dispatch switch cases for Result methods (yielding values).
-    /// </summary>
-    private string BuildHandlerDispatchCasesForResult(
-        FacadeInterfaceInfo facadeInfo,
-        AggregatedMethodGroup methodGroup)
-    {
-        var cases = new List<string>();
-
-        foreach (var method in methodGroup.Methods)
-        {
-            var containingType = method.MethodSymbol.ContainingType
-                .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method).ToFullString();
-
-            cases.Add(
-                $$"""
-                if (handler.TargetType == typeof({{containingType}}))
-                                yield return {{invocation}};
-                """);
-        }
-
-        return string.Join("\n            else ", cases);
-    }
-
-    /// <summary>
-    /// Builds the handler dispatch switch cases for async result methods (yielding values).
-    /// </summary>
-    private string BuildHandlerDispatchCasesForAsyncResult(
-        FacadeInterfaceInfo facadeInfo,
-        AggregatedMethodGroup methodGroup)
-    {
-        var cases = new List<string>();
-
-        foreach (var method in methodGroup.Methods)
-        {
-            var containingType = method.MethodSymbol.ContainingType
-                .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method).ToFullString();
-
-            cases.Add(
-                $$"""
-                if (handler.TargetType == typeof({{containingType}}))
-                                yield return await {{invocation}}.ConfigureAwait(false);
-                """);
-        }
-
-        return string.Join("\n            else ", cases);
-    }
-
-    /// <summary>
-    /// Builds the handler dispatch switch cases for aggregated methods with filtering.
-    /// </summary>
-    private string BuildHandlerDispatchCases(
-        FacadeInterfaceInfo facadeInfo,
-        AggregatedMethodGroup methodGroup,
-        bool isVoid = false,
-        bool isAsync = false)
-    {
-        var cases = new List<string>();
-
-        foreach (var method in methodGroup.Methods)
-        {
-            var containingType = method.MethodSymbol.ContainingType
-                .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method).ToFullString();
-
-            if (isAsync && !isVoid)
-            {
-                // Async with result - not used in this context, handled separately
-                continue;
-            }
-            else if (isAsync)
-            {
-                // Async void
-                cases.Add(
-                    $$"""
-                    if (handler.TargetType == typeof({{containingType}}))
-                                    await {{invocation}}.ConfigureAwait(false);
-                    """);
-            }
-            else if (!isVoid)
-            {
-                // Sync with result - not used in this context, handled separately
-                continue;
-            }
-            else
-            {
-                // Sync void
-                cases.Add(
-                    $$"""
-                    if (handler.TargetType == typeof({{containingType}}))
-                                    {{invocation}};
-                    """);
-            }
-        }
-
-        return string.Join("\n                else ", cases);
     }
 
     /// <summary>
@@ -672,10 +591,10 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
     private static string GetMethodName(CandidateMethodInfo methodInfo)
     {
         var methodSymbol = methodInfo.MethodSymbol;
-        
+
         if (!methodSymbol.IsGenericMethod)
             return methodSymbol.Name;
-        
+
         var typeArgs = string.Join(", ", methodSymbol.TypeParameters.Select(tp => tp.Name));
         return $"{methodSymbol.Name}<{typeArgs}>";
     }

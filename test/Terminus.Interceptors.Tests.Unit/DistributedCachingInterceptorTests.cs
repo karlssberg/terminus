@@ -24,15 +24,15 @@ public class DistributedCachingInterceptorTests
         var method = typeof(ISampleFacade).GetMethod(nameof(ISampleFacade.GetData))!;
         var attribute = new SampleAttribute();
         var properties = new Dictionary<string, object?>();
-        var handlers = new FacadeHandlerDescriptor[]
+        var handlers = new FacadeAsyncHandlerDescriptor<TestData>[]
         {
-            new(typeof(SampleHandler), attribute, isStatic: false)
+            new(typeof(SampleHandler), attribute, isStatic: false, () => new ValueTask<TestData>(new TestData()))
         };
 
         _context = new FacadeInvocationContext(
             serviceProvider,
             method,
-            new object?[] { 42 },
+            [42],
             typeof(SampleHandler),
             attribute,
             properties,
@@ -80,7 +80,7 @@ public class DistributedCachingInterceptorTests
             .Returns(cachedBytes);
 
         // Act
-        var result = await _sut.InterceptAsync<TestData>(_context, () =>
+        var result = await _sut.InterceptAsync<TestData>(_context, _ =>
             throw new InvalidOperationException("Should not be called"));
 
         // Assert
@@ -99,7 +99,7 @@ public class DistributedCachingInterceptorTests
             .Returns((byte[]?)null);
 
         // Act
-        var result = await _sut.InterceptAsync<TestData>(_context, () =>
+        var result = await _sut.InterceptAsync<TestData?>(_context, _ =>
             new ValueTask<TestData?>(expectedResult));
 
         // Assert
@@ -122,7 +122,7 @@ public class DistributedCachingInterceptorTests
         var wasCalled = false;
 
         // Act
-        await _sut.InterceptAsync<object>(voidContext, () =>
+        await _sut.InterceptAsync<object?>(voidContext, _ =>
         {
             wasCalled = true;
             return new ValueTask<object?>(result: null);
@@ -141,7 +141,7 @@ public class DistributedCachingInterceptorTests
         var wasCalled = false;
 
         // Act
-        await _sut.InterceptAsync<object>(taskContext, () =>
+        await _sut.InterceptAsync<object?>(taskContext, _ =>
         {
             wasCalled = true;
             return new ValueTask<object?>(result: null);
@@ -161,7 +161,7 @@ public class DistributedCachingInterceptorTests
             .Returns((byte[]?)null);
 
         // Act
-        await _sut.InterceptAsync<TestData>(_context, () =>
+        await _sut.InterceptAsync<TestData?>(_context, _ =>
             new ValueTask<TestData?>(new TestData { Id = 1, Name = "test" }));
 
         // Assert
@@ -182,7 +182,7 @@ public class DistributedCachingInterceptorTests
         var wasCalled = false;
 
         // Act
-        _sut.Intercept<object>(voidContext, () =>
+        _sut.Intercept<object?>(voidContext, _ =>
         {
             wasCalled = true;
             return null;
@@ -200,7 +200,7 @@ public class DistributedCachingInterceptorTests
         var expected = "test result";
 
         // Act - distributed cache doesn't support sync caching
-        var result = _sut.Intercept<string>(resultContext, () => expected);
+        var result = _sut.Intercept<string>(resultContext, _ => expected);
 
         // Assert
         result.Should().Be(expected);
@@ -216,15 +216,15 @@ public class DistributedCachingInterceptorTests
         var method = typeof(ISampleFacade).GetMethod(nameof(ISampleFacade.GetData))!;
         var attribute = new SampleAttribute();
         var properties = new Dictionary<string, object?>();
-        var handlers = new FacadeHandlerDescriptor[]
+        var handlers = new FacadeVoidHandlerDescriptor[]
         {
-            new(typeof(SampleHandler), attribute, isStatic: false)
+            new(typeof(SampleHandler), attribute, isStatic: false, () => { })
         };
 
         return new FacadeInvocationContext(
             serviceProvider,
             method,
-            new object?[] { 1 },
+            [1],
             typeof(SampleHandler),
             attribute,
             properties,

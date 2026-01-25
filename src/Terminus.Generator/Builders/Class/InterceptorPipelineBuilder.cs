@@ -9,13 +9,39 @@ namespace Terminus.Generator.Builders.Class;
 internal static class InterceptorPipelineBuilder
 {
     /// <summary>
-    /// Builds the synchronous interceptor pipeline method.
+    /// Builds the synchronous void interceptor pipeline method.
+    /// </summary>
+    public static MemberDeclarationSyntax BuildSyncVoidPipelineMethod()
+    {
+        return ParseMemberDeclaration(
+            """
+            private void ExecuteWithVoidInterceptors(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeVoidInvocationDelegate target)
+            {
+                var index = 0;
+                global::Terminus.FacadeVoidInvocationDelegate BuildPipeline()
+                {
+                    if (index >= _interceptors.Length)
+                        return target;
+                    var currentIndex = index++;
+                    var next = BuildPipeline();
+                    if (_interceptors[currentIndex] is global::Terminus.ISyncVoidFacadeInterceptor syncVoid)
+                        return handlers => syncVoid.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
+                    return next;
+                }
+
+                BuildPipeline()(null);
+            }
+            """)!;
+    }
+
+    /// <summary>
+    /// Builds the synchronous result interceptor pipeline method.
     /// </summary>
     public static MemberDeclarationSyntax BuildSyncPipelineMethod()
     {
         return ParseMemberDeclaration(
             """
-            private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+            private TResult ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
             {
                 var index = 0;
                 global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
@@ -25,23 +51,49 @@ internal static class InterceptorPipelineBuilder
                     var currentIndex = index++;
                     var next = BuildPipeline();
                     if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                        return () => sync.Intercept(context, next);
+                        return handlers => sync.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                     return next;
                 }
 
-                return BuildPipeline()();
+                return BuildPipeline()(null);
             }
             """)!;
     }
 
     /// <summary>
-    /// Builds the asynchronous interceptor pipeline method.
+    /// Builds the asynchronous void interceptor pipeline method.
+    /// </summary>
+    public static MemberDeclarationSyntax BuildAsyncVoidPipelineMethod()
+    {
+        return ParseMemberDeclaration(
+            """
+            private async global::System.Threading.Tasks.Task ExecuteWithAsyncVoidInterceptors(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncVoidInvocationDelegate target)
+            {
+                var index = 0;
+                global::Terminus.FacadeAsyncVoidInvocationDelegate BuildPipeline()
+                {
+                    if (index >= _interceptors.Length)
+                        return target;
+                    var currentIndex = index++;
+                    var next = BuildPipeline();
+                    if (_interceptors[currentIndex] is global::Terminus.IAsyncVoidFacadeInterceptor asyncVoid)
+                        return handlers => asyncVoid.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
+                    return next;
+                }
+
+                await BuildPipeline()(null).ConfigureAwait(false);
+            }
+            """)!;
+    }
+
+    /// <summary>
+    /// Builds the asynchronous result interceptor pipeline method.
     /// </summary>
     public static MemberDeclarationSyntax BuildAsyncPipelineMethod()
     {
         return ParseMemberDeclaration(
             """
-            private async global::System.Threading.Tasks.ValueTask<TResult?> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
+            private async global::System.Threading.Tasks.ValueTask<TResult> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
             {
                 var index = 0;
                 global::Terminus.FacadeAsyncInvocationDelegate<TResult> BuildPipeline()
@@ -51,11 +103,11 @@ internal static class InterceptorPipelineBuilder
                     var currentIndex = index++;
                     var next = BuildPipeline();
                     if (_interceptors[currentIndex] is global::Terminus.IAsyncFacadeInterceptor async)
-                        return () => async.InterceptAsync(context, next);
+                        return handlers => async.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
                     return next;
                 }
 
-                return await BuildPipeline()().ConfigureAwait(false);
+                return await BuildPipeline()(null).ConfigureAwait(false);
             }
             """)!;
     }
@@ -77,11 +129,11 @@ internal static class InterceptorPipelineBuilder
                     var currentIndex = index++;
                     var next = BuildPipeline();
                     if (_interceptors[currentIndex] is global::Terminus.IStreamFacadeInterceptor stream)
-                        return () => stream.InterceptStream(context, next);
+                        return handlers => stream.InterceptStream(context, nextHandlers => next(nextHandlers ?? handlers));
                     return next;
                 }
 
-                return BuildPipeline()();
+                return BuildPipeline()(null);
             }
             """)!;
     }

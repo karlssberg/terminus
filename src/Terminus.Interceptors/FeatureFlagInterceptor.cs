@@ -14,41 +14,110 @@ namespace Terminus.Interceptors;
 /// If the feature is disabled, a <see cref="FeatureDisabledException"/> is thrown.
 /// The custom attribute must have a property or field that can be used to identify the feature name.
 /// </para>
+/// <para>
+/// For aggregated methods, disabled handlers are filtered out via the handlers parameter
+/// passed to the <c>next</c> delegate.
+/// </para>
 /// </remarks>
-public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : FacadeInterceptor, IAggregatableInterceptor
+public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : FacadeInterceptor
 {
     private readonly IFeatureFlagService _featureFlagService = featureFlagService ?? throw new ArgumentNullException(nameof(featureFlagService));
 
     /// <summary>
-    /// Intercepts synchronous facade method invocations (void or result methods).
+    /// Intercepts synchronous void facade method invocations.
     /// </summary>
-    public override TResult? Intercept<TResult>(
+    public override void Intercept(
         FacadeInvocationContext context,
-        FacadeInvocationDelegate<TResult> next) where TResult : default
+        FacadeVoidInvocationDelegate next)
     {
-        var featureName = ExtractFeatureName(context);
+        if (context.IsAggregated)
+        {
+            // Filter handlers and pass to next in chain
+            var filteredHandlers = FilterHandlers(context).ToList();
+            next(filteredHandlers);
+            return;
+        }
+
+        // Single handler - throw if disabled
+        var featureName = ExtractFeatureName(context.MethodAttribute);
         if (featureName != null && !_featureFlagService.IsEnabled(featureName))
         {
             throw new FeatureDisabledException(featureName);
         }
+        next();
+    }
 
+    /// <summary>
+    /// Intercepts synchronous result-returning facade method invocations.
+    /// </summary>
+    public override TResult Intercept<TResult>(
+        FacadeInvocationContext context,
+        FacadeInvocationDelegate<TResult> next)
+    {
+        if (context.IsAggregated)
+        {
+            // Filter handlers and pass to next in chain
+            var filteredHandlers = FilterHandlers(context).ToList();
+            return next(filteredHandlers);
+        }
+
+        // Single handler - throw if disabled
+        var featureName = ExtractFeatureName(context.MethodAttribute);
+        if (featureName != null && !_featureFlagService.IsEnabled(featureName))
+        {
+            throw new FeatureDisabledException(featureName);
+        }
         return next();
     }
 
     /// <summary>
-    /// Intercepts asynchronous facade method invocations (Task or Task&lt;T&gt; methods).
+    /// Intercepts asynchronous void facade method invocations (Task or ValueTask methods).
     /// </summary>
-    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+    public override async Task InterceptAsync(
         FacadeInvocationContext context,
-        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+        FacadeAsyncVoidInvocationDelegate next)
     {
-        var featureName = ExtractFeatureName(context);
-        if (featureName != null && !await _featureFlagService.IsEnabledAsync(featureName))
+        if (context.IsAggregated)
+        {
+            // Filter handlers and pass to next in chain
+            var filteredHandlers = await FilterHandlersAsync(context).ConfigureAwait(false);
+            await next(filteredHandlers).ConfigureAwait(false);
+            
+            return;
+        }
+
+        // Single handler - throw if disabled
+        var featureName = ExtractFeatureName(context.MethodAttribute);
+        if (featureName != null && !await _featureFlagService.IsEnabledAsync(featureName).ConfigureAwait(false))
         {
             throw new FeatureDisabledException(featureName);
         }
+        
+        await next().ConfigureAwait(false);
+    }
 
-        return await next();
+    /// <summary>
+    /// Intercepts asynchronous result-returning facade method invocations (Task&lt;T&gt; or ValueTask&lt;T&gt; methods).
+    /// </summary>
+    public override async ValueTask<TResult> InterceptAsync<TResult>(
+        FacadeInvocationContext context,
+        FacadeAsyncInvocationDelegate<TResult> next)
+    {
+        if (context.IsAggregated)
+        {
+            // Filter handlers and pass to next in chain
+            var filteredHandlers = await FilterHandlersAsync(context).ConfigureAwait(false);
+            return await next(filteredHandlers).ConfigureAwait(false);
+        }
+
+        // Single handler - throw if disabled
+        var featureName = ExtractFeatureName(context.MethodAttribute);
+        if (featureName != null && !await _featureFlagService.IsEnabledAsync(featureName).ConfigureAwait(false))
+        {
+            throw new FeatureDisabledException(featureName);
+        }
+        
+        return await next().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -58,12 +127,23 @@ public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : Fa
         FacadeInvocationContext context,
         FacadeStreamInvocationDelegate<TItem> next)
     {
-        var featureName = ExtractFeatureName(context);
-        if (featureName != null && !await _featureFlagService.IsEnabledAsync(featureName))
+        if (context.IsAggregated)
+        {
+            // Filter handlers and pass to next in chain
+            var filteredHandlers = await FilterHandlersAsync(context).ConfigureAwait(false);
+            await foreach (var item in next(filteredHandlers))
+            {
+                yield return item;
+            }
+            yield break;
+        }
+
+        // Single handler - throw if disabled
+        var featureName = ExtractFeatureName(context.MethodAttribute);
+        if (featureName != null && !await _featureFlagService.IsEnabledAsync(featureName).ConfigureAwait(false))
         {
             throw new FeatureDisabledException(featureName);
         }
-
         await foreach (var item in next())
         {
             yield return item;
@@ -71,40 +151,11 @@ public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : Fa
     }
 
     /// <summary>
-    /// Filters handlers based on feature flag status.
+    /// Filters handlers based on feature flag status (synchronous version).
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Behavior depends on whether the method is aggregated:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description><b>Not Aggregated (single handler)</b>: Checks the feature flag and throws
-    /// <see cref="FeatureDisabledException"/> if the feature is disabled.</description></item>
-    /// <item><description><b>Aggregated (multiple handlers)</b>: Filters and returns only handlers
-    /// with enabled feature flags (or no feature flag).</description></item>
-    /// </list>
-    /// </remarks>
-    public IEnumerable<FacadeHandlerDescriptor> FilterHandlers(
-        FacadeInvocationContext context,
-        IReadOnlyList<FacadeHandlerDescriptor> handlers)
+    private IEnumerable<FacadeHandlerDescriptor> FilterHandlers(FacadeInvocationContext context)
     {
-        if (!context.IsAggregated)
-        {
-            // Single handler mode - throw if disabled
-            var handler = handlers[0];
-            var featureName = ExtractFeatureName(handler.MethodAttribute);
-
-            if (featureName != null && !_featureFlagService.IsEnabled(featureName))
-            {
-                throw new FeatureDisabledException(featureName);
-            }
-
-            yield return handler;
-            yield break;
-        }
-
-        // Aggregated mode - filter to enabled handlers only
-        foreach (var handler in handlers)
+        foreach (var handler in context.Handlers)
         {
             var featureName = ExtractFeatureName(handler.MethodAttribute);
 
@@ -121,6 +172,34 @@ public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : Fa
                 yield return handler;
             }
         }
+    }
+
+    /// <summary>
+    /// Filters handlers based on feature flag status (asynchronous version).
+    /// </summary>
+    private async Task<List<FacadeHandlerDescriptor>> FilterHandlersAsync(FacadeInvocationContext context)
+    {
+        var result = new List<FacadeHandlerDescriptor>();
+
+        foreach (var handler in context.Handlers)
+        {
+            var featureName = ExtractFeatureName(handler.MethodAttribute);
+
+            // If no feature name found, include the handler
+            if (featureName == null)
+            {
+                result.Add(handler);
+                continue;
+            }
+
+            // Include handler only if feature is enabled
+            if (await _featureFlagService.IsEnabledAsync(featureName).ConfigureAwait(false))
+            {
+                result.Add(handler);
+            }
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -146,13 +225,5 @@ public class FeatureFlagInterceptor(IFeatureFlagService featureFlagService) : Fa
         }
 
         return null;
-    }
-
-    /// <summary>
-    /// Extracts the feature name from the invocation context's method attribute.
-    /// </summary>
-    private static string? ExtractFeatureName(FacadeInvocationContext context)
-    {
-        return ExtractFeatureName(context.MethodAttribute);
     }
 }

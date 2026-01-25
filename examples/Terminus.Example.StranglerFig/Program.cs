@@ -40,7 +40,7 @@ Console.WriteLine($"Status: {facade.GetStatus(456)}");
 
 Console.WriteLine("\nMigration in progress: Facade provides a stable contract while implementations shift.");
 
-// --- Infrastructure ---
+/***********************************************************/
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
 public class MyStranglerTargetAttribute : Attribute;

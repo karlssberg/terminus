@@ -73,47 +73,29 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     void global::Demo.IHandlers.DeleteUser(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeVoidHandlerDescriptor[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeVoidHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).DeleteUser(id))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("DeleteUser")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Void, handlers, isAggregated: false);
-                        ExecuteWithInterceptors<object>(context, () =>
-                        {
-                            global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).DeleteUser(id);
-                            return default;
-                        });
+                        ExecuteWithVoidInterceptors(context, handlers => ((global::Terminus.FacadeVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
-                    private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+                    private void ExecuteWithVoidInterceptors(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeVoidInvocationDelegate target)
                     {
                         var index = 0;
-                        global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
+                        global::Terminus.FacadeVoidInvocationDelegate BuildPipeline()
                         {
                             if (index >= _interceptors.Length)
                                 return target;
                             var currentIndex = index++;
                             var next = BuildPipeline();
-                            if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                                return () => sync.Intercept(context, next);
+                            if (_interceptors[currentIndex] is global::Terminus.ISyncVoidFacadeInterceptor syncVoid)
+                                return handlers => syncVoid.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        BuildPipeline()(null);
                     }
                 }
             }
@@ -195,15 +177,15 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     string global::Demo.IHandlers.GetUser(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeSyncHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeSyncHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("GetUser")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Result, handlers, isAggregated: false);
-                        return ExecuteWithInterceptors<string>(context, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))!;
+                        return ExecuteWithInterceptors<string>(context, handlers => ((global::Terminus.FacadeSyncHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
-                    private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+                    private TResult ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
                     {
                         var index = 0;
                         global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
@@ -213,25 +195,11 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                                return () => sync.Intercept(context, next);
+                                return handlers => sync.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        return BuildPipeline()(null);
                     }
                 }
             }
@@ -315,47 +283,29 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     async global::System.Threading.Tasks.Task global::Demo.IHandlers.ProcessAsync()
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeAsyncVoidHandlerDescriptor[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeAsyncVoidHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, async () => await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).ProcessAsync().ConfigureAwait(false))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("ProcessAsync")!, new object? [] { }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Task, handlers, isAggregated: false);
-                        await ExecuteWithInterceptorsAsync<object>(context, async () =>
-                        {
-                            await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).ProcessAsync().ConfigureAwait(false);
-                            return default;
-                        }).ConfigureAwait(false);
+                        await ExecuteWithAsyncVoidInterceptors(context, async handlers => await ((global::Terminus.FacadeAsyncVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).InvokeAsync().ConfigureAwait(false)).ConfigureAwait(false);
                     }
 
-                    private async global::System.Threading.Tasks.ValueTask<TResult?> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
+                    private async global::System.Threading.Tasks.Task ExecuteWithAsyncVoidInterceptors(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncVoidInvocationDelegate target)
                     {
                         var index = 0;
-                        global::Terminus.FacadeAsyncInvocationDelegate<TResult> BuildPipeline()
+                        global::Terminus.FacadeAsyncVoidInvocationDelegate BuildPipeline()
                         {
                             if (index >= _interceptors.Length)
                                 return target;
                             var currentIndex = index++;
                             var next = BuildPipeline();
-                            if (_interceptors[currentIndex] is global::Terminus.IAsyncFacadeInterceptor async)
-                                return () => async.InterceptAsync(context, next);
+                            if (_interceptors[currentIndex] is global::Terminus.IAsyncVoidFacadeInterceptor asyncVoid)
+                                return handlers => asyncVoid.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return await BuildPipeline()().ConfigureAwait(false);
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        await BuildPipeline()(null).ConfigureAwait(false);
                     }
                 }
             }
@@ -440,15 +390,15 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     async global::System.Threading.Tasks.Task<string> global::Demo.IHandlers.GetUserAsync(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeAsyncHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeAsyncHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, async () => await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("GetUserAsync")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.TaskWithResult, handlers, isAggregated: false);
-                        return (await ExecuteWithInterceptorsAsync<string>(context, async () => await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false)).ConfigureAwait(false))!;
+                        return await ExecuteWithInterceptorsAsync<string>(context, async handlers => await ((global::Terminus.FacadeAsyncHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).InvokeAsync()).ConfigureAwait(false);
                     }
 
-                    private async global::System.Threading.Tasks.ValueTask<TResult?> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
+                    private async global::System.Threading.Tasks.ValueTask<TResult> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
                     {
                         var index = 0;
                         global::Terminus.FacadeAsyncInvocationDelegate<TResult> BuildPipeline()
@@ -458,25 +408,11 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.IAsyncFacadeInterceptor async)
-                                return () => async.InterceptAsync(context, next);
+                                return handlers => async.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return await BuildPipeline()().ConfigureAwait(false);
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        return await BuildPipeline()(null).ConfigureAwait(false);
                     }
                 }
             }
@@ -561,15 +497,15 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     string global::Demo.IHandlers.GetUser(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeSyncHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeSyncHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("GetUser")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Result, handlers, isAggregated: false);
-                        return ExecuteWithInterceptors<string>(context, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))!;
+                        return ExecuteWithInterceptors<string>(context, handlers => ((global::Terminus.FacadeSyncHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
-                    private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+                    private TResult ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
                     {
                         var index = 0;
                         global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
@@ -579,25 +515,11 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                                return () => sync.Intercept(context, next);
+                                return handlers => sync.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        return BuildPipeline()(null);
                     }
                 }
             }
@@ -754,47 +676,29 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     void global::Demo.IHandlers.Process(string data)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeVoidHandlerDescriptor[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.StaticHandlers), new global::Demo.HandlerAttribute(), isStatic: true)
+                            new global::Terminus.FacadeVoidHandlerDescriptor(typeof(global::Demo.StaticHandlers), new global::Demo.HandlerAttribute(), isStatic: true, () => global::Demo.StaticHandlers.Process(data))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("Process")!, new object? [] { data }, typeof(global::Demo.StaticHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Void, handlers, isAggregated: false);
-                        ExecuteWithInterceptors<object>(context, () =>
-                        {
-                            global::Demo.StaticHandlers.Process(data);
-                            return default;
-                        });
+                        ExecuteWithVoidInterceptors(context, handlers => ((global::Terminus.FacadeVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
-                    private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+                    private void ExecuteWithVoidInterceptors(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeVoidInvocationDelegate target)
                     {
                         var index = 0;
-                        global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
+                        global::Terminus.FacadeVoidInvocationDelegate BuildPipeline()
                         {
                             if (index >= _interceptors.Length)
                                 return target;
                             var currentIndex = index++;
                             var next = BuildPipeline();
-                            if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                                return () => sync.Intercept(context, next);
+                            if (_interceptors[currentIndex] is global::Terminus.ISyncVoidFacadeInterceptor syncVoid)
+                                return handlers => syncVoid.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        BuildPipeline()(null);
                     }
                 }
             }
@@ -879,12 +783,12 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     global::System.Collections.Generic.IAsyncEnumerable<string> global::Demo.IHandlers.StreamUsersAsync()
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeStreamHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeStreamHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).StreamUsersAsync())
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("StreamUsersAsync")!, new object? [] { }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.AsyncEnumerable, handlers, isAggregated: false);
-                        return ExecuteWithInterceptorsStream<string>(context, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).StreamUsersAsync());
+                        return ExecuteWithInterceptorsStream<string>(context, handlers => ((global::Terminus.FacadeStreamHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
                     private global::System.Collections.Generic.IAsyncEnumerable<TItem> ExecuteWithInterceptorsStream<TItem>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeStreamInvocationDelegate<TItem> target)
@@ -897,25 +801,11 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.IStreamFacadeInterceptor stream)
-                                return () => stream.InterceptStream(context, next);
+                                return handlers => stream.InterceptStream(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        return BuildPipeline()(null);
                     }
                 }
             }
@@ -1011,25 +901,25 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
 
                     string global::Demo.IHandlers.GetUser(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeSyncHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeSyncHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("GetUser")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.Result, handlers, isAggregated: false);
-                        return ExecuteWithInterceptors<string>(context, () => global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUser(id))!;
+                        return ExecuteWithInterceptors<string>(context, handlers => ((global::Terminus.FacadeSyncHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).Invoke());
                     }
 
                     async global::System.Threading.Tasks.Task<string> global::Demo.IHandlers.GetUserAsync(int id)
                     {
-                        var handlers = new global::Terminus.FacadeHandlerDescriptor[]
+                        var handlers = new global::Terminus.FacadeAsyncHandlerDescriptor<string>[]
                         {
-                            new global::Terminus.FacadeHandlerDescriptor(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false)
+                            new global::Terminus.FacadeAsyncHandlerDescriptor<string>(typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), isStatic: false, async () => await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false))
                         };
                         var context = new global::Terminus.FacadeInvocationContext(_serviceProvider, typeof(global::Demo.IHandlers).GetMethod("GetUserAsync")!, new object? [] { id }, typeof(global::Demo.UserHandlers), new global::Demo.HandlerAttribute(), new global::System.Collections.Generic.Dictionary<string, object?>(), global::Terminus.ReturnTypeKind.TaskWithResult, handlers, isAggregated: false);
-                        return (await ExecuteWithInterceptorsAsync<string>(context, async () => await global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<global::Demo.UserHandlers>(_serviceProvider).GetUserAsync(id).ConfigureAwait(false)).ConfigureAwait(false))!;
+                        return await ExecuteWithInterceptorsAsync<string>(context, async handlers => await ((global::Terminus.FacadeAsyncHandlerDescriptor<string>)(handlers ?? context.Handlers)[0]).InvokeAsync()).ConfigureAwait(false);
                     }
 
-                    private TResult? ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
+                    private TResult ExecuteWithInterceptors<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeInvocationDelegate<TResult> target)
                     {
                         var index = 0;
                         global::Terminus.FacadeInvocationDelegate<TResult> BuildPipeline()
@@ -1039,14 +929,14 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.ISyncFacadeInterceptor sync)
-                                return () => sync.Intercept(context, next);
+                                return handlers => sync.Intercept(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return BuildPipeline()();
+                        return BuildPipeline()(null);
                     }
 
-                    private async global::System.Threading.Tasks.ValueTask<TResult?> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
+                    private async global::System.Threading.Tasks.ValueTask<TResult> ExecuteWithInterceptorsAsync<TResult>(global::Terminus.FacadeInvocationContext context, global::Terminus.FacadeAsyncInvocationDelegate<TResult> target)
                     {
                         var index = 0;
                         global::Terminus.FacadeAsyncInvocationDelegate<TResult> BuildPipeline()
@@ -1056,25 +946,11 @@ public class InterceptorTests : SourceGeneratorTestBase<FacadeGenerator>
                             var currentIndex = index++;
                             var next = BuildPipeline();
                             if (_interceptors[currentIndex] is global::Terminus.IAsyncFacadeInterceptor async)
-                                return () => async.InterceptAsync(context, next);
+                                return handlers => async.InterceptAsync(context, nextHandlers => next(nextHandlers ?? handlers));
                             return next;
                         }
 
-                        return await BuildPipeline()().ConfigureAwait(false);
-                    }
-
-                    private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(global::Terminus.FacadeInvocationContext context)
-                    {
-                        global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-                        foreach (var interceptor in _interceptors)
-                        {
-                            if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                            {
-                                handlers = aggregatable.FilterHandlers(context, handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList ? readOnlyList : global::System.Linq.Enumerable.ToList(handlers));
-                            }
-                        }
-
-                        return handlers;
+                        return await BuildPipeline()(null).ConfigureAwait(false);
                     }
                 }
             }

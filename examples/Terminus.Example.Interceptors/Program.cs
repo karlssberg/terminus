@@ -110,6 +110,8 @@ combinedFacade.ProcessData("test");
 
 Console.WriteLine("\n=== Example Complete ===");
 
+/***********************************************************/
+
 // Custom attribute for logging example
 public class LoggingHandlerAttribute : Attribute;
 

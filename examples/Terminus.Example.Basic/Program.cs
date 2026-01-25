@@ -23,6 +23,8 @@ facade.SayHello("Developer");
 Console.WriteLine(facade.GetWeather());
 Console.WriteLine(facade.GetLatestNews());
 
+/***********************************************************/
+
 // Define an attribute to mark methods for inclusion in the facade.
 [AttributeUsage(AttributeTargets.Method)]
 public class FacadeMethodAttribute : Attribute;

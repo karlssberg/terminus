@@ -1,31 +1,29 @@
 namespace Terminus;
 
 /// <summary>
-/// Intercepts synchronous result-returning facade method invocations.
+/// Intercepts synchronous void facade method invocations.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Implement this interface when you need to intercept methods that return a value.
-/// For void methods, implement <see cref="ISyncVoidFacadeInterceptor"/>.
+/// Implement this interface when you need to intercept void methods specifically.
+/// For result-returning methods, implement <see cref="ISyncFacadeInterceptor"/>.
 /// </para>
 /// <para>
 /// The <paramref name="next"/> delegate accepts an optional handlers parameter for filtering.
 /// Call <c>next()</c> to pass through all handlers, or <c>next(filteredHandlers)</c> to filter.
 /// </para>
 /// </remarks>
-public interface ISyncFacadeInterceptor
+public interface ISyncVoidFacadeInterceptor
 {
     /// <summary>
-    /// Intercepts a synchronous result-returning facade method invocation.
+    /// Intercepts a synchronous void facade method invocation.
     /// </summary>
-    /// <typeparam name="TResult">The return type of the method.</typeparam>
     /// <param name="context">The invocation context containing method metadata and arguments.</param>
     /// <param name="next">
     /// Delegate to invoke the next interceptor or target method.
     /// Call with no arguments for pass-through, or with filtered handlers list.
     /// </param>
-    /// <returns>The method result.</returns>
-    TResult Intercept<TResult>(
+    void Intercept(
         FacadeInvocationContext context,
-        FacadeInvocationDelegate<TResult> next);
+        FacadeVoidInvocationDelegate next);
 }

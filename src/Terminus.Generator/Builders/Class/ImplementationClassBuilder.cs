@@ -166,55 +166,28 @@ internal static class ImplementationClassBuilder
         var allMethods = methodGroups.SelectMany(g => g.Methods).ToList();
 
         // Determine which pipeline methods are needed based on return types
-        var needsSync = allMethods.Any(m =>
-            m.ReturnTypeKind is ReturnTypeKind.Void or ReturnTypeKind.Result);
-        var needsAsync = allMethods.Any(m =>
-            m.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.ValueTask or
-            ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult);
+        var needsSyncVoid = allMethods.Any(m => m.ReturnTypeKind is ReturnTypeKind.Void);
+        var needsSyncResult = allMethods.Any(m => m.ReturnTypeKind is ReturnTypeKind.Result);
+        var needsAsyncVoid = allMethods.Any(m =>
+            m.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.ValueTask);
+        var needsAsyncResult = allMethods.Any(m =>
+            m.ReturnTypeKind is ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult);
         var needsStream = allMethods.Any(m =>
             m.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable);
 
-        if (needsSync)
+        if (needsSyncVoid)
+            yield return InterceptorPipelineBuilder.BuildSyncVoidPipelineMethod();
+
+        if (needsSyncResult)
             yield return InterceptorPipelineBuilder.BuildSyncPipelineMethod();
 
-        if (needsAsync)
+        if (needsAsyncVoid)
+            yield return InterceptorPipelineBuilder.BuildAsyncVoidPipelineMethod();
+
+        if (needsAsyncResult)
             yield return InterceptorPipelineBuilder.BuildAsyncPipelineMethod();
 
         if (needsStream)
             yield return InterceptorPipelineBuilder.BuildStreamPipelineMethod();
-
-        // Add FilterHandlers method for per-handler filtering in aggregated methods
-        yield return BuildFilterHandlersMethod();
-    }
-
-    /// <summary>
-    /// Builds the FilterHandlers helper method for per-handler filtering.
-    /// </summary>
-    private static MemberDeclarationSyntax BuildFilterHandlersMethod()
-    {
-        var methodCode =
-            """
-            private global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> FilterHandlers(
-                global::Terminus.FacadeInvocationContext context)
-            {
-                global::System.Collections.Generic.IEnumerable<global::Terminus.FacadeHandlerDescriptor> handlers = context.Handlers;
-
-                foreach (var interceptor in _interceptors)
-                {
-                    if (interceptor is global::Terminus.IAggregatableInterceptor aggregatable)
-                    {
-                        handlers = aggregatable.FilterHandlers(
-                            context,
-                            handlers is global::System.Collections.Generic.IReadOnlyList<global::Terminus.FacadeHandlerDescriptor> readOnlyList
-                                ? readOnlyList
-                                : global::System.Linq.Enumerable.ToList(handlers));
-                    }
-                }
-
-                return handlers;
-            }
-            """;
-
-        return ParseMemberDeclaration(methodCode)!;
     }
 }

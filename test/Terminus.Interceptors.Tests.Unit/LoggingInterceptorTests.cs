@@ -24,9 +24,9 @@ public class LoggingInterceptorTests
         var attribute = new SampleAttribute();
         var properties = new Dictionary<string, object?>();
 
-        var handlers = new FacadeHandlerDescriptor[]
+        var handlers = new FacadeVoidHandlerDescriptor[]
         {
-            new(typeof(SampleHandler), attribute, isStatic: false)
+            new(typeof(SampleHandler), attribute, isStatic: false, () => { })
         };
 
         _context = new FacadeInvocationContext(
@@ -65,7 +65,7 @@ public class LoggingInterceptorTests
         var wasCalled = false;
 
         // Act
-        _sut.Intercept<object>(_context, () =>
+        _sut.Intercept<object?>(_context, _ =>
         {
             wasCalled = true;
             return null;
@@ -86,7 +86,7 @@ public class LoggingInterceptorTests
     public void Intercept_LogsInvocationCompletion()
     {
         // Act
-        _sut.Intercept<object>(_context, () => null);
+        _sut.Intercept<object?>(_context, _ => null);
 
         // Assert - should log at least 2 messages (start and completion)
         _logger.ReceivedWithAnyArgs(2).Log(
@@ -104,7 +104,7 @@ public class LoggingInterceptorTests
         const string expected = "test result";
 
         // Act
-        var result = _sut.Intercept<string>(_context, () => expected);
+        var result = _sut.Intercept<string>(_context, _ => expected);
 
         // Assert
         result.Should().Be(expected);
@@ -117,7 +117,7 @@ public class LoggingInterceptorTests
         var exception = new InvalidOperationException("Test exception");
 
         // Act
-        var act = () => _sut.Intercept<object>(_context, () => throw exception);
+        var act = () => _sut.Intercept<object>(_context, _ => throw exception);
 
         // Assert
         act.Should().Throw<InvalidOperationException>().WithMessage("Test exception");
@@ -140,7 +140,7 @@ public class LoggingInterceptorTests
         var wasCalled = false;
 
         // Act
-        await _sut.InterceptAsync<object>(_context, () =>
+        await _sut.InterceptAsync<object>(_context, _ =>
         {
             wasCalled = true;
             return new ValueTask<object?>(result: null);
@@ -161,7 +161,7 @@ public class LoggingInterceptorTests
     public async Task InterceptAsync_LogsInvocationCompletion()
     {
         // Act
-        await _sut.InterceptAsync<object>(_context, () => new ValueTask<object?>(result: null));
+        await _sut.InterceptAsync<object>(_context, _ => new ValueTask<object?>(result: null));
 
         // Assert - should log at least 2 messages (start and completion)
         _logger.ReceivedWithAnyArgs(2).Log(
@@ -179,7 +179,7 @@ public class LoggingInterceptorTests
         const string expected = "async test result";
 
         // Act
-        var result = await _sut.InterceptAsync<string>(_context, () => new ValueTask<string?>(expected));
+        var result = await _sut.InterceptAsync<string>(_context, _ => new ValueTask<string?>(expected));
 
         // Assert
         result.Should().Be(expected);
@@ -192,7 +192,7 @@ public class LoggingInterceptorTests
         var exception = new InvalidOperationException("Async test exception");
 
         // Act
-        var act = async () => await _sut.InterceptAsync<object>(_context, () => throw exception);
+        var act = async () => await _sut.InterceptAsync<object>(_context, _ => throw exception);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Async test exception");
@@ -215,7 +215,7 @@ public class LoggingInterceptorTests
         var wasCalled = false;
 
         // Act
-        await foreach (var _ in _sut.InterceptStream<int>(_context, () =>
+        await foreach (var _ in _sut.InterceptStream<int>(_context, handlers =>
         {
             wasCalled = true;
             return GetEmptyStream();
@@ -243,7 +243,7 @@ public class LoggingInterceptorTests
         var items = new List<int>();
 
         // Act
-        await foreach (var item in _sut.InterceptStream<int>(_context, () => GetStream(expected)))
+        await foreach (var item in _sut.InterceptStream<int>(_context, _ => GetStream(expected)))
         {
             items.Add(item);
         }
@@ -256,7 +256,7 @@ public class LoggingInterceptorTests
     public async Task InterceptStream_LogsInvocationCompletion()
     {
         // Act
-        await foreach (var _ in _sut.InterceptStream<int>(_context, () => GetEmptyStream()))
+        await foreach (var _ in _sut.InterceptStream<int>(_context, _ => GetEmptyStream()))
         {
             // Consume the stream
         }
@@ -279,7 +279,7 @@ public class LoggingInterceptorTests
         // Act
         var act = async () =>
         {
-            await foreach (var _ in _sut.InterceptStream<int>(_context, () => GetThrowingStream(exception)))
+            await foreach (var _ in _sut.InterceptStream<int>(_context, _ => GetThrowingStream(exception)))
             {
                 // Consume the stream
             }
