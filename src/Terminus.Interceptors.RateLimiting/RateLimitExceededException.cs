@@ -1,4 +1,4 @@
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.RateLimiting;
 
 /// <summary>
 /// Exception thrown when a facade method invocation exceeds the configured rate limit.

@@ -1,4 +1,4 @@
-namespace Terminus.Interceptors.Abstractions;
+namespace Terminus.Interceptors.Metrics;
 
 /// <summary>
 /// Provides metrics recording capabilities for tracking facade method invocations.

@@ -1,4 +1,4 @@
-namespace Terminus.Interceptors.Abstractions;
+namespace Terminus.Interceptors.RateLimiting;
 
 /// <summary>
 /// Provides rate limiting capabilities for controlling the frequency of method invocations.

@@ -1,7 +1,6 @@
 using System.Diagnostics;
-using Terminus.Interceptors.Abstractions;
 
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.Metrics;
 
 /// <summary>
 /// Intercepts facade method invocations to record execution metrics including timing and success/failure counts.

@@ -1,5 +1,4 @@
 using NSubstitute;
-using Terminus.Interceptors.Abstractions;
 using Xunit;
 
 namespace Terminus.Interceptors.Tests.Unit;

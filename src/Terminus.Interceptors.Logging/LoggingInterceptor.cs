@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.Logging;
 
 /// <summary>
 /// Intercepts facade method invocations to log invocation start, completion, and errors.

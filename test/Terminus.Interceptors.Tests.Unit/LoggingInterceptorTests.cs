@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using Terminus.Interceptors.Logging;
 using Xunit;
 
 namespace Terminus.Interceptors.Tests.Unit;

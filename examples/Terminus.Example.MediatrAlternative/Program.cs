@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Terminus;
-using static Terminus.FacadeAggregationMode;
+using Terminus.Example.MediatrAlternative;
 
 // --- MediatR Alternative Demo ---
 // This example shows how Terminus can be used to create a strongly-typed "Mediator" or "Bus".
@@ -19,7 +18,7 @@ services.AddTerminusFacades();
 var serviceProvider = services.BuildServiceProvider();
 
 // 3. Resolve the Mediator (our strongly-typed alternative to MediatR)
-var mediator = serviceProvider.GetRequiredService<IMyMediator>();
+var mediator = serviceProvider.GetRequiredService<Terminus.Example.MediatrAlternative.IMyMediator>();
 
 Console.WriteLine("--- Strongly Typed Mediator (MediatR Alternative) ---");
 
@@ -33,58 +32,61 @@ Console.WriteLine("\n[Client] Calling GetWeatherQuery...");
 var weather = mediator.Send(new GetWeatherQuery("London"));
 Console.WriteLine($"Result: {weather}");
 
-/***********************************************************/
+namespace Terminus.Example.MediatrAlternative
+{
+    /***********************************************************/
 
 // Define an attribute to mark handler methods.
-[AttributeUsage(AttributeTargets.Method)]
-public class MyHandlerAttribute : Attribute;
+    [AttributeUsage(AttributeTargets.Method)]
+    public class MyHandlerAttribute : Attribute;
 
 // The facade interface represents our "Mediator".
 // We use 'CommandName' to rename methods that return 'void' (Commands) to 'Publish'.
-[FacadeOf<MyHandlerAttribute>(
-    CommandName = "Publish",
-    AsyncCommandName = "PublishAsync",
-    QueryName = "Send",
-    AsyncQueryName = "SendAsync",
-    AsyncStreamName = "StreamAsync",
-    AggregationMode = Commands | AsyncCommands)]
-public partial interface IMyMediator;
+    [FacadeOf<MyHandlerAttribute>(
+        CommandName = "Publish",
+        AsyncCommandName = "PublishAsync",
+        QueryName = "Send",
+        AsyncQueryName = "SendAsync",
+        AsyncStreamName = "StreamAsync",
+        AggregationMode = FacadeAggregationMode.Commands | FacadeAggregationMode.AsyncCommands)]
+    public partial interface IMyMediator;
 
 // --- Commands & Queries ---
 
-public sealed record CreateUserCommand(string Name, string Email);
-public sealed record GetWeatherQuery(string City);
+    public sealed record CreateUserCommand(string Name, string Email);
+    public sealed record GetWeatherQuery(string City);
 
 // --- Handlers ---
 
-public class CreateUserHandler
-{
-    [MyHandler]
-    public void Handle(CreateUserCommand command)
+    public class CreateUserHandler
     {
-        Console.WriteLine($"[Handler] User '{command.Name}' created with email '{command.Email}'.");
-    }
+        [MyHandler]
+        public void Handle(CreateUserCommand command)
+        {
+            Console.WriteLine($"[Handler] User '{command.Name}' created with email '{command.Email}'.");
+        }
     
-    [MyHandler]
-    public async Task HandleAsync(CreateUserCommand command)
-    {
-        await Task.Delay(500); // Simulate async work
-        Console.WriteLine($"[Handler] (Async) User '{command.Name}' created with email '{command.Email}'.");
-    }
-}
-
-public class GetWeatherHandler
-{
-    [MyHandler]
-    public string Handle(GetWeatherQuery query)
-    {
-        return $"The weather in {query.City} is cloudy.";
+        [MyHandler]
+        public async Task HandleAsync(CreateUserCommand command)
+        {
+            await Task.Delay(500); // Simulate async work
+            Console.WriteLine($"[Handler] (Async) User '{command.Name}' created with email '{command.Email}'.");
+        }
     }
 
-    [MyHandler]
-    public async Task<string> HandleAsync(GetWeatherQuery query)
+    public class GetWeatherHandler
     {
-        await Task.Delay(300); // Simulate async work
-        return $"The weather in {query.City} is sunny.";
+        [MyHandler]
+        public string Handle(GetWeatherQuery query)
+        {
+            return $"The weather in {query.City} is cloudy.";
+        }
+
+        [MyHandler]
+        public async Task<string> HandleAsync(GetWeatherQuery query)
+        {
+            await Task.Delay(300); // Simulate async work
+            return $"The weather in {query.City} is sunny.";
+        }
     }
 }

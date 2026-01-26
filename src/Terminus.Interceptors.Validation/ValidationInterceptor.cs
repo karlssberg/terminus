@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.Validation;
 
 /// <summary>
 /// Intercepts facade method invocations to validate method parameters using DataAnnotations.

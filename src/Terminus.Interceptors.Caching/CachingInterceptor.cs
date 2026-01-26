@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.Caching;
 
 /// <summary>
 /// Intercepts facade method invocations to cache results for query methods (non-void return types) using in-memory caching.
@@ -39,7 +39,7 @@ public class CachingInterceptor : FacadeInterceptor
     /// Intercepts synchronous facade method invocations (void or result methods).
     /// Caches results for query methods (non-void return types).
     /// </summary>
-    public override TResult? Intercept<TResult>(
+    public override TResult Intercept<TResult>(
         FacadeInvocationContext context,
         FacadeInvocationDelegate<TResult> next) where TResult : default
     {
@@ -51,10 +51,10 @@ public class CachingInterceptor : FacadeInterceptor
 
         var cacheKey = GenerateCacheKey(context);
 
-        if (_memoryCache.TryGetValue(cacheKey, out var cachedResult))
+        if (_memoryCache.TryGetValue(cacheKey, out var cachedResult) && cachedResult is TResult value)
         {
             context.Properties["CacheHit"] = true;
-            return (TResult?)cachedResult;
+            return value;
         }
 
         var result = next();
@@ -67,7 +67,7 @@ public class CachingInterceptor : FacadeInterceptor
     /// Intercepts asynchronous facade method invocations (Task or Task&lt;T&gt; methods).
     /// Caches results for async query methods (Task&lt;T&gt; return types).
     /// </summary>
-    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+    public override async ValueTask<TResult> InterceptAsync<TResult>(
         FacadeInvocationContext context,
         FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
     {
@@ -79,10 +79,10 @@ public class CachingInterceptor : FacadeInterceptor
 
         var cacheKey = GenerateCacheKey(context);
 
-        if (_memoryCache.TryGetValue(cacheKey, out var cachedResult))
+        if (_memoryCache.TryGetValue(cacheKey, out var cachedResult) && cachedResult is TResult value)
         {
             context.Properties["CacheHit"] = true;
-            return (TResult?)cachedResult;
+            return value;
         }
 
         var result = await next();
@@ -99,7 +99,7 @@ public class CachingInterceptor : FacadeInterceptor
     /// </summary>
     private static string GenerateCacheKey(FacadeInvocationContext context)
     {
-        var args = context.Arguments ?? [];
+        var args = context.Arguments;
         var argString = args.Length == 0
             ? string.Empty
             : string.Join(",", args.Select(a => a?.ToString() ?? "null"));

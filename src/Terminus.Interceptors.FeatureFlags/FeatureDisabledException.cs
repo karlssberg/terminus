@@ -1,4 +1,4 @@
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.FeatureFlags;
 
 /// <summary>
 /// Exception thrown when a facade method is invoked but the associated feature is disabled.

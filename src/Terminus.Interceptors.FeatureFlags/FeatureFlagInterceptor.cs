@@ -1,6 +1,4 @@
-using Terminus.Interceptors.Abstractions;
-
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.FeatureFlags;
 
 /// <summary>
 /// Intercepts facade method invocations to check feature flags before execution.

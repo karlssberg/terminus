@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace Terminus.Interceptors;
+namespace Terminus.Interceptors.Caching;
 
 /// <summary>
 /// Intercepts facade method invocations to cache results for async query methods using distributed caching.
@@ -41,7 +41,7 @@ public class DistributedCachingInterceptor : FacadeInterceptor
     /// Intercepts synchronous facade method invocations.
     /// Distributed caching does not support synchronous operations effectively, so this passes through to the next handler.
     /// </summary>
-    public override TResult? Intercept<TResult>(
+    public override TResult Intercept<TResult>(
         FacadeInvocationContext context,
         FacadeInvocationDelegate<TResult> next) where TResult : default
     {
@@ -54,7 +54,7 @@ public class DistributedCachingInterceptor : FacadeInterceptor
     /// Intercepts asynchronous facade method invocations (Task or Task&lt;T&gt; methods).
     /// Caches results for async query methods (Task&lt;T&gt; return types).
     /// </summary>
-    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+    public override async ValueTask<TResult> InterceptAsync<TResult>(
         FacadeInvocationContext context,
         FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
     {
@@ -68,10 +68,10 @@ public class DistributedCachingInterceptor : FacadeInterceptor
 
         // Try to get from cache
         var cachedBytes = await _distributedCache.GetAsync(cacheKey);
-        if (cachedBytes != null)
+        if (cachedBytes is not null)
         {
             context.Properties["CacheHit"] = true;
-            return JsonSerializer.Deserialize<TResult>(cachedBytes, _jsonOptions);
+            return JsonSerializer.Deserialize<TResult>(cachedBytes, _jsonOptions)!;
         }
 
         // Cache miss - execute and cache result
@@ -95,7 +95,7 @@ public class DistributedCachingInterceptor : FacadeInterceptor
     /// </summary>
     private static string GenerateCacheKey(FacadeInvocationContext context)
     {
-        var args = context.Arguments ?? [];
+        var args = context.Arguments;
         var argString = args.Length == 0
             ? string.Empty
             : string.Join(",", args.Select(a => a?.ToString() ?? "null"));

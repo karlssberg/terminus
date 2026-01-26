@@ -1,6 +1,4 @@
-﻿
-using Microsoft.Extensions.DependencyInjection;
-using Terminus;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Terminus.Example.CrossProject.Dependent;
 
 var services = new ServiceCollection();
@@ -16,7 +14,7 @@ services.AddTerminusFacades();
 var serviceProvider = services.BuildServiceProvider();
 
 // Get the facade
-var facade = serviceProvider.GetRequiredService<IMyCrossProjectFacade>();
+var facade = serviceProvider.GetRequiredService<Terminus.Example.CrossProject.Host.IMyCrossProjectFacade>();
 
 // Use the facade
 Console.WriteLine("--- Synchronous Call ---");
@@ -33,5 +31,8 @@ await foreach (var item in facade.StreamDataAsync(3))
     Console.WriteLine($"Received: {item}");
 }
 
-[FacadeOf<MyTargetAttribute>(MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
-public partial interface IMyCrossProjectFacade;
+namespace Terminus.Example.CrossProject.Host
+{
+    [FacadeOf<MyTargetAttribute>(MethodDiscovery = MethodDiscoveryMode.ReferencedAssemblies)]
+    public partial interface IMyCrossProjectFacade;
+}
