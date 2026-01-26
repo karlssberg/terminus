@@ -19,7 +19,7 @@
 
   <!-- DataAnnotations for netstandard2.0 compatibility -->
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" />
   </ItemGroup>
 
 </Project>

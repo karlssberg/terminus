@@ -2,6 +2,7 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using NSubstitute;
+using Terminus.Interceptors.Caching;
 using Xunit;
 
 namespace Terminus.Interceptors.Tests.Unit;
