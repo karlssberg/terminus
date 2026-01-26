@@ -1,5 +1,5 @@
 using NSubstitute;
-using Terminus.Interceptors.FeatureFlags;
+using Terminus.Extensions.FeatureFlags;
 using Xunit;
 
 namespace Terminus.Interceptors.Tests.Unit;

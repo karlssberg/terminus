@@ -14,9 +14,9 @@
     <Project Path="test\Terminus.Interceptors.Tests.Unit\Terminus.Interceptors.Tests.Unit.csproj" />
     <Project Path="test\Terminus.Tests.Unit\Terminus.Tests.Unit.csproj" />
   </Folder>
+  <Project Path="src/Terminus.Extensions.FeatureFlags/Terminus.Extensions.FeatureFlags.csproj" />
   <Project Path="src\Terminus.Generator\Terminus.Generator.csproj" />
   <Project Path="src\Terminus.Interceptors.Caching\Terminus.Interceptors.Caching.csproj" />
-  <Project Path="src\Terminus.Interceptors.FeatureFlags\Terminus.Interceptors.FeatureFlags.csproj" />
   <Project Path="src\Terminus.Interceptors.Logging\Terminus.Interceptors.Logging.csproj" />
   <Project Path="src\Terminus.Interceptors.Metrics\Terminus.Interceptors.Metrics.csproj" />
   <Project Path="src\Terminus.Interceptors.RateLimiting\Terminus.Interceptors.RateLimiting.csproj" />

@@ -1,4 +1,4 @@
-namespace Terminus.Interceptors.FeatureFlags;
+namespace Terminus.Extensions.FeatureFlags;
 
 /// <summary>
 /// Provides feature flag evaluation for controlling feature availability at runtime.

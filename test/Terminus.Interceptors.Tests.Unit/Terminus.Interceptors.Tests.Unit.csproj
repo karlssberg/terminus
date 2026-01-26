@@ -25,7 +25,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\Terminus\Terminus.csproj" />
         <ProjectReference Include="..\..\src\Terminus.Interceptors.Caching\Terminus.Interceptors.Caching.csproj" />
-        <ProjectReference Include="..\..\src\Terminus.Interceptors.FeatureFlags\Terminus.Interceptors.FeatureFlags.csproj" />
+        <ProjectReference Include="..\..\src\Terminus.Extensions.FeatureFlags\Terminus.Extensions.FeatureFlags.csproj" />
         <ProjectReference Include="..\..\src\Terminus.Interceptors.Logging\Terminus.Interceptors.Logging.csproj" />
         <ProjectReference Include="..\..\src\Terminus.Interceptors.Metrics\Terminus.Interceptors.Metrics.csproj" />
         <ProjectReference Include="..\..\src\Terminus.Interceptors.RateLimiting\Terminus.Interceptors.RateLimiting.csproj" />
