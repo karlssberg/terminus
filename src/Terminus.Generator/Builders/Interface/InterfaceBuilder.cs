@@ -13,8 +13,22 @@ namespace Terminus.Generator.Builders.Interface;
 /// <summary>
 /// Builds the partial interface declaration with facade method and property signatures.
 /// </summary>
-internal static class InterfaceBuilder
+internal sealed class InterfaceBuilder
 {
+    private readonly FacadeInterfaceInfo _facadeInfo;
+    private readonly ImmutableArray<AggregatedMethodGroup> _methodGroups;
+    private readonly ImmutableArray<CandidatePropertyInfo> _properties;
+
+    private InterfaceBuilder(
+        FacadeInterfaceInfo facadeInfo,
+        ImmutableArray<AggregatedMethodGroup> methodGroups,
+        ImmutableArray<CandidatePropertyInfo> properties)
+    {
+        _facadeInfo = facadeInfo;
+        _methodGroups = methodGroups;
+        _properties = properties;
+    }
+
     /// <summary>
     /// Builds the partial interface declaration with all method and property signatures.
     /// </summary>
@@ -23,11 +37,17 @@ internal static class InterfaceBuilder
         ImmutableArray<AggregatedMethodGroup> methodGroups,
         ImmutableArray<CandidatePropertyInfo> properties = default)
     {
-        var interfaceName = facadeInfo.InterfaceSymbol.Name;
+        var builder = new InterfaceBuilder(facadeInfo, methodGroups, properties);
+        return builder.BuildInternal();
+    }
+
+    private InterfaceDeclarationSyntax BuildInternal()
+    {
+        var interfaceName = _facadeInfo.InterfaceSymbol.Name;
 
         // Flatten all methods from groups for documentation
-        var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
-        var documentation = DocumentationBuilder.BuildInterfaceDocumentation(allMethods, properties);
+        var allMethods = _methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
+        var documentation = DocumentationBuilder.BuildInterfaceDocumentation(allMethods, _properties);
 
         var attributeList = GeneratedCodeAttributeBuilder.Build();
 
@@ -44,26 +64,23 @@ internal static class InterfaceBuilder
                 Token(SyntaxKind.PartialKeyword)));
 
         // Build interface member declarations (methods and properties)
-        var memberDeclarations = BuildInterfaceMembers(facadeInfo, methodGroups, properties);
+        var memberDeclarations = BuildInterfaceMembers();
 
         return interfaceDeclaration.WithMembers(memberDeclarations);
     }
 
-    private static SyntaxList<MemberDeclarationSyntax> BuildInterfaceMembers(
-        FacadeInterfaceInfo facadeInfo,
-        ImmutableArray<AggregatedMethodGroup> methodGroups,
-        ImmutableArray<CandidatePropertyInfo> properties)
+    private SyntaxList<MemberDeclarationSyntax> BuildInterfaceMembers()
     {
         var members = new List<MemberDeclarationSyntax>();
 
         // Add method declarations
-        members.AddRange(methodGroups.Select(group => MethodSignatureBuilder.BuildInterfaceMethod(facadeInfo, group)));
+        members.AddRange(_methodGroups.Select(group => MethodSignatureBuilder.BuildInterfaceMethod(_facadeInfo, group)));
 
         // Add property declarations (sorted by name for consistent output)
-        if (!properties.IsDefault && !properties.IsEmpty)
+        if (!_properties.IsDefault && !_properties.IsEmpty)
         {
-            var sortedProperties = properties.OrderBy(p => p.PropertySymbol.Name).ToList();
-            members.AddRange(sortedProperties.Select(prop => PropertySignatureBuilder.BuildInterfaceProperty(facadeInfo, prop)));
+            var sortedProperties = _properties.OrderBy(p => p.PropertySymbol.Name).ToList();
+            members.AddRange(sortedProperties.Select(prop => PropertySignatureBuilder.BuildInterfaceProperty(_facadeInfo, prop)));
         }
 
         return List(members);

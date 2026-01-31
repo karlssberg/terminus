@@ -90,7 +90,7 @@ The solution contains 3 projects:
   - `FacadeGenerator.cs` - Main generator implementing `IIncrementalGenerator`
   - `Discovery/` - Discovery logic for facades and methods
   - `Matching/` - Logic to match methods to facades
-  - `Pipeline/FacadeGenerationPipeline.cs` - Orchestrates the generation process
+  - `Pipeline/` - Orchestrates the generation process via `FacadeProcessor`
   - `Builders/` - Modular builders for generating code using Roslyn
   - `UsageValidator.cs` - Validates discovered methods for errors
   - `Diagnostics.cs` - Diagnostic definitions
