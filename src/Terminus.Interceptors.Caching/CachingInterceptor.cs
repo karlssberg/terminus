@@ -41,7 +41,7 @@ public class CachingInterceptor : FacadeInterceptor
     /// </summary>
     public override TResult Intercept<TResult>(
         FacadeInvocationContext context,
-        FacadeInvocationDelegate<TResult> next) where TResult : default
+        FacadeInvocationDelegate<TResult> next)
     {
         // Only cache query methods (non-void return types)
         if (context.ReturnTypeKind == ReturnTypeKind.Void)
@@ -69,7 +69,7 @@ public class CachingInterceptor : FacadeInterceptor
     /// </summary>
     public override async ValueTask<TResult> InterceptAsync<TResult>(
         FacadeInvocationContext context,
-        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+        FacadeAsyncInvocationDelegate<TResult> next)
     {
         // Only cache async query methods (Task<T>, not Task)
         if (context.ReturnTypeKind != ReturnTypeKind.TaskWithResult)

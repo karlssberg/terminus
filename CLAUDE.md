@@ -6,35 +6,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Building
 ```bash
-# Build the entire solution
-dotnet build
+# Build the entire solution (recommended)
+dotnet build Terminus.slnx
 
 # Build a specific project
-dotnet build src/Terminus.Generator/Terminus.Generator.csproj
+dotnet build src/Terminus/Terminus.csproj
 
 # Build in Release mode
 dotnet build -c Release
+
+# Explicit restore (if facing NETSDK1005 or similar errors)
+dotnet restore Terminus.slnx
 ```
 
 ### Testing
 ```bash
-# Run all tests
-dotnet test
-
-# Run tests with detailed output
-dotnet test -v detailed
-
-# Run a specific test class
-dotnet test --filter "FullyQualifiedName~ClassName"
-
-# Run a specific test method
-dotnet test --filter "FullyQualifiedName~ClassName.MethodName"
-
-# Run tests for a specific project
-dotnet test <path-to-test-project.csproj>
+# Run all tests in the solution
+dotnet test Terminus.slnx
 
 # Run tests without rebuilding (faster iteration)
-dotnet test --no-build
+dotnet test Terminus.slnx --no-build
 ```
 
 ### Debugging Generated Code

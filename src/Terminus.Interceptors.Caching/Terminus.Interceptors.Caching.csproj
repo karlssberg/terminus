@@ -9,7 +9,7 @@
     <Authors>Terminus Contributors</Authors>
     <Description>Caching interceptors for Terminus facades supporting in-memory and distributed caching.</Description>
     <PackageTags>terminus;interceptor;caching;memory-cache;distributed-cache</PackageTags>
-    <PackageProjectUrl>https://github.com/your-org/terminus</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/karlssberg/terminus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 

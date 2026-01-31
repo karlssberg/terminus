@@ -20,9 +20,9 @@ public class ValidationInterceptor : FacadeInterceptor
     /// <summary>
     /// Intercepts synchronous facade method invocations (void or result methods).
     /// </summary>
-    public override TResult? Intercept<TResult>(
+    public override TResult Intercept<TResult>(
         FacadeInvocationContext context,
-        FacadeInvocationDelegate<TResult> next) where TResult : default
+        FacadeInvocationDelegate<TResult> next)
     {
         ValidateArguments(context);
         return next();
@@ -31,9 +31,9 @@ public class ValidationInterceptor : FacadeInterceptor
     /// <summary>
     /// Intercepts asynchronous facade method invocations (Task or Task&lt;T&gt; methods).
     /// </summary>
-    public override async ValueTask<TResult?> InterceptAsync<TResult>(
+    public override async ValueTask<TResult> InterceptAsync<TResult>(
         FacadeInvocationContext context,
-        FacadeAsyncInvocationDelegate<TResult> next) where TResult : default
+        FacadeAsyncInvocationDelegate<TResult> next)
     {
         ValidateArguments(context);
         return await next();

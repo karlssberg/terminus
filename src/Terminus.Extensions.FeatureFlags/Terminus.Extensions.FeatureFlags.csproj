@@ -9,7 +9,7 @@
     <Authors>Terminus Contributors</Authors>
     <Description>Feature flag interceptor for Terminus facades enabling runtime feature toggling.</Description>
     <PackageTags>terminus;interceptor;feature-flags;feature-toggles</PackageTags>
-    <PackageProjectUrl>https://github.com/your-org/terminus</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/karlssberg/terminus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 

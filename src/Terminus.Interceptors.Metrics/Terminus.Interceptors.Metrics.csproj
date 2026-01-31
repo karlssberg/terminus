@@ -9,7 +9,7 @@
     <Authors>Terminus Contributors</Authors>
     <Description>Metrics recording interceptor for Terminus facades enabling performance monitoring and telemetry.</Description>
     <PackageTags>terminus;interceptor;metrics;telemetry;monitoring</PackageTags>
-    <PackageProjectUrl>https://github.com/your-org/terminus</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/karlssberg/terminus</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
