@@ -1,4 +1,4 @@
-namespace Terminus.Generator.Tests.Unit.Generator;
+namespace Terminus.Generator.Tests.Unit;
 
 /// <summary>
 /// Tests for generic FacadeOf&lt;T&gt; attribute with strongly-typed interceptors.

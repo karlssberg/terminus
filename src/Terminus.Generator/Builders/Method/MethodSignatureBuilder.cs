@@ -157,12 +157,24 @@ internal sealed class MethodSignatureBuilder
 
                 if (p.HasExplicitDefaultValue)
                 {
-                    var defaultValue = p.ExplicitDefaultValue switch
+                    ExpressionSyntax defaultValue;
+                    
+                    defaultValue = p.ExplicitDefaultValue switch
                     {
-                        string s => LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(s)),
-                        bool b => LiteralExpression(b ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
-                        null => LiteralExpression(SyntaxKind.NullLiteralExpression),
-                        _ => ParseExpression(p.ExplicitDefaultValue.ToString() ?? "default")
+                        string s => 
+                            LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(s)),
+                        
+                        bool b =>
+                            LiteralExpression(b ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression),
+                        
+                        null when p.Type.IsValueType => 
+                            LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)),
+                        
+                        null => 
+                            LiteralExpression(SyntaxKind.NullLiteralExpression),
+                        
+                        _ =>
+                            ParseExpression(p.ExplicitDefaultValue.ToString() ?? "default")
                     };
 
                     parameter = parameter.WithDefault(EqualsValueClause(defaultValue));

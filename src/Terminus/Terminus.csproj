@@ -3,7 +3,7 @@
     <PropertyGroup>
         <LangVersion>latest</LangVersion>
         <Nullable>enable</Nullable>
-        <TargetFrameworks>net8.0;netstandard2.0;net10.0</TargetFrameworks>
+        <TargetFrameworks>net8.0;netstandard2.0;net9.0</TargetFrameworks>
         <Version>1.0.0</Version>
         <Authors>Terminus Contributors</Authors>
         <Description>A high-performance C# source generator that effortlessly aggregates methods from multiple services into a single, cohesive facade.</Description>
@@ -22,12 +22,18 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Terminus.Generator\Terminus.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\Terminus.Generator\Terminus.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
-    <ItemGroup>
-        <None Include="..\Terminus.Generator\bin\$(Configuration)\netstandard2.0\Terminus.Generator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
+    <PropertyGroup>
+        <GetCustomStaticAssetsTargets>$(GetCustomStaticAssetsTargets);GetGeneratorOutput</GetCustomStaticAssetsTargets>
+    </PropertyGroup>
+
+    <Target Name="GetGeneratorOutput" DependsOnTargets="ResolveProjectReferences">
+        <ItemGroup>
+            <None Include="@(_ResolvedProjectReferencePaths)" Condition="'%(_ResolvedProjectReferencePaths.Name)' == 'Terminus.Generator'" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+        </ItemGroup>
+    </Target>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.CSharp" />

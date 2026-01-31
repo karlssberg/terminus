@@ -1,0 +1,6 @@
+@TerminusExample.CleanArchitecture.Infrastructure.Web_HostAddress = http://localhost:5107
+
+GET {{TerminusExample.CleanArchitecture.Infrastructure.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

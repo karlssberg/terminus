@@ -6,4 +6,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Terminus.Example.CleanArchitecture.Application\Terminus.Example.CleanArchitecture.Application.csproj" />
+    </ItemGroup>
+
 </Project>
