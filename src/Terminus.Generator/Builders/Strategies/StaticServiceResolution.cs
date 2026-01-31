@@ -14,8 +14,9 @@ internal sealed class StaticServiceResolution : IServiceResolutionStrategy
         return methodInfo.MethodSymbol.IsStatic;
     }
 
-    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
+    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool isAggregation = false)
     {
+        // Static methods don't use DI, so aggregation doesn't apply
         var fullyQualifiedTypeName = methodInfo.MethodSymbol.ContainingType
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 

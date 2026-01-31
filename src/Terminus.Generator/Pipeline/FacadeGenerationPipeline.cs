@@ -53,6 +53,20 @@ internal static class FacadeGenerationPipeline
             allCandidateMethods = candidateMethods.AddRange(referencedMethods);
         }
 
+        // Step 0b: Filter out methods from open generic types (they will be handled by closed generic discovery)
+        allCandidateMethods = allCandidateMethods
+            .Where(m => !IsFromOpenGenericType(m.MethodSymbol))
+            .ToImmutableArray();
+
+        // Step 0c: Discover methods from open generic types (closed generic instantiations)
+        var openGenericMethods = OpenGenericMethodDiscovery.DiscoverClosedGenericMethods(
+            compilation,
+            facade.FacadeMethodAttributeTypes,
+            context,
+            context.CancellationToken);
+
+        allCandidateMethods = allCandidateMethods.AddRange(openGenericMethods);
+
         // Step 1: Match methods to this facade
         var matchedMethods = FacadeMethodMatcher.MatchMethodsToFacade(facade, allCandidateMethods)
             .GroupBy(m => m.MethodSymbol, SymbolEqualityComparer.Default)
@@ -96,5 +110,18 @@ internal static class FacadeGenerationPipeline
             .ToFullString();
 
         context.AddSource($"{facade.InterfaceSymbol.ToIdentifierString()}_Generated.g.cs", source);
+    }
+
+    /// <summary>
+    /// Determines if a method belongs to an open generic type (a generic type with unresolved type parameters).
+    /// </summary>
+    private static bool IsFromOpenGenericType(IMethodSymbol method)
+    {
+        var containingType = method.ContainingType;
+        if (!containingType.IsGenericType || containingType.IsUnboundGenericType)
+            return false;
+
+        // Check if any type arguments are type parameters (not concrete types)
+        return containingType.TypeArguments.Any(t => t.TypeKind == TypeKind.TypeParameter);
     }
 }

@@ -93,4 +93,24 @@ internal static class Diagnostics
         isEnabledByDefault: true,
         helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0010.md",
         description: "When AggregationReturnTypeStrategy is First, only the first handler in an aggregated method group will be executed. This warning alerts when multiple handlers are detected.");
+
+    public static readonly DiagnosticDescriptor NoClosedGenericInstantiationsFound = new(
+        id: "TM0011",
+        title: "No closed generic instantiations found for open generic type",
+        messageFormat: "Open generic type '{0}' with facade method attributes has no closed generic instantiations in the compilation. Ensure the type is used with concrete type arguments.",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0011.md",
+        description: "Open generic types with facade method attributes must have at least one closed generic instantiation (e.g., via implementation, field usage, or type parameter) for methods to be discovered.");
+
+    public static readonly DiagnosticDescriptor TypeParameterConstraintViolation = new(
+        id: "TM0012",
+        title: "Type parameter constraint violation in closed generic",
+        messageFormat: "Closed generic type '{0}' violates type parameter constraints from open generic '{1}': {2}",
+        category: "Terminus.Generator",
+        DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        helpLinkUri: "https://github.com/karlssberg/terminus/blob/main/docs/diagnostics/TM0012.md",
+        description: "Type arguments in closed generic types must satisfy the constraints defined on the open generic type's type parameters.");
 }

@@ -14,17 +14,25 @@ internal sealed class ScopedServiceResolution : IServiceResolutionStrategy
         return facadeInfo.Features.IsScoped && !methodInfo.MethodSymbol.IsStatic;
     }
 
-    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
+    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool isAggregation = false)
     {
-        var fullyQualifiedTypeName = methodInfo.MethodSymbol.ContainingType
+        var containingType = methodInfo.MethodSymbol.ContainingType;
+        var fullyQualifiedTypeName = containingType
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 
         // Determine which scope to use based on method return type
-        var scopeExpression = methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult 
-                                                           or ReturnTypeKind.ValueTask or ReturnTypeKind.ValueTaskWithResult 
+        var scopeExpression = methodInfo.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.TaskWithResult
+                                                           or ReturnTypeKind.ValueTask or ReturnTypeKind.ValueTaskWithResult
                                                            or ReturnTypeKind.AsyncEnumerable
             ? "_asyncScope.Value.ServiceProvider"
             : "_syncScope.Value.ServiceProvider";
+
+        // For aggregation on interface/abstract types, use GetServices to get all implementations
+        if (isAggregation && (containingType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Interface || containingType.IsAbstract))
+        {
+            return ParseExpression(
+                $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetServices<{fullyQualifiedTypeName}>({scopeExpression})");
+        }
 
         return ParseExpression(
             $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{fullyQualifiedTypeName}>({scopeExpression})");

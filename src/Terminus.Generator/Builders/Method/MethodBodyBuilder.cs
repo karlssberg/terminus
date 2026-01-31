@@ -55,6 +55,23 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         // For single methods (without metadata and without interceptors), use existing logic
         var methodInfo = methodGroup.PrimaryMethod;
 
+        // Check if this is from an open generic interface/abstract type (even if not aggregated,
+        // we should use GetServices since multiple implementations might be registered at runtime)
+        var isFromOpenGeneric = methodInfo.IsFromClosedGeneric;
+        var needsGetServicesForOpenGeneric = isFromOpenGeneric &&
+            (methodInfo.MethodSymbol.ContainingType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Interface ||
+             methodInfo.MethodSymbol.ContainingType.IsAbstract);
+
+        if (needsGetServicesForOpenGeneric)
+        {
+            // Use GetServices pattern for open generic interfaces/abstract types
+            foreach (var statement in BuildGetServicesMethodBody(facadeInfo, methodInfo))
+            {
+                yield return statement;
+            }
+            yield break;
+        }
+
         // Handle CancellationToken.ThrowIfCancellationRequested() first for static scoped methods
         var cancellationTokens = methodInfo.MethodSymbol.Parameters
             .Where(p => !p.IsParams && p.Type.ToDisplayString() == typeof(CancellationToken).FullName)
@@ -86,6 +103,54 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                 BuildAsyncEnumerableProxyStatement(facadeInfo, methodInfo),
             _ => ReturnStatement(invocationExpression)
         };
+    }
+
+    /// <summary>
+    /// Builds method body for single methods from open generic interfaces/abstract types using GetServices.
+    /// </summary>
+    private IEnumerable<StatementSyntax> BuildGetServicesMethodBody(
+        FacadeInterfaceInfo facadeInfo,
+        CandidateMethodInfo methodInfo)
+    {
+        // Get the GetServices<T>() expression (without method invocation)
+        var servicesExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo, isAggregation: true);
+        var methodName = GetMethodName(methodInfo);
+        var parameters = string.Join(", ", methodInfo.MethodSymbol.Parameters.Select(p => p.Name.EscapeIdentifier()));
+
+        switch (methodInfo.ReturnTypeKind)
+        {
+            case ReturnTypeKind.Void:
+                yield return ParseStatement(
+                    $$"""
+                    foreach (var handler in {{servicesExpression.ToFullString()}})
+                    {
+                        handler.{{methodName}}({{parameters}});
+                    }
+                    """);
+                break;
+
+            case ReturnTypeKind.Task:
+            case ReturnTypeKind.ValueTask:
+                yield return ParseStatement(
+                    $$"""
+                    foreach (var handler in {{servicesExpression.ToFullString()}})
+                    {
+                        await handler.{{methodName}}({{parameters}}).ConfigureAwait(false);
+                    }
+                    """);
+                break;
+
+            default:
+                // For other return types, fall back to single invocation
+                var invocationExpression = _invocationBuilder.BuildInvocation(facadeInfo, methodInfo);
+                yield return methodInfo.ReturnTypeKind switch
+                {
+                    ReturnTypeKind.TaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+                    ReturnTypeKind.ValueTaskWithResult => ReturnStatement(AwaitExpression(invocationExpression)),
+                    _ => ReturnStatement(invocationExpression)
+                };
+                break;
+        }
     }
 
     /// <summary>
@@ -277,64 +342,144 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
             switch (returnTypeKind)
             {
                 case ReturnTypeKind.Void:
-                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod, isAggregation: true));
                     yield break;
                 case ReturnTypeKind.Result:
-                    yield return ReturnStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield return ReturnStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod, isAggregation: true));
                     yield break;
                 case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
-                    yield return ReturnStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod)));
+                    yield return ReturnStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod, isAggregation: true)));
                     yield break;
                 case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
-                    yield return ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod)));
+                    yield return ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod, isAggregation: true)));
                     yield break;
                 default:
-                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod));
+                    yield return ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, firstMethod, isAggregation: true));
                     yield break;
             }
         }
 
-        // Existing "Collection" strategy logic below (unchanged)
+        // Check if we need to use GetServices (for interface/abstract types)
+        var needsGetServices = primaryMethod.MethodSymbol.ContainingType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Interface
+                            || primaryMethod.MethodSymbol.ContainingType.IsAbstract;
+
+        // Existing "Collection" strategy logic below
         switch (returnTypeKind)
         {
-            // For void methods, just execute all handlers in sequence
+            // For void methods, execute all handlers in sequence
             case ReturnTypeKind.Void:
             {
-                foreach (var statement in methodGroup.Methods.Select(method =>
-                    ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, method))))
+                if (needsGetServices)
                 {
-                    yield return statement;
+                    // Use GetServices to get all implementations
+                    var servicesExpression = _invocationBuilder.BuildInvocation(facadeInfo, primaryMethod, isAggregation: true);
+                    var methodName = GetMethodName(primaryMethod);
+                    var parameters = string.Join(", ", primaryMethod.MethodSymbol.Parameters.Select(p => p.Name.EscapeIdentifier()));
+
+                    yield return ParseStatement(
+                        $$"""
+                        foreach (var handler in {{servicesExpression.ToFullString()}})
+                        {
+                            handler.{{methodName}}({{parameters}});
+                        }
+                        """);
+                }
+                else
+                {
+                    // Original logic for concrete types
+                    foreach (var statement in methodGroup.Methods.Select(method =>
+                        ExpressionStatement(_invocationBuilder.BuildInvocation(facadeInfo, method))))
+                    {
+                        yield return statement;
+                    }
                 }
                 yield break;
             }
             // For result methods (T), yield return each result
             case ReturnTypeKind.Result:
             {
-                foreach (var method in methodGroup.Methods)
+                if (needsGetServices)
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
+                    // Use GetServices to get all implementations
+                    var servicesExpression = _invocationBuilder.BuildInvocation(facadeInfo, primaryMethod, isAggregation: true);
+                    var methodName = GetMethodName(primaryMethod);
+                    var parameters = string.Join(", ", primaryMethod.MethodSymbol.Parameters.Select(p => p.Name.EscapeIdentifier()));
+
+                    yield return ParseStatement(
+                        $$"""
+                        foreach (var handler in {{servicesExpression.ToFullString()}})
+                        {
+                            yield return handler.{{methodName}}({{parameters}});
+                        }
+                        """);
+                }
+                else
+                {
+                    // Original logic for concrete types
+                    foreach (var method in methodGroup.Methods)
+                    {
+                        var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, invocation);
+                    }
                 }
                 yield break;
             }
             // For async result methods (Task<T>, ValueTask<T>), yield return await each result
             case ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult:
             {
-                foreach (var method in methodGroup.Methods)
+                if (needsGetServices)
                 {
-                    var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
-                    var awaitedInvocation = AwaitExpression(invocation);
-                    yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
+                    // Use GetServices to get all implementations
+                    var servicesExpression = _invocationBuilder.BuildInvocation(facadeInfo, primaryMethod, isAggregation: true);
+                    var methodName = GetMethodName(primaryMethod);
+                    var parameters = string.Join(", ", primaryMethod.MethodSymbol.Parameters.Select(p => p.Name.EscapeIdentifier()));
+
+                    yield return ParseStatement(
+                        $$"""
+                        foreach (var handler in {{servicesExpression.ToFullString()}})
+                        {
+                            yield return await handler.{{methodName}}({{parameters}}).ConfigureAwait(false);
+                        }
+                        """);
+                }
+                else
+                {
+                    // Original logic for concrete types
+                    foreach (var method in methodGroup.Methods)
+                    {
+                        var invocation = _invocationBuilder.BuildInvocation(facadeInfo, method);
+                        var awaitedInvocation = AwaitExpression(invocation);
+                        yield return YieldStatement(SyntaxKind.YieldReturnStatement, awaitedInvocation);
+                    }
                 }
                 yield break;
             }
             // For Task/ValueTask without results, await all
             case ReturnTypeKind.Task or ReturnTypeKind.ValueTask:
             {
-                foreach (var statement in methodGroup.Methods.Select(method =>
-                    ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, method)))))
+                if (needsGetServices)
                 {
-                    yield return statement;
+                    // Use GetServices to get all implementations
+                    var servicesExpression = _invocationBuilder.BuildInvocation(facadeInfo, primaryMethod, isAggregation: true);
+                    var methodName = GetMethodName(primaryMethod);
+                    var parameters = string.Join(", ", primaryMethod.MethodSymbol.Parameters.Select(p => p.Name.EscapeIdentifier()));
+
+                    yield return ParseStatement(
+                        $$"""
+                        foreach (var handler in {{servicesExpression.ToFullString()}})
+                        {
+                            await handler.{{methodName}}({{parameters}}).ConfigureAwait(false);
+                        }
+                        """);
+                }
+                else
+                {
+                    // Original logic for concrete types
+                    foreach (var statement in methodGroup.Methods.Select(method =>
+                        ExpressionStatement(AwaitExpression(_invocationBuilder.BuildInvocation(facadeInfo, method)))))
+                    {
+                        yield return statement;
+                    }
                 }
                 yield break;
             }

@@ -15,5 +15,8 @@ internal interface IServiceResolutionStrategy
     /// <summary>
     /// Gets the expression that resolves the service instance or type for method invocation.
     /// </summary>
-    ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo);
+    /// <param name="facadeInfo">The facade interface information.</param>
+    /// <param name="methodInfo">The method information.</param>
+    /// <param name="isAggregation">Whether this is being called in an aggregation context where multiple implementations should be resolved.</param>
+    ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool isAggregation = false);
 }

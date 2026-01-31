@@ -16,13 +16,15 @@ internal sealed class InvocationBuilder(IServiceResolutionStrategy serviceResolu
     /// <param name="facadeInfo">The facade interface information.</param>
     /// <param name="methodInfo">The method information.</param>
     /// <param name="includeConfigureAwait">Whether to append ConfigureAwait(false) for async methods. Set to false when building delegates for lazy execution.</param>
+    /// <param name="isAggregation">Whether this is being called in an aggregation context where multiple implementations should be resolved.</param>
     public InvocationExpressionSyntax BuildInvocation(
         FacadeInterfaceInfo facadeInfo,
         CandidateMethodInfo methodInfo,
-        bool includeConfigureAwait = true)
+        bool includeConfigureAwait = true,
+        bool isAggregation = false)
     {
         // Get service/type expression
-        var instanceExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo);
+        var instanceExpression = serviceResolution.GetServiceExpression(facadeInfo, methodInfo, isAggregation);
 
         // Build method access
         var methodName = methodInfo.MethodSymbol.Name;

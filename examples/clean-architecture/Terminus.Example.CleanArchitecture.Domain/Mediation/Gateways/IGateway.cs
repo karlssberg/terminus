@@ -1,6 +1,6 @@
 namespace Terminus.Example.CleanArchitecture.Domain.Mediation.Gateways;
 
-[FacadeOf<GatewayAttribute>]
+[FacadeOf<GatewayAttribute>(MethodDiscovery = MethodDiscoveryMode.TransitiveAssemblies)]
 public partial interface IGateway;
 
 [Gateway]

@@ -14,10 +14,18 @@ internal sealed class NonScopedServiceResolution : IServiceResolutionStrategy
         return !facadeInfo.Features.IsScoped && !methodInfo.MethodSymbol.IsStatic;
     }
 
-    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo)
+    public ExpressionSyntax GetServiceExpression(FacadeInterfaceInfo facadeInfo, CandidateMethodInfo methodInfo, bool isAggregation = false)
     {
-        var fullyQualifiedTypeName = methodInfo.MethodSymbol.ContainingType
+        var containingType = methodInfo.MethodSymbol.ContainingType;
+        var fullyQualifiedTypeName = containingType
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+
+        // For aggregation on interface/abstract types, use GetServices to get all implementations
+        if (isAggregation && (containingType.TypeKind == Microsoft.CodeAnalysis.TypeKind.Interface || containingType.IsAbstract))
+        {
+            return ParseExpression(
+                $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetServices<{fullyQualifiedTypeName}>(_serviceProvider)");
+        }
 
         return ParseExpression(
             $"global::Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions.GetRequiredService<{fullyQualifiedTypeName}>(_serviceProvider)");

@@ -60,6 +60,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             public static class ServiceProviderServiceExtensions
             {
                 public static T GetRequiredService<T>(this IServiceProvider provider) => default;
+                public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this IServiceProvider provider) => default;
                 public static IServiceScope CreateScope(this IServiceProvider provider) => default;
                 public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;
             }
@@ -104,6 +105,7 @@ public class TerminusSourceGeneratorTest<TGenerator> : CSharpSourceGeneratorTest
             public static class ServiceProviderServiceExtensions
             {
                 public static T GetRequiredService<T>(this IServiceProvider provider) => default;
+                public static System.Collections.Generic.IEnumerable<T> GetServices<T>(this IServiceProvider provider) => default;
                 public static IServiceScope CreateScope(this IServiceProvider provider) => default;
                 public static AsyncServiceScope CreateAsyncScope(this IServiceProvider provider) => default;
             }
