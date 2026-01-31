@@ -67,6 +67,7 @@ internal sealed class FacadeProcessor(
         var openGenericMethods = OpenGenericMethodDiscovery.DiscoverClosedGenericMethods(
             compilation,
             facade.FacadeMethodAttributeTypes,
+            discoveryMode,
             context,
             context.CancellationToken);
 

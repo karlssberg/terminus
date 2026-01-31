@@ -13,23 +13,25 @@ internal static class OpenGenericMethodDiscovery
     /// </summary>
     /// <param name="compilation">The current compilation.</param>
     /// <param name="facadeMethodAttributeTypes">The attribute types that identify facade methods.</param>
+    /// <param name="discoveryMode">The method discovery mode.</param>
     /// <param name="context">The source production context for reporting diagnostics.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Collection of candidate method info for all closed generic instantiations.</returns>
     public static ImmutableArray<CandidateMethodInfo> DiscoverClosedGenericMethods(
         Compilation compilation,
         ImmutableArray<INamedTypeSymbol> facadeMethodAttributeTypes,
+        MethodDiscoveryMode discoveryMode,
         SourceProductionContext context,
         CancellationToken ct)
     {
         // Step 1: Find all open generic types with facade method attributes (class-level or method-level)
-        var openGenericTypes = DiscoverOpenGenericTypes(compilation, facadeMethodAttributeTypes, ct);
+        var openGenericTypes = DiscoverOpenGenericTypes(compilation, facadeMethodAttributeTypes, discoveryMode, ct);
 
         if (openGenericTypes.IsEmpty)
             return ImmutableArray<CandidateMethodInfo>.Empty;
 
         // Step 2: Find all closed generic instantiations of these types
-        var closedInstantiations = DiscoverClosedGenericInstantiations(compilation, openGenericTypes, ct);
+        var closedInstantiations = DiscoverClosedGenericInstantiations(compilation, openGenericTypes, discoveryMode, ct);
 
         // Step 3: Report warning for open generic types without closed instantiations
         ReportMissingInstantiations(context, openGenericTypes, closedInstantiations);
@@ -47,47 +49,52 @@ internal static class OpenGenericMethodDiscovery
     private static ImmutableArray<OpenGenericTypeInfo> DiscoverOpenGenericTypes(
         Compilation compilation,
         ImmutableArray<INamedTypeSymbol> facadeMethodAttributeTypes,
+        MethodDiscoveryMode discoveryMode,
         CancellationToken ct)
     {
         var result = ImmutableArray.CreateBuilder<OpenGenericTypeInfo>();
 
-        foreach (var type in GetAllTypes(compilation.Assembly.GlobalNamespace, ct))
+        var assembliesToScan = GetAssembliesToScan(compilation, discoveryMode);
+        foreach (var assembly in assembliesToScan)
         {
-            ct.ThrowIfCancellationRequested();
-
-            // Only process open generic types (types with unspecified type parameters)
-            if (!type.IsGenericType || type.IsUnboundGenericType)
-                continue;
-
-            // Check if this is an open generic (has type parameters, not type arguments)
-            var isOpenGeneric = type.TypeArguments.Any(t => t.TypeKind == TypeKind.TypeParameter);
-            if (!isOpenGeneric)
-                continue;
-
-            // Check for class-level attributes
-            var classLevelAttributes = type.GetAttributes()
-                .Where(attr => attr.AttributeClass is not null &&
-                               InheritsFromAnyAttribute(attr.AttributeClass, facadeMethodAttributeTypes))
-                .ToArray();
-
-            // Check for method-level attributes
-            var methodsWithAttributes = type.GetMembers()
-                .OfType<IMethodSymbol>()
-                .Where(m =>
-                    m.DeclaredAccessibility == Accessibility.Public &&
-                    m.MethodKind == MethodKind.Ordinary &&
-                    m.GetAttributes().Any(attr =>
-                        attr.AttributeClass is not null &&
-                        InheritsFromAnyAttribute(attr.AttributeClass, facadeMethodAttributeTypes)))
-                .ToArray();
-
-            // If type has class-level or method-level attributes, add it
-            if (classLevelAttributes.Length > 0 || methodsWithAttributes.Length > 0)
+            foreach (var type in GetAllTypes(assembly.GlobalNamespace, ct))
             {
-                result.Add(new OpenGenericTypeInfo(
-                    type,
-                    classLevelAttributes.ToImmutableArray(),
-                    methodsWithAttributes.ToImmutableArray()));
+                ct.ThrowIfCancellationRequested();
+
+                // Only process open generic types (types with unspecified type parameters)
+                if (!type.IsGenericType || type.IsUnboundGenericType)
+                    continue;
+
+                // Check if this is an open generic (has type parameters, not type arguments)
+                var isOpenGeneric = type.TypeArguments.Any(t => t.TypeKind == TypeKind.TypeParameter);
+                if (!isOpenGeneric)
+                    continue;
+
+                // Check for class-level attributes
+                var classLevelAttributes = type.GetAttributes()
+                    .Where(attr => attr.AttributeClass is not null &&
+                                   InheritsFromAnyAttribute(attr.AttributeClass, facadeMethodAttributeTypes))
+                    .ToArray();
+
+                // Check for method-level attributes
+                var methodsWithAttributes = type.GetMembers()
+                    .OfType<IMethodSymbol>()
+                    .Where(m =>
+                        m.DeclaredAccessibility == Accessibility.Public &&
+                        m.MethodKind == MethodKind.Ordinary &&
+                        m.GetAttributes().Any(attr =>
+                            attr.AttributeClass is not null &&
+                            InheritsFromAnyAttribute(attr.AttributeClass, facadeMethodAttributeTypes)))
+                    .ToArray();
+
+                // If type has class-level or method-level attributes, add it
+                if (classLevelAttributes.Length > 0 || methodsWithAttributes.Length > 0)
+                {
+                    result.Add(new OpenGenericTypeInfo(
+                        type,
+                        [..classLevelAttributes],
+                        [..methodsWithAttributes]));
+                }
             }
         }
 
@@ -100,39 +107,98 @@ internal static class OpenGenericMethodDiscovery
     private static ImmutableArray<ClosedGenericInstantiation> DiscoverClosedGenericInstantiations(
         Compilation compilation,
         ImmutableArray<OpenGenericTypeInfo> openGenericTypes,
+        MethodDiscoveryMode discoveryMode,
         CancellationToken ct)
     {
         var result = new Dictionary<string, ClosedGenericInstantiation>();
 
+        var assembliesToScan = GetAssembliesToScan(compilation, discoveryMode);
+
         // Walk all types in the compilation looking for closed generic usages
-        foreach (var type in GetAllTypes(compilation.Assembly.GlobalNamespace, ct))
+        foreach (var assembly in assembliesToScan)
         {
-            ct.ThrowIfCancellationRequested();
-
-            // Check if this type implements/derives from any open generic
-            foreach (var openGenericInfo in openGenericTypes)
+            foreach (var type in GetAllTypes(assembly.GlobalNamespace, ct))
             {
-                // Skip the open generic type itself
-                if (SymbolEqualityComparer.Default.Equals(type, openGenericInfo.OpenGenericType))
-                    continue;
+                ct.ThrowIfCancellationRequested();
 
-                var closedVersions = FindClosedGenericUsages(type, openGenericInfo.OpenGenericType);
-                foreach (var closedType in closedVersions)
+                // Check if this type implements/derives from any open generic
+                foreach (var openGenericInfo in openGenericTypes)
                 {
-                    var key = closedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-                    if (!result.ContainsKey(key))
+                    // Skip the open generic type itself
+                    if (SymbolEqualityComparer.Default.Equals(type, openGenericInfo.OpenGenericType))
+                        continue;
+
+                    var closedVersions = FindClosedGenericUsages(type, openGenericInfo.OpenGenericType);
+                    foreach (var closedType in closedVersions)
                     {
-                        result[key] = new ClosedGenericInstantiation(
-                            closedType,
-                            openGenericInfo.OpenGenericType,
-                            openGenericInfo.ClassLevelAttributes,
-                            openGenericInfo.MethodsWithAttributes);
+                        var key = closedType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                        if (!result.ContainsKey(key))
+                        {
+                            result[key] = new ClosedGenericInstantiation(
+                                closedType,
+                                openGenericInfo.OpenGenericType,
+                                openGenericInfo.ClassLevelAttributes,
+                                openGenericInfo.MethodsWithAttributes);
+                        }
                     }
                 }
             }
         }
 
         return result.Values.ToImmutableArray();
+    }
+
+    private static IEnumerable<IAssemblySymbol> GetAssembliesToScan(
+        Compilation compilation,
+        MethodDiscoveryMode discoveryMode)
+    {
+        yield return compilation.Assembly;
+
+        switch (discoveryMode)
+        {
+            case MethodDiscoveryMode.ReferencedAssemblies:
+            {
+                var referencedAssemblies = compilation.Assembly.Modules
+                    .SelectMany(module => module.ReferencedAssemblySymbols.Where(ShouldScanAssembly));
+                
+                foreach (var referencedAssembly in referencedAssemblies)
+                {
+                    yield return referencedAssembly;
+                }
+
+                break;
+            }
+            case MethodDiscoveryMode.TransitiveAssemblies:
+            {
+                foreach (var reference in compilation.References)
+                {
+                    if (compilation.GetAssemblyOrModuleSymbol(reference) is not IAssemblySymbol assemblySymbol)
+                        continue;
+                    
+                    if (ShouldScanAssembly(assemblySymbol))
+                        yield return assemblySymbol;
+                }
+
+                break;
+            }
+        }
+    }
+
+    private static bool ShouldScanAssembly(IAssemblySymbol assembly)
+    {
+        var name = assembly.Name;
+
+        // Skip well-known system assemblies
+        if (name.StartsWith("System.", StringComparison.Ordinal) ||
+            name.StartsWith("Microsoft.", StringComparison.Ordinal) ||
+            name == "mscorlib" ||
+            name == "netstandard" ||
+            name == "Terminus") // Skip Terminus itself
+        {
+            return false;
+        }
+
+        return true;
     }
 
     /// <summary>
