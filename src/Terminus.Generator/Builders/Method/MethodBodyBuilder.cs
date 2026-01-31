@@ -110,6 +110,12 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         var returnTypeKindName = GetReturnTypeKindName(methodInfo.ReturnTypeKind);
         var isStatic = methodInfo.MethodSymbol.IsStatic;
 
+        // Generic facade support: determine if we should use strongly-typed context
+        var isGenericFacade = facadeInfo.IsGenericFacade;
+        var attributeTypeName = isGenericFacade && facadeInfo.FacadeMethodAttributeTypes.Length > 0
+            ? facadeInfo.FacadeMethodAttributeTypes[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : null;
+
         // Build the invocation expression
         var invocation = _invocationBuilder.BuildInvocation(facadeInfo, methodInfo, includeConfigureAwait: false);
         var invocationCode = invocation.ToFullString();
@@ -127,7 +133,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                         new global::Terminus.FacadeVoidHandlerDescriptor(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
                     };
                     """);
-                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName, isGenericFacade, attributeTypeName);
                 yield return ParseStatement(
                     """
                     ExecuteWithVoidInterceptors(context, handlers => ((global::Terminus.FacadeVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).Invoke());
@@ -145,7 +151,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                         new global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
                     };
                     """);
-                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName, isGenericFacade, attributeTypeName);
                 yield return ParseStatement(
                     $$"""
                     return ExecuteWithInterceptors<{{returnType}}>(context, handlers => ((global::Terminus.FacadeSyncHandlerDescriptor<{{returnType}}>)(handlers ?? context.Handlers)[0]).Invoke());
@@ -163,7 +169,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                         new global::Terminus.FacadeAsyncVoidHandlerDescriptor(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, async () => await {{invocationCode}}.ConfigureAwait(false))
                     };
                     """);
-                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName, isGenericFacade, attributeTypeName);
                 yield return ParseStatement(
                     """
                     await ExecuteWithAsyncVoidInterceptors(context, async handlers => await ((global::Terminus.FacadeAsyncVoidHandlerDescriptor)(handlers ?? context.Handlers)[0]).InvokeAsync().ConfigureAwait(false)).ConfigureAwait(false);
@@ -182,7 +188,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                         new global::Terminus.FacadeAsyncHandlerDescriptor<{{returnType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, async () => await {{invocationCode}}.ConfigureAwait(false))
                     };
                     """);
-                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName, isGenericFacade, attributeTypeName);
                 yield return ParseStatement(
                     $$"""
                     return await ExecuteWithInterceptorsAsync<{{returnType}}>(context, async handlers => await ((global::Terminus.FacadeAsyncHandlerDescriptor<{{returnType}}>)(handlers ?? context.Handlers)[0]).InvokeAsync()).ConfigureAwait(false);
@@ -200,7 +206,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
                         new global::Terminus.FacadeStreamHandlerDescriptor<{{itemType}}>(typeof({{containingTypeName}}), {{attributeInstantiation.ToFullString()}}, isStatic: {{isStatic.ToString().ToLowerInvariant()}}, () => {{invocationCode}})
                     };
                     """);
-                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName);
+                yield return BuildContextCreationStatement(interfaceName, methodName, argumentsArray, containingTypeName, attributeInstantiation, returnTypeKindName, isGenericFacade, attributeTypeName);
                 yield return ParseStatement(
                     $$"""
                     return ExecuteWithInterceptorsStream<{{itemType}}>(context, handlers => ((global::Terminus.FacadeStreamHandlerDescriptor<{{itemType}}>)(handlers ?? context.Handlers)[0]).Invoke());
@@ -216,11 +222,17 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
         string argumentsArray,
         string containingTypeName,
         ExpressionSyntax attributeInstantiation,
-        string returnTypeKindName)
+        string returnTypeKindName,
+        bool isGenericFacade,
+        string? attributeTypeName = null)
     {
+        var contextTypeName = isGenericFacade && attributeTypeName != null
+            ? $"global::Terminus.FacadeInvocationContext<{attributeTypeName}>"
+            : "global::Terminus.FacadeInvocationContext";
+
         return ParseStatement(
             $$"""
-            var context = new global::Terminus.FacadeInvocationContext(
+            var context = new {{contextTypeName}}(
                 _serviceProvider,
                 typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
                 new object? [] { {{argumentsArray}} },
@@ -357,6 +369,15 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
 
         var returnTypeKindName = GetReturnTypeKindName(primaryMethod.ReturnTypeKind);
 
+        // Generic facade support: determine if we should use strongly-typed context
+        var isGenericFacade = facadeInfo.IsGenericFacade;
+        var attributeTypeName = isGenericFacade && facadeInfo.FacadeMethodAttributeTypes.Length > 0
+            ? facadeInfo.FacadeMethodAttributeTypes[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : null;
+        var contextTypeName = isGenericFacade && attributeTypeName != null
+            ? $"global::Terminus.FacadeInvocationContext<{attributeTypeName}>"
+            : "global::Terminus.FacadeInvocationContext";
+
         // Build typed handler descriptors with invoke delegates for all methods in the group
         var handlerDescriptors = new List<string>();
         foreach (var method in methodGroup.Methods)
@@ -395,7 +416,7 @@ internal sealed class MethodBodyBuilder(IServiceResolutionStrategy serviceResolu
 
         yield return ParseStatement(
             $$"""
-            var context = new global::Terminus.FacadeInvocationContext(
+            var context = new {{contextTypeName}}(
                 _serviceProvider,
                 typeof({{interfaceName}}).GetMethod("{{methodName}}")!,
                 new object? [] { {{argumentsArray}} },

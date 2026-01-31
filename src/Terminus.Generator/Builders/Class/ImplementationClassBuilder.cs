@@ -12,6 +12,27 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 namespace Terminus.Generator.Builders.Class;
 
 /// <summary>
+/// Captures pre-computed requirements for interceptor pipeline method generation.
+/// Computed once to avoid multiple passes over method collections.
+/// </summary>
+internal readonly record struct InterceptorPipelineRequirements(
+    bool NeedsSyncVoid,
+    bool NeedsSyncResult,
+    bool NeedsAsyncVoid,
+    bool NeedsAsyncResult,
+    bool NeedsStream);
+
+/// <summary>
+/// Holds pre-computed values for implementation class building.
+/// This context is created once and reused throughout the build process.
+/// </summary>
+internal readonly record struct ImplementationBuildContext(
+    ImmutableArray<CandidateMethodInfo> AllMethods,
+    bool HasInstanceMembers,
+    bool HasInterceptors,
+    InterceptorPipelineRequirements PipelineRequirements);
+
+/// <summary>
 /// Orchestrates the building of the complete facade implementation class.
 /// </summary>
 internal static class ImplementationClassBuilder
@@ -27,94 +48,59 @@ internal static class ImplementationClassBuilder
         var interfaceName = facadeInfo.InterfaceSymbol
             .ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         var implementationClassName = facadeInfo.GetImplementationClassName();
+        var isScoped = facadeInfo.Features.IsScoped;
 
-        // Flatten all methods from groups for documentation and analysis
-        var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
-        var documentation = DocumentationBuilder.BuildImplementationDocumentation(allMethods, properties);
+        // Create build context with pre-computed values (single-pass analysis)
+        var context = CreateBuildContext(facadeInfo, methodGroups, properties);
 
+        // Build documentation
+        var documentation = DocumentationBuilder.BuildImplementationDocumentation(context.AllMethods, properties);
+
+        // Build class declaration with base type
         var classDeclaration = ClassDeclaration(implementationClassName)
             .WithModifiers([Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.SealedKeyword)])
             .AddBaseListTypes(SimpleBaseType(ParseTypeName(interfaceName)));
 
         if (documentation.Any())
-        {
             classDeclaration = classDeclaration.WithLeadingTrivia((IEnumerable<SyntaxTrivia>)documentation);
-        }
 
-        // Determine if we need IServiceProvider based on whether we have instance members (methods or properties)
-        var hasInstanceMethods = allMethods.Any(m => !m.MethodSymbol.IsStatic);
-        var hasInstanceProperties = !properties.IsDefault && properties.Any(p => !p.PropertySymbol.IsStatic);
-        var hasInstanceMembers = hasInstanceMethods || hasInstanceProperties;
-
-        // Check for interceptors
-        var hasInterceptors = facadeInfo.Features.HasInterceptors;
-        var interceptorTypes = facadeInfo.Features.InterceptorTypes;
-
-        // Add [FacadeImplementation] attribute
+        // Add attributes
         classDeclaration = AddFacadeImplementationAttribute(
-            classDeclaration,
-            interfaceName,
-            facadeInfo.Features.IsScoped,
-            hasInstanceMembers);
+            classDeclaration, interfaceName, isScoped, context.HasInstanceMembers);
 
-        // Add disposal interfaces for scoped facades with instance members
-        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-        {
-            classDeclaration = classDeclaration.AddBaseListTypes(
-                SimpleBaseType(ParseTypeName("global::System.IDisposable")),
-                SimpleBaseType(ParseTypeName("global::System.IAsyncDisposable")));
-        }
+        // Add disposal interfaces for scoped facades
+        classDeclaration = AddDisposalInterfaces(classDeclaration, isScoped, context.HasInstanceMembers);
 
-        // Build members
+        // Build all members
         var members = new List<MemberDeclarationSyntax>();
 
-        // Add fields
-        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-            members.AddRange(FieldBuilder.BuildScopedFields());
-        else if (!facadeInfo.Features.IsScoped)
-            members.AddRange(FieldBuilder.BuildNonScopedFields());
+        // Fields
+        members.AddRange(BuildFields(isScoped, context.HasInstanceMembers, context.HasInterceptors));
 
-        // Add interceptors field if needed
-        if (hasInterceptors)
-            members.Add(FieldBuilder.BuildInterceptorsField());
+        // Constructor
+        var constructor = SelectConstructor(
+            implementationClassName,
+            isScoped,
+            context.HasInstanceMembers,
+            context.HasInterceptors,
+            facadeInfo.Features.InterceptorTypes);
 
-        // Add constructor
-        if (hasInterceptors)
-        {
-            if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-                members.Add(ConstructorBuilder.BuildScopedConstructorWithInterceptors(implementationClassName, interceptorTypes));
-            else if (!facadeInfo.Features.IsScoped)
-                members.Add(ConstructorBuilder.BuildNonScopedConstructorWithInterceptors(implementationClassName, interceptorTypes));
-        }
-        else
-        {
-            if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-                members.Add(ConstructorBuilder.BuildScopedConstructor(implementationClassName));
-            else if (!facadeInfo.Features.IsScoped)
-                members.Add(ConstructorBuilder.BuildNonScopedConstructor(implementationClassName));
-        }
+        if (constructor != null)
+            members.Add(constructor);
 
-        // Add implementation methods
+        // Methods
         members.AddRange(BuildImplementationMethods(facadeInfo, methodGroups));
 
-        // Add implementation properties (sorted by name for consistent output)
-        if (!properties.IsDefault && !properties.IsEmpty)
-        {
-            var sortedProperties = properties.OrderBy(p => p.PropertySymbol.Name).ToList();
-            members.AddRange(sortedProperties.Select(prop => PropertyBuilder.BuildImplementationProperty(facadeInfo, prop)));
-        }
+        // Properties
+        members.AddRange(BuildProperties(facadeInfo, properties));
 
-        // Add disposal methods for scoped facades
-        if (facadeInfo.Features.IsScoped && hasInstanceMembers)
-        {
+        // Disposal methods
+        if (isScoped && context.HasInstanceMembers)
             members.AddRange(DisposalBuilder.BuildDisposalMethods());
-        }
 
-        // Add interceptor pipeline methods if needed
-        if (hasInterceptors)
-        {
-            members.AddRange(BuildInterceptorPipelineMethods(methodGroups));
-        }
+        // Interceptor pipeline methods
+        if (context.HasInterceptors)
+            members.AddRange(BuildInterceptorPipelineMethods(facadeInfo, context.PipelineRequirements));
 
         return classDeclaration.WithMembers(List(members));
     }
@@ -161,33 +147,198 @@ internal static class ImplementationClassBuilder
     }
 
     private static IEnumerable<MemberDeclarationSyntax> BuildInterceptorPipelineMethods(
-        ImmutableArray<AggregatedMethodGroup> methodGroups)
+        FacadeInterfaceInfo facadeInfo,
+        InterceptorPipelineRequirements requirements)
     {
-        var allMethods = methodGroups.SelectMany(g => g.Methods).ToList();
+        // Check if we should use generic pipeline methods
+        var isGenericFacade = facadeInfo.IsGenericFacade;
+        var attributeTypeName = isGenericFacade && facadeInfo.FacadeMethodAttributeTypes.Length > 0
+            ? facadeInfo.FacadeMethodAttributeTypes[0].ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            : null;
 
-        // Determine which pipeline methods are needed based on return types
-        var needsSyncVoid = allMethods.Any(m => m.ReturnTypeKind is ReturnTypeKind.Void);
-        var needsSyncResult = allMethods.Any(m => m.ReturnTypeKind is ReturnTypeKind.Result);
-        var needsAsyncVoid = allMethods.Any(m =>
-            m.ReturnTypeKind is ReturnTypeKind.Task or ReturnTypeKind.ValueTask);
-        var needsAsyncResult = allMethods.Any(m =>
-            m.ReturnTypeKind is ReturnTypeKind.TaskWithResult or ReturnTypeKind.ValueTaskWithResult);
-        var needsStream = allMethods.Any(m =>
-            m.ReturnTypeKind is ReturnTypeKind.AsyncEnumerable);
+        if (isGenericFacade && attributeTypeName is not null)
+        {
+            // Use generic pipeline methods
+            if (requirements.NeedsSyncVoid)
+                yield return InterceptorPipelineBuilder.BuildGenericSyncVoidPipelineMethod(attributeTypeName);
 
-        if (needsSyncVoid)
-            yield return InterceptorPipelineBuilder.BuildSyncVoidPipelineMethod();
+            if (requirements.NeedsSyncResult)
+                yield return InterceptorPipelineBuilder.BuildGenericSyncPipelineMethod(attributeTypeName);
 
-        if (needsSyncResult)
-            yield return InterceptorPipelineBuilder.BuildSyncPipelineMethod();
+            if (requirements.NeedsAsyncVoid)
+                yield return InterceptorPipelineBuilder.BuildGenericAsyncVoidPipelineMethod(attributeTypeName);
 
-        if (needsAsyncVoid)
-            yield return InterceptorPipelineBuilder.BuildAsyncVoidPipelineMethod();
+            if (requirements.NeedsAsyncResult)
+                yield return InterceptorPipelineBuilder.BuildGenericAsyncPipelineMethod(attributeTypeName);
 
-        if (needsAsyncResult)
-            yield return InterceptorPipelineBuilder.BuildAsyncPipelineMethod();
+            if (requirements.NeedsStream)
+                yield return InterceptorPipelineBuilder.BuildGenericStreamPipelineMethod(attributeTypeName);
+        }
+        else
+        {
+            // Use non-generic pipeline methods
+            if (requirements.NeedsSyncVoid)
+                yield return InterceptorPipelineBuilder.BuildSyncVoidPipelineMethod();
 
-        if (needsStream)
-            yield return InterceptorPipelineBuilder.BuildStreamPipelineMethod();
+            if (requirements.NeedsSyncResult)
+                yield return InterceptorPipelineBuilder.BuildSyncPipelineMethod();
+
+            if (requirements.NeedsAsyncVoid)
+                yield return InterceptorPipelineBuilder.BuildAsyncVoidPipelineMethod();
+
+            if (requirements.NeedsAsyncResult)
+                yield return InterceptorPipelineBuilder.BuildAsyncPipelineMethod();
+
+            if (requirements.NeedsStream)
+                yield return InterceptorPipelineBuilder.BuildStreamPipelineMethod();
+        }
+    }
+
+    /// <summary>
+    /// Creates a build context with pre-computed values for efficient class building.
+    /// Performs single-pass analysis over methods and properties.
+    /// </summary>
+    private static ImplementationBuildContext CreateBuildContext(
+        FacadeInterfaceInfo facadeInfo,
+        ImmutableArray<AggregatedMethodGroup> methodGroups,
+        ImmutableArray<CandidatePropertyInfo> properties)
+    {
+        var allMethods = methodGroups.SelectMany(g => g.Methods).ToImmutableArray();
+        var hasInterceptors = facadeInfo.Features.HasInterceptors;
+
+        // Single-pass analysis for instance members and pipeline requirements
+        var hasInstanceMethods = false;
+        var needsSyncVoid = false;
+        var needsSyncResult = false;
+        var needsAsyncVoid = false;
+        var needsAsyncResult = false;
+        var needsStream = false;
+
+        foreach (var method in allMethods)
+        {
+            if (!method.MethodSymbol.IsStatic)
+                hasInstanceMethods = true;
+
+            // Only compute pipeline requirements if we have interceptors
+            if (hasInterceptors)
+            {
+                switch (method.ReturnTypeKind)
+                {
+                    case ReturnTypeKind.Void:
+                        needsSyncVoid = true;
+                        break;
+                    case ReturnTypeKind.Result:
+                        needsSyncResult = true;
+                        break;
+                    case ReturnTypeKind.Task:
+                    case ReturnTypeKind.ValueTask:
+                        needsAsyncVoid = true;
+                        break;
+                    case ReturnTypeKind.TaskWithResult:
+                    case ReturnTypeKind.ValueTaskWithResult:
+                        needsAsyncResult = true;
+                        break;
+                    case ReturnTypeKind.AsyncEnumerable:
+                        needsStream = true;
+                        break;
+                }
+            }
+        }
+
+        var hasInstanceProperties = !properties.IsDefault && properties.Any(p => !p.PropertySymbol.IsStatic);
+        var hasInstanceMembers = hasInstanceMethods || hasInstanceProperties;
+
+        var pipelineRequirements = new InterceptorPipelineRequirements(
+            needsSyncVoid,
+            needsSyncResult,
+            needsAsyncVoid,
+            needsAsyncResult,
+            needsStream);
+
+        return new ImplementationBuildContext(
+            allMethods,
+            hasInstanceMembers,
+            hasInterceptors,
+            pipelineRequirements);
+    }
+
+    /// <summary>
+    /// Adds disposal interfaces to the class declaration for scoped facades with instance members.
+    /// </summary>
+    private static ClassDeclarationSyntax AddDisposalInterfaces(
+        ClassDeclarationSyntax classDeclaration,
+        bool isScoped,
+        bool hasInstanceMembers)
+    {
+        if (isScoped && hasInstanceMembers)
+        {
+            return classDeclaration.AddBaseListTypes(
+                SimpleBaseType(ParseTypeName("global::System.IDisposable")),
+                SimpleBaseType(ParseTypeName("global::System.IAsyncDisposable")));
+        }
+
+        return classDeclaration;
+    }
+
+    /// <summary>
+    /// Builds field declarations based on scope and interceptor configuration.
+    /// </summary>
+    private static IEnumerable<MemberDeclarationSyntax> BuildFields(
+        bool isScoped,
+        bool hasInstanceMembers,
+        bool hasInterceptors)
+    {
+        if (isScoped && hasInstanceMembers)
+        {
+            foreach (var field in FieldBuilder.BuildScopedFields())
+                yield return field;
+        }
+        else if (!isScoped)
+        {
+            foreach (var field in FieldBuilder.BuildNonScopedFields())
+                yield return field;
+        }
+
+        if (hasInterceptors)
+            yield return FieldBuilder.BuildInterceptorsField();
+    }
+
+    /// <summary>
+    /// Selects and builds the appropriate constructor based on scope and interceptor configuration.
+    /// </summary>
+    private static MemberDeclarationSyntax? SelectConstructor(
+        string implementationClassName,
+        bool isScoped,
+        bool hasInstanceMembers,
+        bool hasInterceptors,
+        ImmutableArray<INamedTypeSymbol> interceptorTypes)
+    {
+        // Scoped facades without instance members don't need a constructor
+        if (isScoped && !hasInstanceMembers)
+            return null;
+
+        return (isScoped, hasInterceptors) switch
+        {
+            (true, true) => ConstructorBuilder.BuildScopedConstructorWithInterceptors(
+                implementationClassName, interceptorTypes),
+            (true, false) => ConstructorBuilder.BuildScopedConstructor(implementationClassName),
+            (false, true) => ConstructorBuilder.BuildNonScopedConstructorWithInterceptors(
+                implementationClassName, interceptorTypes),
+            (false, false) => ConstructorBuilder.BuildNonScopedConstructor(implementationClassName),
+        };
+    }
+
+    /// <summary>
+    /// Builds property implementations sorted by name for consistent output.
+    /// </summary>
+    private static IEnumerable<MemberDeclarationSyntax> BuildProperties(
+        FacadeInterfaceInfo facadeInfo,
+        ImmutableArray<CandidatePropertyInfo> properties)
+    {
+        if (properties.IsDefault || properties.IsEmpty)
+            yield break;
+
+        foreach (var prop in properties.OrderBy(p => p.PropertySymbol.Name))
+            yield return PropertyBuilder.BuildImplementationProperty(facadeInfo, prop);
     }
 }

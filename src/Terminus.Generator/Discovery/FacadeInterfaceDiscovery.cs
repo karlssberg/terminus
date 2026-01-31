@@ -51,6 +51,7 @@ internal sealed class FacadeInterfaceDiscovery
             // For generic attributes like FacadeOfAttribute<T>, get type arguments
             // For non-generic attributes, get constructor arguments
             ImmutableArray<INamedTypeSymbol> facadeMethodAttrTypes;
+            bool isGenericFacade;
 
             if (aggregatorAttrData.AttributeClass is { IsGenericType: true, TypeArguments.Length: > 0 })
             {
@@ -59,6 +60,9 @@ internal sealed class FacadeInterfaceDiscovery
                     ..aggregatorAttrData.AttributeClass.TypeArguments
                         .OfType<INamedTypeSymbol>()
                 ];
+                
+                // Check if this is a single-attribute generic facade (FacadeOfAttribute<T>)
+                isGenericFacade = facadeMethodAttrTypes.Length == 1;
             }
             else
             {
@@ -71,6 +75,8 @@ internal sealed class FacadeInterfaceDiscovery
                         .Select(arg => arg.Value)
                         .OfType<INamedTypeSymbol>()
                 ];
+                
+                isGenericFacade = false;
             }
 
             // TargetTypes is not supported in the current design - always empty
@@ -81,7 +87,8 @@ internal sealed class FacadeInterfaceDiscovery
                 facadeMethodAttrTypes,
                 targetTypes,
                 dotnetFeatures,
-                generationFeatures
+                generationFeatures,
+                isGenericFacade
             );
         }
 
